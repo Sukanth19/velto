@@ -13,8 +13,8 @@ This implementation plan breaks down the Decision-Driven Execution App into incr
   - Set up package structure: data/, domain/, presentation/, di/
   - _Requirements: 10.1, 10.2_
 
-- [ ] 2. Implement domain models and enums
-  - [ ] 2.1 Create Task domain model with validation
+- [x] 2. Implement domain models and enums
+  - [x] 2.1 Create Task domain model with validation
     - Define Task data class with id, title, description, category, urgency, importance, effort, energyTag, createdAt
     - Add init block with require() checks for urgency (1-5) and importance (1-5)
     - Create TaskCategory enum (SCHOOL, PERSONAL, WORK)
@@ -22,22 +22,22 @@ This implementation plan breaks down the Decision-Driven Execution App into incr
     - Create EnergyTag enum (LOW, DEEP_WORK)
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6_
 
-  - [ ] 2.2 Write property test for Task validation
+  - [x] 2.2 Write property test for Task validation
     - **Property 1: Task Attribute Validation**
     - **Validates: Requirements 1.2, 1.3**
 
-  - [ ] 2.3 Create FocusSession domain models
+  - [x] 2.3 Create FocusSession domain models
     - Define FocusSessionState sealed class (Idle, Focusing, Paused, Breaking)
     - Define FocusSessionData data class for persistence
     - Define JustStartResult sealed class (Success, NoTasksAvailable)
     - _Requirements: 3.1, 3.2, 3.3, 3.4_
 
-  - [ ] 2.4 Create UserPreferences data class
+  - [x] 2.4 Create UserPreferences data class
     - Define UserPreferences with focusDurationMinutes (default 25), breakDurationMinutes (default 5), themeMode
     - Create ThemeMode enum (LIGHT, DARK, SYSTEM)
     - _Requirements: 11.1, 11.2, 11.5_
 
-  - [ ] 2.5 Create EisenhowerQuadrant enum
+  - [x] 2.5 Create EisenhowerQuadrant enum
     - Define URGENT_IMPORTANT, NOT_URGENT_IMPORTANT, URGENT_NOT_IMPORTANT, NEITHER
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
