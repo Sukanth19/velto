@@ -41,56 +41,56 @@ This implementation plan breaks down the Decision-Driven Execution App into incr
     - Define URGENT_IMPORTANT, NOT_URGENT_IMPORTANT, URGENT_NOT_IMPORTANT, NEITHER
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 3. Implement data layer - Room database
-  - [ ] 3.1 Create Room entities
+- [x] 3. Implement data layer - Room database
+  - [x] 3.1 Create Room entities
     - Define TaskEntity with @Entity annotation and all task fields
     - Define TaskCompletionEntity with taskId, taskTitle, completedAt, focusDuration
     - Add proper @PrimaryKey, @ColumnInfo annotations
     - _Requirements: 10.1, 10.6_
 
-  - [ ] 3.2 Create TaskDao interface
+  - [x] 3.2 Create TaskDao interface
     - Define getAllActiveTasks() returning Flow<List<TaskEntity>>
     - Define getTaskById(id) returning Flow<TaskEntity?>
     - Define getTasksByCategory(category) returning Flow<List<TaskEntity>>
     - Define insertTask(task), updateTask(task), deleteTask(taskId), completeTask(taskId, timestamp)
     - _Requirements: 1.1, 1.7, 1.8, 1.9, 9.6_
 
-  - [ ] 3.3 Create TaskCompletionDao interface
+  - [x] 3.3 Create TaskCompletionDao interface
     - Define insertCompletion(completion)
     - Define getCompletionsInPeriod(startTimestamp, endTimestamp) returning Flow<List<TaskCompletionEntity>>
     - Define getTotalFocusTimeInPeriod(startTimestamp, endTimestamp) returning Flow<Int?>
     - Define getDaysWithCompletions(startTimestamp) returning Flow<Int>
     - _Requirements: 7.1, 7.2, 7.3, 7.4_
 
-  - [ ] 3.4 Create AppDatabase class
+  - [x] 3.4 Create AppDatabase class
     - Define @Database annotation with entities and version
     - Create abstract methods for taskDao() and taskCompletionDao()
     - _Requirements: 10.1_
 
-- [ ] 4. Implement data layer - DataStore
-  - [ ] 4.1 Create PreferencesRepository interface and implementation
+- [x] 4. Implement data layer - DataStore
+  - [x] 4.1 Create PreferencesRepository interface and implementation
     - Define interface with getPreferences() returning Flow<UserPreferences>
     - Define savePreferences(preferences), saveFocusSession(sessionData), getFocusSession()
     - Implement PreferencesRepositoryImpl using Preferences DataStore
     - _Requirements: 10.2, 10.4, 11.4_
 
-  - [ ] 4.2 Write property test for preferences persistence
+  - [x] 4.2 Write property test for preferences persistence
     - **Property 30: Preferences Persistence Round Trip**
     - **Validates: Requirements 10.2, 10.4, 11.4**
 
-- [ ] 5. Implement data layer - Repository implementations
-  - [ ] 5.1 Create TaskRepository interface
+- [x] 5. Implement data layer - Repository implementations
+  - [x] 5.1 Create TaskRepository interface
     - Define getAllTasks(), getTaskById(id), insertTask(task), updateTask(task), deleteTask(taskId), completeTask(taskId, timestamp), getTasksByCategory(category)
     - All methods return Flow or suspend functions
     - _Requirements: 1.1, 1.7, 1.8, 1.9_
 
-  - [ ] 5.2 Implement TaskRepositoryImpl
+  - [x] 5.2 Implement TaskRepositoryImpl
     - Inject TaskDao and TaskCompletionDao
     - Implement all methods with entity-to-domain model mapping
     - Map TaskEntity to Task and vice versa
     - _Requirements: 1.1, 1.7, 1.8, 1.9, 10.6_
 
-  - [ ] 5.3 Write property tests for TaskRepository
+  - [x] 5.3 Write property tests for TaskRepository
     - **Property 2: Task CRUD Operations**
     - **Property 3: Task Update Persistence**
     - **Property 4: Task Deletion**
@@ -98,24 +98,24 @@ This implementation plan breaks down the Decision-Driven Execution App into incr
     - **Property 29: Task Persistence Round Trip**
     - **Validates: Requirements 1.1, 1.7, 1.8, 1.9, 10.1, 10.3, 10.6**
 
-  - [ ] 5.3 Create PerformanceRepository interface and implementation
+  - [x] 5.3 Create PerformanceRepository interface and implementation
     - Define recordCompletion(taskId, timestamp, focusDuration)
     - Define getCompletionsInPeriod(startTimestamp, endTimestamp), getTotalFocusTimeInPeriod(), getConsistencyScore(days)
     - Implement PerformanceRepositoryImpl using TaskCompletionDao
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.6_
 
-  - [ ] 5.4 Write property tests for PerformanceRepository
+  - [x] 5.4 Write property tests for PerformanceRepository
     - **Property 21: Completion Timestamp Recording**
     - **Property 22: Completed Tasks Count**
     - **Property 23: Total Focus Time Calculation**
     - **Property 24: Consistency Score Calculation**
     - **Validates: Requirements 7.1, 7.2, 7.3, 7.4**
 
-- [ ] 6. Checkpoint - Ensure all tests pass
+- [x] 6. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 7. Implement domain layer - Scoring Engine
-  - [ ] 7.1 Create ScoringEngine class
+- [x] 7. Implement domain layer - Scoring Engine
+  - [x] 7.1 Create ScoringEngine class
     - Implement calculateScore(task) using weighted formula: (2.0 * urgency) + (3.0 * importance) + (-0.5 * effortValue) + energyBonus
     - Map effort to values: LOW=1, MEDIUM=2, HIGH=3
     - Map energy to bonus: DEEP_WORK=1.0, LOW=0.5, null=0
@@ -123,20 +123,20 @@ This implementation plan breaks down the Decision-Driven Execution App into incr
     - Implement getTopThreeTasks(tasks) returning top 3 tasks in descending score order
     - _Requirements: 2.1, 2.2, 2.3, 2.4_
 
-  - [ ] 7.2 Write property tests for ScoringEngine
+  - [x] 7.2 Write property tests for ScoringEngine
     - **Property 6: Score Calculation and Best Task Selection**
     - **Property 7: Top Three Task Ordering**
     - **Property 8: Score Tiebreaker**
     - **Validates: Requirements 2.1, 2.2, 2.3, 2.4**
 
-  - [ ] 7.3 Write unit tests for ScoringEngine edge cases
+  - [x] 7.3 Write unit tests for ScoringEngine edge cases
     - Test empty task list returns null
     - Test single task returns that task
     - Test identical scores use timestamp tiebreaker
     - _Requirements: 2.4, 2.5_
 
-- [ ] 8. Implement domain layer - Eisenhower Classifier
-  - [ ] 8.1 Create EisenhowerClassifier class
+- [x] 8. Implement domain layer - Eisenhower Classifier
+  - [x] 8.1 Create EisenhowerClassifier class
     - Implement classify(task) returning EisenhowerQuadrant based on urgency/importance thresholds
     - URGENT_IMPORTANT: urgency >= 4 AND importance >= 4
     - NOT_URGENT_IMPORTANT: urgency <= 3 AND importance >= 4
@@ -145,7 +145,7 @@ This implementation plan breaks down the Decision-Driven Execution App into incr
     - Implement groupByQuadrant(tasks) returning Map<EisenhowerQuadrant, List<Task>>
     - _Requirements: 6.2, 6.3, 6.4, 6.5, 6.6, 6.7_
 
-  - [ ] 8.2 Write property tests for EisenhowerClassifier
+  - [x] 8.2 Write property tests for EisenhowerClassifier
     - **Property 16: Eisenhower Urgent and Important Classification**
     - **Property 17: Eisenhower Not Urgent but Important Classification**
     - **Property 18: Eisenhower Urgent but Not Important Classification**
@@ -153,8 +153,8 @@ This implementation plan breaks down the Decision-Driven Execution App into incr
     - **Property 20: Eisenhower Quadrant Counts**
     - **Validates: Requirements 6.2, 6.3, 6.4, 6.5, 6.7**
 
-- [ ] 9. Implement domain layer - Focus Session Manager
-  - [ ] 9.1 Create FocusSessionManager class
+- [x] 9. Implement domain layer - Focus Session Manager
+  - [x] 9.1 Create FocusSessionManager class
     - Define sessionState as MutableStateFlow<FocusSessionState> initialized to Idle
     - Implement startSession(task, focusDuration, breakDuration) that saves state to DataStore and updates StateFlow
     - Implement pauseSession() that transitions Focusing to Paused, preserving elapsed time
@@ -164,7 +164,7 @@ This implementation plan breaks down the Decision-Driven Execution App into incr
     - Implement completeSession() for automatic transition when break completes
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.6, 4.7, 4.8, 4.9_
 
-  - [ ] 9.2 Write property tests for FocusSessionManager
+  - [x] 9.2 Write property tests for FocusSessionManager
     - **Property 9: Custom Focus Duration Application**
     - **Property 10: Focus Session State Transition**
     - **Property 11: Focus Session Pause Preservation**
@@ -172,14 +172,14 @@ This implementation plan breaks down the Decision-Driven Execution App into incr
     - **Property 13: Focus Completion Recording**
     - **Validates: Requirements 4.2, 4.4, 4.6, 4.7, 4.8, 4.9, 11.3**
 
-  - [ ] 9.3 Write unit tests for FocusSessionManager
+  - [x] 9.3 Write unit tests for FocusSessionManager
     - Test default durations (25 minutes focus, 5 minutes break)
     - Test pause preserves exact remaining time
     - Test state transitions through full cycle
     - _Requirements: 4.1, 4.6, 4.7, 11.5_
 
-- [ ] 10. Implement domain layer - Use Cases
-  - [ ] 10.1 Create task management use cases
+- [x] 10. Implement domain layer - Use Cases
+  - [x] 10.1 Create task management use cases
     - Implement CreateTaskUseCase(taskRepository) with validation
     - Implement UpdateTaskUseCase(taskRepository) with validation
     - Implement DeleteTaskUseCase(taskRepository)
@@ -188,35 +188,35 @@ This implementation plan breaks down the Decision-Driven Execution App into incr
     - Implement GetTaskByIdUseCase(taskRepository)
     - _Requirements: 1.1, 1.7, 1.8, 1.9, 7.1_
 
-  - [ ] 10.2 Write unit tests for task use cases
+  - [x] 10.2 Write unit tests for task use cases
     - Test CreateTaskUseCase validates urgency/importance ranges
     - Test CompleteTaskUseCase records completion timestamp
     - Test DeleteTaskUseCase removes task from queries
     - _Requirements: 1.2, 1.3, 1.8, 1.9_
 
-  - [ ] 10.3 Create scoring use cases
+  - [x] 10.3 Create scoring use cases
     - Implement GetBestTaskUseCase(taskRepository, scoringEngine) that gets all tasks and returns best
     - Implement GetTopThreeTasksUseCase(taskRepository, scoringEngine)
     - _Requirements: 2.1, 2.2, 2.3_
 
-  - [ ] 10.4 Create JustStartUseCase
+  - [x] 10.4 Create JustStartUseCase
     - Inject GetBestTaskUseCase, StartFocusSessionUseCase, PreferencesRepository
     - Implement invoke() that gets best task, loads preferences, starts session, returns JustStartResult
     - Handle NoTasksAvailable case when best task is null
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
-  - [ ] 10.5 Create focus session use cases
+  - [x] 10.5 Create focus session use cases
     - Implement StartFocusSessionUseCase(focusSessionManager)
     - Implement PauseFocusSessionUseCase(focusSessionManager)
     - Implement ResumeFocusSessionUseCase(focusSessionManager)
     - Implement EndFocusSessionUseCase(focusSessionManager)
     - _Requirements: 4.6, 4.7, 4.8_
 
-  - [ ] 10.6 Create Eisenhower use case
+  - [x] 10.6 Create Eisenhower use case
     - Implement GetEisenhowerMatrixUseCase(taskRepository, eisenhowerClassifier) that groups tasks by quadrant
     - _Requirements: 6.1, 6.6_
 
-  - [ ] 10.7 Create performance tracking use cases
+  - [x] 10.7 Create performance tracking use cases
     - Implement GetProductivityMetricsUseCase(performanceRepository) with time period parameter
     - Return metrics: completedTasks, totalFocusTime, consistencyScore
     - _Requirements: 7.2, 7.3, 7.4, 7.5_
