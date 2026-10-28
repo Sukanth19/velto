@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.dagger.hilt.android")
     id("com.google.devtools.ksp")
 }
@@ -45,8 +46,9 @@ android {
         compose = true
     }
 
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14"
+
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
     }
 
     packaging {
@@ -113,6 +115,11 @@ dependencies {
     // Testing - Room
     testImplementation("androidx.room:room-testing:$roomVersion")
     
+    // Testing - Robolectric (Room tests need a real SQLite on the JVM)
+    testImplementation("org.robolectric:robolectric:4.11.1")
+    testImplementation("androidx.test:core-ktx:1.5.0")
+    testRuntimeOnly("org.junit.vintage:junit-vintage-engine:5.10.1")
+    
     // Testing - Android
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
@@ -127,4 +134,7 @@ dependencies {
 // Configure Kotest to use JUnit 5
 tasks.withType<Test> {
     useJUnitPlatform()
+    // keep robolectric from eating the machine
+    maxHeapSize = "1g"
+    maxParallelForks = 1
 }
