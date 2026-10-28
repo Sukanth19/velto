@@ -1,5 +1,6 @@
 package com.decisionexecution.app.presentation.settings
 
+import com.decisionexecution.app.testutil.PROPERTY_ITERATIONS
 import com.decisionexecution.app.domain.model.ThemeMode
 import com.decisionexecution.app.domain.model.UserPreferences
 import com.decisionexecution.app.domain.repository.PreferencesRepository
@@ -87,7 +88,7 @@ class SettingsViewModelPropertyTest : StringSpec({
 
     "loads stored preferences and saves theme changes" {
         // Requirements: 11.3, 11.4
-        checkAll(50, Arb.int(5..90), Arb.int(1..30), Arb.enum<ThemeMode>()) { focus, brk, theme ->
+        checkAll(PROPERTY_ITERATIONS, Arb.int(5..90), Arb.int(1..30), Arb.enum<ThemeMode>()) { focus, brk, theme ->
             val repository = createRepository(UserPreferences(focus, brk, ThemeMode.SYSTEM))
             val viewModel = SettingsViewModel(repository)
 

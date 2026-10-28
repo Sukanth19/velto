@@ -1,5 +1,6 @@
 package com.decisionexecution.app.domain.service
 
+import com.decisionexecution.app.testutil.PROPERTY_ITERATIONS
 import com.decisionexecution.app.domain.model.*
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.comparables.shouldBeGreaterThanOrEqualTo
@@ -22,7 +23,7 @@ class ScoringEnginePropertyTest : StringSpec({
         // to all other tasks in the list.
         // Validates: Requirements 2.1, 2.2
         
-        checkAll(100, Arb.list(taskArb(), range = 1..100)) { tasks ->
+        checkAll(PROPERTY_ITERATIONS, Arb.list(taskArb(), range = 1..100)) { tasks ->
             val scoringEngine = ScoringEngine()
             val bestTask = scoringEngine.getBestTask(tasks)
             
@@ -41,7 +42,7 @@ class ScoringEnginePropertyTest : StringSpec({
         // three tasks, the top three tasks returned should be in descending order by score.
         // Validates: Requirements 2.3
         
-        checkAll(100, Arb.list(taskArb(), range = 3..100)) { tasks ->
+        checkAll(PROPERTY_ITERATIONS, Arb.list(taskArb(), range = 3..100)) { tasks ->
             val scoringEngine = ScoringEngine()
             val topThree = scoringEngine.getTopThreeTasks(tasks)
             
@@ -66,7 +67,7 @@ class ScoringEnginePropertyTest : StringSpec({
         // scores, the task with the earliest creation timestamp should be ranked higher.
         // Validates: Requirements 2.4
         
-        checkAll(100, Arb.int(1..5), Arb.int(1..5)) { urgency, importance ->
+        checkAll(PROPERTY_ITERATIONS, Arb.int(1..5), Arb.int(1..5)) { urgency, importance ->
             val scoringEngine = ScoringEngine()
             
             // Create tasks with identical attributes but different timestamps

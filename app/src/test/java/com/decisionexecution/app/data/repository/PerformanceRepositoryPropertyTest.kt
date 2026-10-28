@@ -1,5 +1,6 @@
 package com.decisionexecution.app.data.repository
 
+import com.decisionexecution.app.testutil.PROPERTY_ITERATIONS
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.room.Room
@@ -37,8 +38,7 @@ class PerformanceRepositoryPropertyTest {
         // matching the completion time.
         // **Validates: Requirements 7.1**
         
-        checkAll(
-            100,
+        checkAll(PROPERTY_ITERATIONS,
             Arb.string(10..50),
             Arb.long(1000000000000L..2000000000000L),
             Arb.int(5..90).orNull()
@@ -73,8 +73,7 @@ class PerformanceRepositoryPropertyTest {
         // equal the number of completions with timestamps within the period bounds.
         // **Validates: Requirements 7.2**
         
-        checkAll(
-            100,
+        checkAll(PROPERTY_ITERATIONS,
             Arb.list(completionDataArb(), 0..20),
             Arb.long(1000000000000L..1500000000000L),
             Arb.long(1500000000001L..2000000000000L)
@@ -111,8 +110,7 @@ class PerformanceRepositoryPropertyTest {
         // equal the sum of all focus durations within the period.
         // **Validates: Requirements 7.3**
         
-        checkAll(
-            100,
+        checkAll(PROPERTY_ITERATIONS,
             Arb.list(completionDataArb(), 0..20),
             Arb.long(1000000000000L..1500000000000L),
             Arb.long(1500000000001L..2000000000000L)
@@ -148,8 +146,7 @@ class PerformanceRepositoryPropertyTest {
         // phases count toward total focus time, and never toward completed tasks.
         // **Validates: Requirements 4.9, 7.2, 7.3**
 
-        checkAll(
-            100,
+        checkAll(PROPERTY_ITERATIONS,
             Arb.list(Arb.pair(Arb.long(1000000000000L..2000000000000L), Arb.int(5..90)), 0..20),
             Arb.long(1000000000000L..1500000000000L),
             Arb.long(1500000000001L..2000000000000L)
@@ -178,8 +175,7 @@ class PerformanceRepositoryPropertyTest {
         // (days with completions / total days) * 100.
         // **Validates: Requirements 7.4**
         
-        checkAll(
-            100,
+        checkAll(PROPERTY_ITERATIONS,
             Arb.int(1..30),
             Arb.list(Arb.int(0..29), 0..30)
         ) { totalDays, daysWithCompletionsIndices ->

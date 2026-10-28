@@ -8,6 +8,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.decisionexecution.app.domain.model.EnergyTag
 import com.decisionexecution.app.domain.model.Task
@@ -36,9 +39,9 @@ val EnergyTag.label: String
     }
 
 @Composable
-fun AttributeTag(text: String, modifier: Modifier = Modifier) {
+fun AttributeTag(text: String, modifier: Modifier = Modifier, spokenText: String = text) {
     Surface(
-        modifier = modifier,
+        modifier = modifier.semantics { contentDescription = spokenText },
         shape = MaterialTheme.shapes.small,
         color = MaterialTheme.colorScheme.surfaceVariant,
         contentColor = MaterialTheme.colorScheme.onSurfaceVariant
@@ -46,7 +49,9 @@ fun AttributeTag(text: String, modifier: Modifier = Modifier) {
         Text(
             text = text,
             style = MaterialTheme.typography.labelMedium,
-            modifier = Modifier.padding(horizontal = Spacing.sm, vertical = 2.dp)
+            modifier = Modifier
+                .padding(horizontal = Spacing.sm, vertical = 2.dp)
+                .clearAndSetSemantics { }
         )
     }
 }
@@ -57,8 +62,9 @@ fun AttributeTag(text: String, modifier: Modifier = Modifier) {
 @Composable
 fun TaskAttributeRow(task: Task, modifier: Modifier = Modifier) {
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-        AttributeTag("U${task.urgency}")
-        AttributeTag("I${task.importance}")
+        // Compact on screen, spelled out for screen readers
+        AttributeTag("U${task.urgency}", spokenText = "Urgency ${task.urgency} of 5")
+        AttributeTag("I${task.importance}", spokenText = "Importance ${task.importance} of 5")
         AttributeTag(task.effort.label)
         task.energyTag?.let { AttributeTag(it.label) }
     }

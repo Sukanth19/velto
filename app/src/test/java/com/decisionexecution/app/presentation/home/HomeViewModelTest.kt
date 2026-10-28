@@ -10,6 +10,7 @@ import io.kotest.matchers.shouldBe
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -79,7 +80,30 @@ class HomeViewModelTest : StringSpec({
 
         viewModel.onJustStartClicked()
 
-        viewModel.uiState.value.error shouldBe "database unavailable"
+        viewModel.uiState.value.error shouldBe "Couldn't start a focus session. Please try again."
+    }
+
+    "a failed load offers retry, and retrying loads the data" {
+        // Requirements: 10.6, 12.4
+        val task = createTestTask()
+        var attempts = 0
+        val getBest = mockk<GetBestTaskUseCase>()
+        every { getBest() } answers {
+            attempts++
+            if (attempts == 1) flow { throw IllegalStateException("db closed") } else flowOf(task)
+        }
+        val metrics = mockk<GetProductivityMetricsUseCase>()
+        every { metrics(any(), any(), any()) } returns flowOf(ProductivityMetrics(0, 0, 0.0))
+        val viewModel = HomeViewModel(getBest, mockk(relaxed = true), metrics)
+
+        viewModel.uiState.value.canRetry shouldBe true
+        viewModel.uiState.value.error shouldBe "Couldn't load today's data. Please try again."
+
+        viewModel.onRetry()
+
+        viewModel.uiState.value.bestTask shouldBe task
+        viewModel.uiState.value.error shouldBe null
+        viewModel.uiState.value.canRetry shouldBe false
     }
 
     "onErrorShown should clear error" {

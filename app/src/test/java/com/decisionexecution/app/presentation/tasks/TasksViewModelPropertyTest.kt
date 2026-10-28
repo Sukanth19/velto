@@ -1,5 +1,6 @@
 package com.decisionexecution.app.presentation.tasks
 
+import com.decisionexecution.app.testutil.PROPERTY_ITERATIONS
 import com.decisionexecution.app.domain.model.*
 import com.decisionexecution.app.domain.service.ScoringEngine
 import com.decisionexecution.app.domain.usecase.CompleteTaskUseCase
@@ -38,7 +39,7 @@ class TasksViewModelPropertyTest : StringSpec({
         // its category attribute.
         // Validates: Requirements 9.1
 
-        checkAll(100, Arb.list(taskArb(), 0..50)) { tasks ->
+        checkAll(PROPERTY_ITERATIONS, Arb.list(taskArb(), 0..50)) { tasks ->
             val grouped = groupTasksByCategory(tasks, ScoringEngine())
 
             grouped.values.flatten() shouldContainExactlyInAnyOrder tasks
@@ -53,7 +54,7 @@ class TasksViewModelPropertyTest : StringSpec({
         // single category, the tasks should be ordered in descending order by their priority score.
         // Validates: Requirements 9.2
 
-        checkAll(100, Arb.list(taskArb(), 0..50)) { tasks ->
+        checkAll(PROPERTY_ITERATIONS, Arb.list(taskArb(), 0..50)) { tasks ->
             val scoringEngine = ScoringEngine()
             val grouped = groupTasksByCategory(tasks, scoringEngine)
 
@@ -70,7 +71,7 @@ class TasksViewModelPropertyTest : StringSpec({
         // category, filtering by that category should return only tasks with that category attribute.
         // Validates: Requirements 9.6
 
-        checkAll(100, Arb.list(taskArb(), 0..50), Arb.enum<TaskCategory>()) { tasks, category ->
+        checkAll(PROPERTY_ITERATIONS, Arb.list(taskArb(), 0..50), Arb.enum<TaskCategory>()) { tasks, category ->
             val filtered = filterByCategory(groupTasksByCategory(tasks, ScoringEngine()), category)
 
             filtered.keys shouldBe setOf(category)
@@ -82,7 +83,7 @@ class TasksViewModelPropertyTest : StringSpec({
         // Feature: decision-driven-execution-app, Property 27
         // Validates: Requirements 9.6
 
-        checkAll(100, Arb.list(taskArb(), 0..30), Arb.enum<TaskCategory>()) { tasks, category ->
+        checkAll(PROPERTY_ITERATIONS, Arb.list(taskArb(), 0..30), Arb.enum<TaskCategory>()) { tasks, category ->
             val viewModel = createViewModel(tasks)
 
             viewModel.onCategoryFilter(category)
@@ -99,7 +100,7 @@ class TasksViewModelPropertyTest : StringSpec({
         // the displayed count should equal the number of tasks in the list.
         // Validates: Requirements 9.7
 
-        checkAll(100, Arb.list(taskArb(), 0..50), Arb.enum<TaskCategory>().orNull()) { tasks, category ->
+        checkAll(PROPERTY_ITERATIONS, Arb.list(taskArb(), 0..50), Arb.enum<TaskCategory>().orNull()) { tasks, category ->
             val viewModel = createViewModel(tasks)
             viewModel.onCategoryFilter(category)
 

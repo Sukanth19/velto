@@ -63,7 +63,7 @@ class TaskDetailViewModelTest : StringSpec({
         viewModel.onDelete()
 
         viewModel.uiState.value.isFinished shouldBe false
-        viewModel.uiState.value.error shouldBe "locked"
+        viewModel.uiState.value.error shouldBe "Couldn't delete the task. Please try again."
     }
 })
 

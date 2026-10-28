@@ -15,6 +15,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -43,9 +46,15 @@ fun TasksScreen(
     var actionsFor by remember { mutableStateOf<Task?>(null) }
 
     LaunchedEffect(uiState.error) {
-        uiState.error?.let {
-            snackbarHostState.showSnackbar(it)
+        uiState.error?.let { message ->
+            val retry = uiState.canRetry
+            val result = snackbarHostState.showSnackbar(
+                message = message,
+                actionLabel = if (retry) "Retry" else null,
+                duration = if (retry) SnackbarDuration.Indefinite else SnackbarDuration.Short
+            )
             viewModel.onErrorShown()
+            if (retry && result == SnackbarResult.ActionPerformed) viewModel.onRetry()
         }
     }
 
@@ -183,7 +192,15 @@ private fun SwipeableTaskRow(
         },
         dismissContent = {
             ListItem(
-                modifier = Modifier.clickable(onClick = onClick),
+                modifier = Modifier
+                    .clickable(onClick = onClick)
+                    // Swipes aren't reachable with TalkBack, so offer the same actions in its menu
+                    .semantics {
+                        customActions = listOf(
+                            CustomAccessibilityAction("Complete task") { currentOnComplete(); true },
+                            CustomAccessibilityAction("Edit or delete") { currentOnShowActions(); true }
+                        )
+                    },
                 headlineContent = { Text(task.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                 supportingContent = { TaskAttributeRow(task, Modifier.padding(top = Spacing.xs)) }
             )

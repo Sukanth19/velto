@@ -7,7 +7,9 @@ import com.decisionexecution.app.domain.model.Task
 import com.decisionexecution.app.domain.usecase.GetBestTaskUseCase
 import com.decisionexecution.app.domain.usecase.GetProductivityMetricsUseCase
 import com.decisionexecution.app.domain.usecase.JustStartUseCase
+import com.decisionexecution.app.presentation.common.toUserMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,6 +28,8 @@ data class HomeUiState(
     val consistencyScore: Double = 0.0,
     val isLoading: Boolean = false,
     val error: String? = null,
+    /** The error came from loading, so the UI can offer Retry */
+    val canRetry: Boolean = false,
     val focusSessionStarted: Boolean = false
 )
 
@@ -48,9 +52,12 @@ class HomeViewModel @Inject constructor(
         loadHomeData()
     }
 
+    private var loadJob: Job? = null
+
     private fun loadHomeData() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null, canRetry = false) }
 
             val zone = ZoneId.systemDefault()
             val startOfToday = LocalDate.now(zone).atStartOfDay(zone).toInstant().toEpochMilli()
@@ -68,7 +75,9 @@ class HomeViewModel @Inject constructor(
                     isLoading = false
                 )
             }
-                .catch { e -> _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to load data") } }
+                .catch { e ->
+                    _uiState.update { it.copy(isLoading = false, error = e.toUserMessage("load today's data"), canRetry = true) }
+                }
                 .collect { state -> _uiState.value = state }
         }
     }
@@ -85,7 +94,7 @@ class HomeViewModel @Inject constructor(
                     }
                 }
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message ?: "Failed to start focus session") }
+                _uiState.update { it.copy(error = e.toUserMessage("start a focus session")) }
             }
         }
     }
@@ -95,8 +104,10 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onErrorShown() {
-        _uiState.update { it.copy(error = null) }
+        _uiState.update { it.copy(error = null, canRetry = false) }
     }
+
+    fun onRetry() = loadHomeData()
 
     companion object {
         const val CONSISTENCY_DAYS = 7

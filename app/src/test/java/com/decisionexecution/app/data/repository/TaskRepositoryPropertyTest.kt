@@ -1,5 +1,6 @@
 package com.decisionexecution.app.data.repository
 
+import com.decisionexecution.app.testutil.PROPERTY_ITERATIONS
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.room.Room
@@ -37,7 +38,7 @@ class TaskRepositoryPropertyTest {
         // with all attributes preserved.
         // **Validates: Requirements 1.1**
         
-        checkAll(100, taskArb()) { task ->
+        checkAll(PROPERTY_ITERATIONS, taskArb()) { task ->
             val database = createInMemoryDatabase()
             val repository = createRepository(database)
             
@@ -72,7 +73,7 @@ class TaskRepositoryPropertyTest {
         // modified attributes being persisted and retrievable.
         // **Validates: Requirements 1.7**
         
-        checkAll(100, taskArb(), taskArb()) { originalTask, updatedAttributes ->
+        checkAll(PROPERTY_ITERATIONS, taskArb(), taskArb()) { originalTask, updatedAttributes ->
             val database = createInMemoryDatabase()
             val repository = createRepository(database)
             
@@ -116,7 +117,7 @@ class TaskRepositoryPropertyTest {
         // deleting it should result in the task no longer appearing in any task queries.
         // **Validates: Requirements 1.8**
         
-        checkAll(100, taskArb()) { task ->
+        checkAll(PROPERTY_ITERATIONS, taskArb()) { task ->
             val database = createInMemoryDatabase()
             val repository = createRepository(database)
             
@@ -150,7 +151,7 @@ class TaskRepositoryPropertyTest {
         // and not appearing in active task lists.
         // **Validates: Requirements 1.9**
         
-        checkAll(100, taskArb(), Arb.long(1000000000000L..2000000000000L)) { task, completionTimestamp ->
+        checkAll(PROPERTY_ITERATIONS, taskArb(), Arb.long(1000000000000L..2000000000000L)) { task, completionTimestamp ->
             val database = createInMemoryDatabase()
             val repository = createRepository(database)
             
@@ -181,7 +182,7 @@ class TaskRepositoryPropertyTest {
         // in a list containing an equivalent task.
         // **Validates: Requirements 1.1, 1.7, 1.8, 1.9, 10.1, 10.3, 10.6**
         
-        checkAll(100, taskArb()) { task ->
+        checkAll(PROPERTY_ITERATIONS, taskArb()) { task ->
             val database = createInMemoryDatabase()
             val repository = createRepository(database)
             

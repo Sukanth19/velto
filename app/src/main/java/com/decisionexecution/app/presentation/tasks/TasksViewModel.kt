@@ -8,7 +8,9 @@ import com.decisionexecution.app.domain.service.ScoringEngine
 import com.decisionexecution.app.domain.usecase.CompleteTaskUseCase
 import com.decisionexecution.app.domain.usecase.DeleteTaskUseCase
 import com.decisionexecution.app.domain.usecase.GetAllTasksUseCase
+import com.decisionexecution.app.presentation.common.toUserMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,7 +25,9 @@ data class TasksUiState(
     val selectedCategory: TaskCategory? = null,
     val activeTaskCount: Int = 0,
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    /** The error came from loading, so the UI can offer Retry */
+    val canRetry: Boolean = false
 )
 
 /**
@@ -66,8 +70,16 @@ class TasksViewModel @Inject constructor(
 
     private val selectedCategory = MutableStateFlow<TaskCategory?>(null)
 
+    private var loadJob: Job? = null
+
     init {
-        viewModelScope.launch {
+        loadTasks()
+    }
+
+    private fun loadTasks() {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null, canRetry = false) }
             combine(getAllTasksUseCase(), selectedCategory) { tasks, category ->
                 _uiState.value.copy(
                     tasksByCategory = filterByCategory(groupTasksByCategory(tasks, scoringEngine), category),
@@ -76,7 +88,9 @@ class TasksViewModel @Inject constructor(
                     isLoading = false
                 )
             }
-                .catch { e -> _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to load tasks") } }
+                .catch { e ->
+                    _uiState.update { it.copy(isLoading = false, error = e.toUserMessage("load your tasks"), canRetry = true) }
+                }
                 .collect { state -> _uiState.value = state }
         }
     }
@@ -86,7 +100,7 @@ class TasksViewModel @Inject constructor(
             try {
                 completeTaskUseCase(taskId)
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message ?: "Failed to complete task") }
+                _uiState.update { it.copy(error = e.toUserMessage("complete the task")) }
             }
         }
     }
@@ -96,7 +110,7 @@ class TasksViewModel @Inject constructor(
             try {
                 deleteTaskUseCase(taskId)
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message ?: "Failed to delete task") }
+                _uiState.update { it.copy(error = e.toUserMessage("delete the task")) }
             }
         }
     }
@@ -106,6 +120,8 @@ class TasksViewModel @Inject constructor(
     }
 
     fun onErrorShown() {
-        _uiState.update { it.copy(error = null) }
+        _uiState.update { it.copy(error = null, canRetry = false) }
     }
+
+    fun onRetry() = loadTasks()
 }

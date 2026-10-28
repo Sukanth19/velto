@@ -1,5 +1,6 @@
 package com.decisionexecution.app.domain.service
 
+import com.decisionexecution.app.testutil.PROPERTY_ITERATIONS
 import com.decisionexecution.app.domain.model.*
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
@@ -19,7 +20,7 @@ class EisenhowerClassifierPropertyTest : StringSpec({
         // and importance >= 4, the Eisenhower classifier should classify it as Urgent and Important.
         // Validates: Requirements 6.2
         
-        checkAll(100, Arb.int(4..5), Arb.int(4..5)) { urgency, importance ->
+        checkAll(PROPERTY_ITERATIONS, Arb.int(4..5), Arb.int(4..5)) { urgency, importance ->
             val classifier = EisenhowerClassifier()
             val task = createTask(urgency = urgency, importance = importance)
             
@@ -34,7 +35,7 @@ class EisenhowerClassifierPropertyTest : StringSpec({
         // and importance >= 4, the Eisenhower classifier should classify it as Not Urgent but Important.
         // Validates: Requirements 6.3
         
-        checkAll(100, Arb.int(1..3), Arb.int(4..5)) { urgency, importance ->
+        checkAll(PROPERTY_ITERATIONS, Arb.int(1..3), Arb.int(4..5)) { urgency, importance ->
             val classifier = EisenhowerClassifier()
             val task = createTask(urgency = urgency, importance = importance)
             
@@ -49,7 +50,7 @@ class EisenhowerClassifierPropertyTest : StringSpec({
         // and importance <= 3, the Eisenhower classifier should classify it as Urgent but Not Important.
         // Validates: Requirements 6.4
         
-        checkAll(100, Arb.int(4..5), Arb.int(1..3)) { urgency, importance ->
+        checkAll(PROPERTY_ITERATIONS, Arb.int(4..5), Arb.int(1..3)) { urgency, importance ->
             val classifier = EisenhowerClassifier()
             val task = createTask(urgency = urgency, importance = importance)
             
@@ -64,7 +65,7 @@ class EisenhowerClassifierPropertyTest : StringSpec({
         // and importance <= 3, the Eisenhower classifier should classify it as Neither Urgent nor Important.
         // Validates: Requirements 6.5
         
-        checkAll(100, Arb.int(1..3), Arb.int(1..3)) { urgency, importance ->
+        checkAll(PROPERTY_ITERATIONS, Arb.int(1..3), Arb.int(1..3)) { urgency, importance ->
             val classifier = EisenhowerClassifier()
             val task = createTask(urgency = urgency, importance = importance)
             
@@ -79,7 +80,7 @@ class EisenhowerClassifierPropertyTest : StringSpec({
         // the sum of task counts across all four Eisenhower quadrants should equal the total number of tasks.
         // Validates: Requirements 6.7
         
-        checkAll(100, Arb.list(taskArb(), range = 0..100)) { tasks ->
+        checkAll(PROPERTY_ITERATIONS, Arb.list(taskArb(), range = 0..100)) { tasks ->
             val classifier = EisenhowerClassifier()
             val groupedTasks = classifier.groupByQuadrant(tasks)
             

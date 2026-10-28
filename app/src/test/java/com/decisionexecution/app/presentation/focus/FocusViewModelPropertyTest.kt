@@ -1,5 +1,6 @@
 package com.decisionexecution.app.presentation.focus
 
+import com.decisionexecution.app.testutil.PROPERTY_ITERATIONS
 import com.decisionexecution.app.domain.model.*
 import com.decisionexecution.app.domain.repository.PreferencesRepository
 import com.decisionexecution.app.domain.service.FocusSessionManager
@@ -37,7 +38,7 @@ class FocusViewModelPropertyTest : StringSpec({
         // the focus UI state should contain the task title of the task being worked on.
         // Validates: Requirements 5.2
 
-        checkAll(100, taskArb(), Arb.int(5..90), Arb.int(1..30), Arb.boolean()) { task, focus, brk, paused ->
+        checkAll(PROPERTY_ITERATIONS, taskArb(), Arb.int(5..90), Arb.int(1..30), Arb.boolean()) { task, focus, brk, paused ->
             val clock = FakeTimeSource()
             val manager = focusSessionManager(clock = clock)
             val viewModel = createViewModel(manager)
@@ -57,7 +58,7 @@ class FocusViewModelPropertyTest : StringSpec({
         // during focus time should be distinguishable from the UI state during break time.
         // Validates: Requirements 5.6
 
-        checkAll(100, taskArb(), Arb.int(5..90), Arb.int(1..30)) { task, focus, brk ->
+        checkAll(PROPERTY_ITERATIONS, taskArb(), Arb.int(5..90), Arb.int(1..30)) { task, focus, brk ->
             val clock = FakeTimeSource()
             val manager = focusSessionManager(clock = clock)
             val viewModel = createViewModel(manager)
@@ -78,7 +79,7 @@ class FocusViewModelPropertyTest : StringSpec({
 
     "remaining time is total minus elapsed and never negative" {
         // Requirements: 5.3
-        checkAll(100, taskArb(), Arb.int(5..90), Arb.int(0..10_000)) { task, focus, rawElapsed ->
+        checkAll(PROPERTY_ITERATIONS, taskArb(), Arb.int(5..90), Arb.int(0..10_000)) { task, focus, rawElapsed ->
             // Stay inside the focus phase; going past it correctly moves to the break
             val elapsed = rawElapsed % (focus * 60)
             val clock = FakeTimeSource()
@@ -96,7 +97,7 @@ class FocusViewModelPropertyTest : StringSpec({
 
     "ending a session returns UI to idle" {
         // Requirements: 4.8
-        checkAll(100, taskArb()) { task ->
+        checkAll(PROPERTY_ITERATIONS, taskArb()) { task ->
             val clock = FakeTimeSource()
             val manager = focusSessionManager(clock = clock)
             val viewModel = createViewModel(manager)

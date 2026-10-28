@@ -10,6 +10,7 @@ import com.decisionexecution.app.domain.model.TaskEffort
 import com.decisionexecution.app.domain.usecase.CreateTaskUseCase
 import com.decisionexecution.app.domain.usecase.GetTaskByIdUseCase
 import com.decisionexecution.app.domain.usecase.UpdateTaskUseCase
+import com.decisionexecution.app.presentation.common.toUserMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -107,10 +108,8 @@ class AddEditTaskViewModel @Inject constructor(
                 )
                 if (existing != null) updateTaskUseCase(task) else createTaskUseCase(task)
                 _uiState.update { it.copy(isSaved = true) }
-            } catch (e: IllegalArgumentException) {
-                _uiState.update { it.copy(error = e.message ?: "Invalid task") }
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message ?: "Failed to save task") }
+                _uiState.update { it.copy(error = e.toUserMessage("save the task")) }
             }
         }
     }

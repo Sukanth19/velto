@@ -66,10 +66,10 @@ private fun deepLinkAction(context: Context, uri: String): Action =
 class BestTaskWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        // Any failure shows the empty state rather than a broken widget (Requirement 8.4)
-        val state = runCatching {
+        // A failed or slow load shows the last known task rather than a broken widget (Requirement 8.4)
+        val state = loadBestTaskWidgetState(BestTaskWidgetCache(context), LOAD_TIMEOUT_MILLIS) {
             bestTaskWidgetState(context.widgetEntryPoint().getBestTaskUseCase()().first())
-        }.getOrElse { bestTaskWidgetState(null) }
+        }
 
         provideContent {
             GlanceTheme { BestTaskContent(context, state) }
@@ -104,6 +104,10 @@ class BestTaskWidget : GlanceAppWidget() {
                 Button("Just Start", onClick = deepLinkAction(context, DeepLinks.JUST_START))
             }
         }
+    }
+
+    private companion object {
+        const val LOAD_TIMEOUT_MILLIS = 5_000L
     }
 }
 

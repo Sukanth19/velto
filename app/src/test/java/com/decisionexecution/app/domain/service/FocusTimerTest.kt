@@ -97,7 +97,7 @@ class FocusTimerTest : StringSpec({
 
     "pausing freezes time and cancels the check; resuming reschedules the remainder" {
         // Requirements: 4.6, 4.7
-        checkAll(100, Arb.int(5..90), Arb.int(0..300), Arb.int(0..3600)) { focus, beforePause, whilePaused ->
+        checkAll(PROPERTY_ITERATIONS, Arb.int(5..90), Arb.int(0..300), Arb.int(0..3600)) { focus, beforePause, whilePaused ->
             val clock = FakeTimeSource()
             val scheduler = RecordingScheduler()
             val manager = focusSessionManager(clock = clock, scheduler = scheduler)

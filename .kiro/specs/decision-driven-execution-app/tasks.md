@@ -438,14 +438,14 @@ This implementation plan breaks down the Decision-Driven Execution App into incr
       (see 19.2). Widgets refresh immediately on changes while the app runs, with a 15-minute periodic
       worker as the best-task fallback.
 
-- [ ] 20. Implement error handling and edge cases
-  - [ ] 20.1 Add validation error handling
+- [x] 20. Implement error handling and edge cases
+  - [x] 20.1 Add validation error handling
     - Catch IllegalArgumentException from domain models
     - Display user-friendly error messages in UI
     - Test empty title, out-of-range urgency/importance, invalid durations
     - _Requirements: 1.2, 1.3, 11.1, 11.2_
 
-  - [ ] 20.2 Add database error handling
+  - [x] 20.2 Add database error handling
     - Wrap database operations in try-catch blocks
     - Handle SQLiteException, SQLiteConstraintException, SQLiteDiskIOException
     - Display error messages and retry options in UI
@@ -457,13 +457,13 @@ This implementation plan breaks down the Decision-Driven Execution App into incr
     - Restore session state from DataStore on app restart after process death
     - _Requirements: 13.6_
 
-  - [ ] 20.4 Add widget error handling
+  - [x] 20.4 Add widget error handling
     - Catch all exceptions in widget update code
     - Display placeholder content when data unavailable
     - Use cached data on update timeout
     - _Requirements: 8.4, 8.5_
 
-- [ ] 21. Final integration and polish
+- [x] 21. Final integration and polish
   - [x] 21.1 Wire all components together
     - Verify all ViewModels are properly injected
     - Verify all navigation flows work correctly
@@ -471,25 +471,27 @@ This implementation plan breaks down the Decision-Driven Execution App into incr
     - Verify background timer continues when app is backgrounded
     - _Requirements: All_
 
-  - [ ] 21.2 Test complete user flows
+  - [x] 21.2 Test complete user flows
     - Test Just Start flow: tap button → best task selected → focus session starts → timer runs → break starts → session completes
     - Test task creation → appears in list → swipe to complete → removed from list → appears in metrics
     - Test preferences change → applied to next focus session
     - Test widget tap → opens app to correct screen
     - _Requirements: 3.1, 3.2, 3.3, 9.3, 11.3, 8.6, 8.7_
 
-  - [ ] 21.3 Run all property-based tests with increased iterations
+  - [x] 21.3 Run all property-based tests with increased iterations
     - Run all property tests with 500 iterations
     - Verify no failures
+    - Iterations come from `-PpropIterations` (default 100):
+      `./gradlew testDebugUnitTest -PpropIterations=500`
     - _Requirements: All_
 
-  - [ ] 21.4 Verify Material 3 design consistency
+  - [x] 21.4 Verify Material 3 design consistency
     - Check all screens use consistent spacing, typography, colors
     - Verify light and dark mode work correctly
     - Verify accessibility (content descriptions, touch targets)
     - _Requirements: 12.1, 12.2, 12.7, 12.8_
 
-- [ ] 22. Final checkpoint - Ensure all tests pass
+- [x] 22. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

@@ -1,5 +1,6 @@
 package com.decisionexecution.app.domain.service
 
+import com.decisionexecution.app.testutil.PROPERTY_ITERATIONS
 import com.decisionexecution.app.domain.model.*
 import com.decisionexecution.app.testutil.FakeTimeSource
 import com.decisionexecution.app.testutil.InMemoryPreferencesRepository
@@ -27,8 +28,7 @@ class FocusSessionManagerPropertyTest : StringSpec({
         // should result in the session using those durations.
         // Validates: Requirements 4.2, 11.3
         
-        checkAll(
-            100,  Arb.int(5..90),  // focusDuration in minutes
+        checkAll(PROPERTY_ITERATIONS,  Arb.int(5..90),  // focusDuration in minutes
             Arb.int(1..30),  // breakDuration in minutes
             taskArb()
         ) { focusDuration, breakDuration, task ->
@@ -54,8 +54,7 @@ class FocusSessionManagerPropertyTest : StringSpec({
         // transition to the break state.
         // Validates: Requirements 4.4
         
-        checkAll(
-            100,  Arb.int(5..90),  // focusDuration in minutes
+        checkAll(PROPERTY_ITERATIONS,  Arb.int(5..90),  // focusDuration in minutes
             Arb.int(1..30),  // breakDuration in minutes
             taskArb()
         ) { focusDuration, breakDuration, task ->
@@ -83,8 +82,7 @@ class FocusSessionManagerPropertyTest : StringSpec({
         // from the same point.
         // Validates: Requirements 4.6, 4.7
         
-        checkAll(
-            100,  Arb.int(5..90),  // focusDuration in minutes
+        checkAll(PROPERTY_ITERATIONS,  Arb.int(5..90),  // focusDuration in minutes
             Arb.int(1..30),  // breakDuration in minutes
             taskArb()
         ) { focusDuration, breakDuration, task ->
@@ -135,8 +133,7 @@ class FocusSessionManagerPropertyTest : StringSpec({
         // ending it early should transition the session state back to idle.
         // Validates: Requirements 4.8
         
-        checkAll(
-            100,  Arb.int(5..90),  // focusDuration in minutes
+        checkAll(PROPERTY_ITERATIONS,  Arb.int(5..90),  // focusDuration in minutes
             Arb.int(1..30),  // breakDuration in minutes
             taskArb()
         ) { focusDuration, breakDuration, task ->
@@ -164,8 +161,7 @@ class FocusSessionManagerPropertyTest : StringSpec({
         // focus duration.
         // Validates: Requirements 4.9
         
-        checkAll(
-            100,  Arb.int(5..90),  // focusDuration in minutes
+        checkAll(PROPERTY_ITERATIONS,  Arb.int(5..90),  // focusDuration in minutes
             Arb.int(1..30),  // breakDuration in minutes
             taskArb()
         ) { focusDuration, breakDuration, task ->

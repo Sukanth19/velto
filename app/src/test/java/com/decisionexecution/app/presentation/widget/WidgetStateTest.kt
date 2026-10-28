@@ -1,5 +1,6 @@
 package com.decisionexecution.app.presentation.widget
 
+import com.decisionexecution.app.testutil.PROPERTY_ITERATIONS
 import com.decisionexecution.app.domain.model.*
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
@@ -39,7 +40,7 @@ class WidgetStateTest : StringSpec({
 
     "timer widget remaining time matches the session for any elapsed time" {
         // Requirements: 8.2, 8.5
-        checkAll(100, Arb.int(1..5400), Arb.int(0..6000)) { total, elapsed ->
+        checkAll(PROPERTY_ITERATIONS, Arb.int(1..5400), Arb.int(0..6000)) { total, elapsed ->
             val running = timerWidgetState(FocusSessionState.Focusing(task, elapsed, total))
             running.shouldBeInstanceOf<TimerWidgetState.Active>()
             running.remainingMillis shouldBe maxOf(0, total - elapsed) * 1000L
@@ -61,7 +62,7 @@ class WidgetStateTest : StringSpec({
 
     "timer widget only redraws on phase changes, not every tick" {
         // Requirements: 8.5
-        checkAll(100, Arb.int(0..1499), Arb.int(0..1499)) { a, b ->
+        checkAll(PROPERTY_ITERATIONS, Arb.int(0..1499), Arb.int(0..1499)) { a, b ->
             timerWidgetKey(FocusSessionState.Focusing(task, a, 1500)) shouldBe
                 timerWidgetKey(FocusSessionState.Focusing(task, b, 1500))
         }

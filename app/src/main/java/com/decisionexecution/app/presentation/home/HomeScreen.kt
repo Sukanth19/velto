@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -44,9 +45,15 @@ fun HomeScreen(
         }
     }
     LaunchedEffect(uiState.error) {
-        uiState.error?.let {
-            snackbarHostState.showSnackbar(it)
+        uiState.error?.let { message ->
+            val retry = uiState.canRetry
+            val result = snackbarHostState.showSnackbar(
+                message = message,
+                actionLabel = if (retry) "Retry" else null,
+                duration = if (retry) SnackbarDuration.Indefinite else SnackbarDuration.Short
+            )
             viewModel.onErrorShown()
+            if (retry && result == SnackbarResult.ActionPerformed) viewModel.onRetry()
         }
     }
 
@@ -157,7 +164,8 @@ private fun ProductivityStats(completedToday: Int, focusMinutesToday: Int, consi
 @Composable
 private fun StatTile(label: String, value: String, modifier: Modifier = Modifier) {
     Surface(
-        modifier = modifier,
+        // Read as one item ("3, Done today") rather than two fragments
+        modifier = modifier.semantics(mergeDescendants = true) {},
         shape = MaterialTheme.shapes.medium,
         color = MaterialTheme.colorScheme.surfaceVariant
     ) {

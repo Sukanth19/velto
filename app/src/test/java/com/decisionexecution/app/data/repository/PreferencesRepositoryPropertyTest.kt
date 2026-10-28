@@ -1,5 +1,6 @@
 package com.decisionexecution.app.data.repository
 
+import com.decisionexecution.app.testutil.PROPERTY_ITERATIONS
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import com.decisionexecution.app.domain.model.FocusSessionData
 import com.decisionexecution.app.domain.model.ThemeMode
@@ -30,7 +31,7 @@ class PreferencesRepositoryPropertyTest : StringSpec({
         val breakDurationArb = Arb.int(1..30)
         val themeModeArb = Arb.enum<ThemeMode>()
         
-        checkAll(100, focusDurationArb, breakDurationArb, themeModeArb) { focusDuration, breakDuration, themeMode ->
+        checkAll(PROPERTY_ITERATIONS, focusDurationArb, breakDurationArb, themeModeArb) { focusDuration, breakDuration, themeMode ->
             // Create a test DataStore with a unique file for each test iteration
             val testDispatcher = UnconfinedTestDispatcher()
             val testScope = TestScope(testDispatcher)
@@ -82,8 +83,7 @@ class PreferencesRepositoryPropertyTest : StringSpec({
         val isPausedArb = Arb.boolean()
         val pausedAtSecondsArb = Arb.int(0..5400).orNull()
         
-        checkAll(
-            100,
+        checkAll(PROPERTY_ITERATIONS,
             taskIdArb,
             taskTitleArb,
             timestampArb,

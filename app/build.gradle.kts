@@ -151,4 +151,6 @@ tasks.withType<Test> {
     // keep robolectric from eating the machine
     maxHeapSize = "1g"
     maxParallelForks = 1
+    // -PpropIterations=500 runs every property test with more iterations
+    systemProperty("propIterations", project.findProperty("propIterations") ?: "100")
 }

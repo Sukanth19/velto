@@ -7,6 +7,7 @@ import com.decisionexecution.app.domain.model.Task
 import com.decisionexecution.app.domain.usecase.CompleteTaskUseCase
 import com.decisionexecution.app.domain.usecase.DeleteTaskUseCase
 import com.decisionexecution.app.domain.usecase.GetTaskByIdUseCase
+import com.decisionexecution.app.presentation.common.toUserMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -44,22 +45,22 @@ class TaskDetailViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             getTaskByIdUseCase(taskId)
-                .catch { e -> _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to load task") } }
+                .catch { e -> _uiState.update { it.copy(isLoading = false, error = e.toUserMessage("load the task")) } }
                 .collect { task -> _uiState.update { it.copy(task = task, isLoading = false) } }
         }
     }
 
-    fun onComplete() = finishWith { completeTaskUseCase(taskId) }
+    fun onComplete() = finishWith("complete the task") { completeTaskUseCase(taskId) }
 
-    fun onDelete() = finishWith { deleteTaskUseCase(taskId) }
+    fun onDelete() = finishWith("delete the task") { deleteTaskUseCase(taskId) }
 
-    private fun finishWith(action: suspend () -> Unit) {
+    private fun finishWith(description: String, action: suspend () -> Unit) {
         viewModelScope.launch {
             try {
                 action()
                 _uiState.update { it.copy(isFinished = true) }
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = e.message ?: "Something went wrong") }
+                _uiState.update { it.copy(error = e.toUserMessage(description)) }
             }
         }
     }

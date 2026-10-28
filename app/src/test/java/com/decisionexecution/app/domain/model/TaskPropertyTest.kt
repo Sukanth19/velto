@@ -1,5 +1,6 @@
 package com.decisionexecution.app.domain.model
 
+import com.decisionexecution.app.testutil.PROPERTY_ITERATIONS
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
@@ -20,7 +21,7 @@ class TaskPropertyTest : StringSpec({
         // this range must be rejected with an error.
         // Validates: Requirements 1.2, 1.3
         
-        checkAll<Int, Int>(100) { urgency, importance ->
+        checkAll<Int, Int>(PROPERTY_ITERATIONS) { urgency, importance ->
             val validUrgency = urgency in 1..5
             val validImportance = importance in 1..5
             
@@ -63,7 +64,7 @@ class TaskPropertyTest : StringSpec({
         // Feature: decision-driven-execution-app, Property 1
         // Validates: Requirements 1.2
         
-        checkAll(100, Arb.int(1..5), Arb.int(1..5)) { urgency, importance ->
+        checkAll(PROPERTY_ITERATIONS, Arb.int(1..5), Arb.int(1..5)) { urgency, importance ->
             val task = Task(
                 id = UUID.randomUUID().toString(),
                 title = "Test Task",
@@ -90,7 +91,7 @@ class TaskPropertyTest : StringSpec({
             Arb.int(6..Int.MAX_VALUE)
         )
         
-        checkAll(100, invalidUrgencyValues, Arb.int(1..5)) { urgency, importance ->
+        checkAll(PROPERTY_ITERATIONS, invalidUrgencyValues, Arb.int(1..5)) { urgency, importance ->
             shouldThrow<IllegalArgumentException> {
                 Task(
                     id = UUID.randomUUID().toString(),
@@ -116,7 +117,7 @@ class TaskPropertyTest : StringSpec({
             Arb.int(6..Int.MAX_VALUE)
         )
         
-        checkAll(100, Arb.int(1..5), invalidImportanceValues) { urgency, importance ->
+        checkAll(PROPERTY_ITERATIONS, Arb.int(1..5), invalidImportanceValues) { urgency, importance ->
             shouldThrow<IllegalArgumentException> {
                 Task(
                     id = UUID.randomUUID().toString(),

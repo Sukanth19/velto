@@ -4,7 +4,9 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -27,6 +29,8 @@ import com.decisionexecution.app.presentation.settings.SettingsViewModel
 import com.decisionexecution.app.presentation.tasks.TasksScreen
 import com.decisionexecution.app.presentation.tasks.TasksViewModel
 import com.decisionexecution.app.presentation.theme.DecisionExecutionTheme
+import io.kotest.matchers.shouldBe
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import com.decisionexecution.app.testutil.FakeTimeSource
@@ -103,6 +107,28 @@ class ScreensRenderTest {
         // Count still reflects every active task
         composeRule.onNodeWithText("Tasks · 4 active").assertIsDisplayed()
         save("tasks_filtered_school")
+    }
+
+    @Test
+    fun taskRowsAreUsableWithScreenReaders() {
+        // Requirements: 9.3, 12.1 (accessibility)
+        val complete = mockk<CompleteTaskUseCase>(relaxed = true)
+        val getAll = mockk<GetAllTasksUseCase>()
+        every { getAll() } returns flowOf(tasks)
+        val viewModel = TasksViewModel(getAll, complete, mockk(relaxed = true), ScoringEngine())
+        render("tasks_a11y") { TasksScreen({}, {}, {}, viewModel) }
+
+        // Swipe-only actions are also offered as accessibility actions
+        // The node TalkBack focuses is the nearest ancestor of the title that carries the actions
+        val title = composeRule.onNodeWithText("Buy groceries", useUnmergedTree = true).fetchSemanticsNode()
+        val row = generateSequence(title) { it.parent }.first { SemanticsActions.CustomActions in it.config }
+        val actions = row.config[SemanticsActions.CustomActions]
+        actions.map { it.label } shouldBe listOf("Complete task", "Edit or delete")
+        composeRule.runOnIdle { actions.first().action() }
+        coVerify { complete("4", any()) }
+
+        // Compact tags are spelled out
+        composeRule.onAllNodesWithContentDescription("Urgency 2 of 5").fetchSemanticsNodes().size shouldBe 1
     }
 
     @Test

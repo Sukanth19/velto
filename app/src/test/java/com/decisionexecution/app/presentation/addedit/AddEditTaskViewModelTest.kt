@@ -1,5 +1,6 @@
 package com.decisionexecution.app.presentation.addedit
 
+import com.decisionexecution.app.testutil.PROPERTY_ITERATIONS
 import androidx.lifecycle.SavedStateHandle
 import com.decisionexecution.app.domain.model.*
 import com.decisionexecution.app.domain.usecase.CreateTaskUseCase
@@ -88,7 +89,7 @@ class AddEditTaskViewModelTest : StringSpec({
 
     "urgency and importance are clamped to 1-5 for any slider input" {
         // Requirements: 1.2, 1.3
-        checkAll(100, Arb.int(-50..50), Arb.int(-50..50)) { urgency, importance ->
+        checkAll(PROPERTY_ITERATIONS, Arb.int(-50..50), Arb.int(-50..50)) { urgency, importance ->
             val viewModel = createViewModel()
             viewModel.onUrgencyChange(urgency)
             viewModel.onImportanceChange(importance)
@@ -107,7 +108,7 @@ class AddEditTaskViewModelTest : StringSpec({
         viewModel.onTitleChange("Task")
         viewModel.onSave()
 
-        viewModel.uiState.value.error shouldBe "disk full"
+        viewModel.uiState.value.error shouldBe "Couldn't save the task. Please try again."
         viewModel.uiState.value.isSaved shouldBe false
     }
 })
