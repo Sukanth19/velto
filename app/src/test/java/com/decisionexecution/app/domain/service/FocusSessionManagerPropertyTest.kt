@@ -1,7 +1,9 @@
 package com.decisionexecution.app.domain.service
 
 import com.decisionexecution.app.domain.model.*
-import com.decisionexecution.app.domain.repository.PreferencesRepository
+import com.decisionexecution.app.testutil.FakeTimeSource
+import com.decisionexecution.app.testutil.InMemoryPreferencesRepository
+import com.decisionexecution.app.testutil.focusSessionManager
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -30,8 +32,9 @@ class FocusSessionManagerPropertyTest : StringSpec({
             Arb.int(1..30),  // breakDuration in minutes
             taskArb()
         ) { focusDuration, breakDuration, task ->
-            val preferencesRepo = PropertyTestPreferencesRepository()
-            val manager = FocusSessionManager(preferencesRepo)
+            val preferencesRepo = InMemoryPreferencesRepository()
+            val clock = FakeTimeSource()
+            val manager = focusSessionManager(preferencesRepo, clock = clock)
             
             manager.startSession(task, focusDuration, breakDuration)
             
@@ -56,8 +59,9 @@ class FocusSessionManagerPropertyTest : StringSpec({
             Arb.int(1..30),  // breakDuration in minutes
             taskArb()
         ) { focusDuration, breakDuration, task ->
-            val preferencesRepo = PropertyTestPreferencesRepository()
-            val manager = FocusSessionManager(preferencesRepo)
+            val preferencesRepo = InMemoryPreferencesRepository()
+            val clock = FakeTimeSource()
+            val manager = focusSessionManager(preferencesRepo, clock = clock)
             
             manager.startSession(task, focusDuration, breakDuration)
             
@@ -84,8 +88,9 @@ class FocusSessionManagerPropertyTest : StringSpec({
             Arb.int(1..30),  // breakDuration in minutes
             taskArb()
         ) { focusDuration, breakDuration, task ->
-            val preferencesRepo = PropertyTestPreferencesRepository()
-            val manager = FocusSessionManager(preferencesRepo)
+            val preferencesRepo = InMemoryPreferencesRepository()
+            val clock = FakeTimeSource()
+            val manager = focusSessionManager(preferencesRepo, clock = clock)
             
             manager.startSession(task, focusDuration, breakDuration)
             
@@ -98,7 +103,8 @@ class FocusSessionManagerPropertyTest : StringSpec({
             }
             
             // Manually update the state to simulate elapsed time
-            manager.updateElapsedSeconds(elapsedSeconds)
+            clock.advanceSeconds(elapsedSeconds)
+            manager.sync()
             
             // Pause the session
             manager.pauseSession()
@@ -134,8 +140,9 @@ class FocusSessionManagerPropertyTest : StringSpec({
             Arb.int(1..30),  // breakDuration in minutes
             taskArb()
         ) { focusDuration, breakDuration, task ->
-            val preferencesRepo = PropertyTestPreferencesRepository()
-            val manager = FocusSessionManager(preferencesRepo)
+            val preferencesRepo = InMemoryPreferencesRepository()
+            val clock = FakeTimeSource()
+            val manager = focusSessionManager(preferencesRepo, clock = clock)
             
             manager.startSession(task, focusDuration, breakDuration)
             
@@ -162,8 +169,9 @@ class FocusSessionManagerPropertyTest : StringSpec({
             Arb.int(1..30),  // breakDuration in minutes
             taskArb()
         ) { focusDuration, breakDuration, task ->
-            val preferencesRepo = PropertyTestPreferencesRepository()
-            val manager = FocusSessionManager(preferencesRepo)
+            val preferencesRepo = InMemoryPreferencesRepository()
+            val clock = FakeTimeSource()
+            val manager = focusSessionManager(preferencesRepo, clock = clock)
             
             manager.startSession(task, focusDuration, breakDuration)
             
@@ -204,38 +212,3 @@ private fun taskArb(): Arb<Task> = arbitrary {
 /**
  * Fake implementation of PreferencesRepository for testing.
  */
-private class PropertyTestPreferencesRepository : PreferencesRepository {
-    private var preferences = UserPreferences()
-    private var focusSessionData: FocusSessionData? = null
-    
-    override fun getPreferences(): Flow<UserPreferences> {
-        return MutableStateFlow(preferences)
-    }
-    
-    override suspend fun savePreferences(preferences: UserPreferences) {
-        this.preferences = preferences
-    }
-    
-    override suspend fun updateFocusDuration(minutes: Int) {
-        preferences = preferences.copy(focusDurationMinutes = minutes)
-    }
-    
-    override suspend fun updateBreakDuration(minutes: Int) {
-        preferences = preferences.copy(breakDurationMinutes = minutes)
-    }
-    
-    override suspend fun saveFocusSession(sessionData: FocusSessionData) {
-        // If all fields are null, clear the session
-        if (sessionData.taskId == null && sessionData.taskTitle == null && 
-            sessionData.startTimestamp == null && sessionData.focusDurationSeconds == null &&
-            sessionData.breakDurationSeconds == null) {
-            this.focusSessionData = null
-        } else {
-            this.focusSessionData = sessionData
-        }
-    }
-    
-    override suspend fun getFocusSession(): FocusSessionData? {
-        return focusSessionData
-    }
-}

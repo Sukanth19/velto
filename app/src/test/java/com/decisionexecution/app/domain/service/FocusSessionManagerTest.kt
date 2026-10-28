@@ -1,7 +1,9 @@
 package com.decisionexecution.app.domain.service
 
 import com.decisionexecution.app.domain.model.*
-import com.decisionexecution.app.domain.repository.PreferencesRepository
+import com.decisionexecution.app.testutil.FakeTimeSource
+import com.decisionexecution.app.testutil.InMemoryPreferencesRepository
+import com.decisionexecution.app.testutil.focusSessionManager
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeInstanceOf
@@ -17,8 +19,9 @@ class FocusSessionManagerTest : StringSpec({
     
     "should use default durations of 25 minutes focus and 5 minutes break" {
         // Requirements: 4.1, 11.5
-        val preferencesRepo = FakePreferencesRepository()
-        val manager = FocusSessionManager(preferencesRepo)
+        val preferencesRepo = InMemoryPreferencesRepository()
+        val clock = FakeTimeSource()
+        val manager = focusSessionManager(preferencesRepo, clock = clock)
         
         val task = createTestTask()
         
@@ -43,14 +46,16 @@ class FocusSessionManagerTest : StringSpec({
     
     "should preserve exact remaining time when paused" {
         // Requirements: 4.6, 4.7
-        val preferencesRepo = FakePreferencesRepository()
-        val manager = FocusSessionManager(preferencesRepo)
+        val preferencesRepo = InMemoryPreferencesRepository()
+        val clock = FakeTimeSource()
+        val manager = focusSessionManager(preferencesRepo, clock = clock)
         
         val task = createTestTask()
         manager.startSession(task, focusDuration = 25, breakDuration = 5)
         
         // Simulate 10 minutes elapsed (600 seconds)
-        manager.updateElapsedSeconds(600)
+        clock.advanceSeconds(600)
+        manager.sync()
         
         // Pause the session
         manager.pauseSession()
@@ -79,8 +84,9 @@ class FocusSessionManagerTest : StringSpec({
     
     "should transition through full cycle: Idle -> Focusing -> Breaking -> Idle" {
         // Requirements: 4.1, 4.6, 4.7, 11.5
-        val preferencesRepo = FakePreferencesRepository()
-        val manager = FocusSessionManager(preferencesRepo)
+        val preferencesRepo = InMemoryPreferencesRepository()
+        val clock = FakeTimeSource()
+        val manager = focusSessionManager(preferencesRepo, clock = clock)
         
         // Initial state should be Idle
         manager.sessionState.value.shouldBeInstanceOf<FocusSessionState.Idle>()
@@ -102,8 +108,9 @@ class FocusSessionManagerTest : StringSpec({
     
     "should handle pause and resume cycle correctly" {
         // Requirements: 4.6, 4.7
-        val preferencesRepo = FakePreferencesRepository()
-        val manager = FocusSessionManager(preferencesRepo)
+        val preferencesRepo = InMemoryPreferencesRepository()
+        val clock = FakeTimeSource()
+        val manager = focusSessionManager(preferencesRepo, clock = clock)
         
         val task = createTestTask()
         manager.startSession(task, focusDuration = 25, breakDuration = 5)
@@ -130,8 +137,9 @@ class FocusSessionManagerTest : StringSpec({
     
     "should not pause when not in Focusing state" {
         // Requirements: 4.6
-        val preferencesRepo = FakePreferencesRepository()
-        val manager = FocusSessionManager(preferencesRepo)
+        val preferencesRepo = InMemoryPreferencesRepository()
+        val clock = FakeTimeSource()
+        val manager = focusSessionManager(preferencesRepo, clock = clock)
         
         // Try to pause when Idle
         manager.pauseSession()
@@ -148,8 +156,9 @@ class FocusSessionManagerTest : StringSpec({
     
     "should not resume when not in Paused state" {
         // Requirements: 4.7
-        val preferencesRepo = FakePreferencesRepository()
-        val manager = FocusSessionManager(preferencesRepo)
+        val preferencesRepo = InMemoryPreferencesRepository()
+        val clock = FakeTimeSource()
+        val manager = focusSessionManager(preferencesRepo, clock = clock)
         
         // Try to resume when Idle
         manager.resumeSession()
@@ -165,8 +174,9 @@ class FocusSessionManagerTest : StringSpec({
     
     "should end session from any state" {
         // Requirements: 4.8
-        val preferencesRepo = FakePreferencesRepository()
-        val manager = FocusSessionManager(preferencesRepo)
+        val preferencesRepo = InMemoryPreferencesRepository()
+        val clock = FakeTimeSource()
+        val manager = focusSessionManager(preferencesRepo, clock = clock)
         
         val task = createTestTask()
         
@@ -193,8 +203,9 @@ class FocusSessionManagerTest : StringSpec({
     
     "should clear session data from DataStore when ending session" {
         // Requirements: 4.8
-        val preferencesRepo = FakePreferencesRepository()
-        val manager = FocusSessionManager(preferencesRepo)
+        val preferencesRepo = InMemoryPreferencesRepository()
+        val clock = FakeTimeSource()
+        val manager = focusSessionManager(preferencesRepo, clock = clock)
         
         val task = createTestTask()
         manager.startSession(task, focusDuration = 25, breakDuration = 5)
@@ -208,7 +219,7 @@ class FocusSessionManagerTest : StringSpec({
             focusDurationSeconds = 1500,
             breakDurationSeconds = 300,
             isPaused = false,
-            pausedAtSeconds = null
+            pausedAtSeconds = 0 // nothing counted yet
         )
         
         // End session
@@ -221,8 +232,9 @@ class FocusSessionManagerTest : StringSpec({
     
     "should save session data to DataStore when starting session" {
         // Requirements: 4.1
-        val preferencesRepo = FakePreferencesRepository()
-        val manager = FocusSessionManager(preferencesRepo)
+        val preferencesRepo = InMemoryPreferencesRepository()
+        val clock = FakeTimeSource()
+        val manager = focusSessionManager(preferencesRepo, clock = clock)
         
         val task = createTestTask()
         manager.startSession(task, focusDuration = 30, breakDuration = 10)
@@ -237,14 +249,16 @@ class FocusSessionManagerTest : StringSpec({
     
     "should update DataStore when pausing session" {
         // Requirements: 4.6
-        val preferencesRepo = FakePreferencesRepository()
-        val manager = FocusSessionManager(preferencesRepo)
+        val preferencesRepo = InMemoryPreferencesRepository()
+        val clock = FakeTimeSource()
+        val manager = focusSessionManager(preferencesRepo, clock = clock)
         
         val task = createTestTask()
         manager.startSession(task, focusDuration = 25, breakDuration = 5)
         
         // Simulate elapsed time
-        manager.updateElapsedSeconds(300)
+        clock.advanceSeconds(300)
+        manager.sync()
         
         manager.pauseSession()
         
@@ -274,38 +288,3 @@ private fun createTestTask(): Task {
 /**
  * Fake implementation of PreferencesRepository for testing.
  */
-private class FakePreferencesRepository : PreferencesRepository {
-    private var preferences = UserPreferences()
-    private var focusSessionData: FocusSessionData? = null
-    
-    override fun getPreferences(): Flow<UserPreferences> {
-        return MutableStateFlow(preferences)
-    }
-    
-    override suspend fun savePreferences(preferences: UserPreferences) {
-        this.preferences = preferences
-    }
-    
-    override suspend fun updateFocusDuration(minutes: Int) {
-        preferences = preferences.copy(focusDurationMinutes = minutes)
-    }
-    
-    override suspend fun updateBreakDuration(minutes: Int) {
-        preferences = preferences.copy(breakDurationMinutes = minutes)
-    }
-    
-    override suspend fun saveFocusSession(sessionData: FocusSessionData) {
-        // If all fields are null, clear the session
-        if (sessionData.taskId == null && sessionData.taskTitle == null && 
-            sessionData.startTimestamp == null && sessionData.focusDurationSeconds == null &&
-            sessionData.breakDurationSeconds == null) {
-            this.focusSessionData = null
-        } else {
-            this.focusSessionData = sessionData
-        }
-    }
-    
-    override suspend fun getFocusSession(): FocusSessionData? {
-        return focusSessionData
-    }
-}

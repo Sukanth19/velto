@@ -11,4 +11,5 @@ interface PreferencesRepository {
     suspend fun updateBreakDuration(minutes: Int)
     suspend fun saveFocusSession(sessionData: FocusSessionData)
     suspend fun getFocusSession(): FocusSessionData?
+    suspend fun clearFocusSession()
 }

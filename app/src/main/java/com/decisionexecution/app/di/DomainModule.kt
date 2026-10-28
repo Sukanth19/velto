@@ -1,8 +1,6 @@
 package com.decisionexecution.app.di
 
-import com.decisionexecution.app.domain.repository.PreferencesRepository
 import com.decisionexecution.app.domain.service.ScoringEngine
-import com.decisionexecution.app.domain.service.FocusSessionManager
 import com.decisionexecution.app.domain.service.EisenhowerClassifier
 import dagger.Module
 import dagger.Provides
@@ -12,6 +10,7 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
+// FocusSessionManager is constructor-injected; see FocusTimerModule for its collaborators
 object DomainModule {
     
     @Provides
@@ -21,10 +20,4 @@ object DomainModule {
     @Provides
     @Singleton
     fun provideEisenhowerClassifier(): EisenhowerClassifier = EisenhowerClassifier()
-    
-    @Provides
-    @Singleton
-    fun provideFocusSessionManager(
-        preferencesRepository: PreferencesRepository
-    ): FocusSessionManager = FocusSessionManager(preferencesRepository)
 }

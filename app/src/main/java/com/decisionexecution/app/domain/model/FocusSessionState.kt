@@ -21,6 +21,14 @@ sealed class FocusSessionState {
     ) : FocusSessionState()
 }
 
+/**
+ * Persisted focus session. Elapsed time is derived from the clock so it survives process death:
+ * elapsed = pausedAtSeconds + (now - startTimestamp) while running, or pausedAtSeconds while paused.
+ *
+ * @property startTimestamp When the current running stretch began; null while paused
+ * @property pausedAtSeconds Seconds of the current phase already counted before [startTimestamp]
+ * @property isOnBreak Whether the current phase is the break rather than focus time
+ */
 data class FocusSessionData(
     val taskId: String?,
     val taskTitle: String?,
@@ -28,7 +36,8 @@ data class FocusSessionData(
     val focusDurationSeconds: Int?,
     val breakDurationSeconds: Int?,
     val isPaused: Boolean = false,
-    val pausedAtSeconds: Int? = null
+    val pausedAtSeconds: Int? = null,
+    val isOnBreak: Boolean = false
 )
 
 sealed class JustStartResult {

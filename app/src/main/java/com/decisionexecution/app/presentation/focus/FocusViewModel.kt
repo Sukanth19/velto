@@ -8,10 +8,12 @@ import com.decisionexecution.app.domain.usecase.EndFocusSessionUseCase
 import com.decisionexecution.app.domain.usecase.PauseFocusSessionUseCase
 import com.decisionexecution.app.domain.usecase.ResumeFocusSessionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -61,7 +63,7 @@ fun FocusSessionState.toUiState(): FocusUiState = when (this) {
  */
 @HiltViewModel
 class FocusViewModel @Inject constructor(
-    focusSessionManager: FocusSessionManager,
+    private val focusSessionManager: FocusSessionManager,
     private val pauseFocusSessionUseCase: PauseFocusSessionUseCase,
     private val resumeFocusSessionUseCase: ResumeFocusSessionUseCase,
     private val endFocusSessionUseCase: EndFocusSessionUseCase
@@ -75,6 +77,17 @@ class FocusViewModel @Inject constructor(
             focusSessionManager.sessionState.value.toUiState()
         )
 
+    init {
+        // Refresh from the clock once a second while the Focus screen exists; the background
+        // check handles phase ends when it doesn't (Requirement 4.3)
+        viewModelScope.launch {
+            while (isActive) {
+                focusSessionManager.sync()
+                delay(TICK_MILLIS)
+            }
+        }
+    }
+
     fun onPause() {
         viewModelScope.launch { pauseFocusSessionUseCase() }
     }
@@ -85,5 +98,9 @@ class FocusViewModel @Inject constructor(
 
     fun onEnd() {
         viewModelScope.launch { endFocusSessionUseCase() }
+    }
+
+    companion object {
+        const val TICK_MILLIS = 1000L
     }
 }

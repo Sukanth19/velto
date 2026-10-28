@@ -29,6 +29,8 @@ import com.decisionexecution.app.presentation.tasks.TasksViewModel
 import com.decisionexecution.app.presentation.theme.DecisionExecutionTheme
 import io.mockk.every
 import io.mockk.mockk
+import com.decisionexecution.app.testutil.FakeTimeSource
+import com.decisionexecution.app.testutil.focusSessionManager
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import org.junit.Rule
@@ -105,9 +107,11 @@ class ScreensRenderTest {
 
     @Test
     fun focusScreenFocusingAndBreak() {
-        val manager = FocusSessionManager(mockk<PreferencesRepository>(relaxed = true))
+        val clock = FakeTimeSource()
+        val manager = focusSessionManager(clock = clock)
         runBlocking { manager.startSession(tasks[0], 25, 5) }
-        manager.updateElapsedSeconds(9 * 60 + 35)
+        clock.advanceSeconds(9 * 60 + 35)
+        runBlocking { manager.sync() }
         val viewModel = FocusViewModel(
             manager,
             PauseFocusSessionUseCase(manager),

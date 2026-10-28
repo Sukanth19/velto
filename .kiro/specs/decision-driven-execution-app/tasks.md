@@ -353,14 +353,14 @@ This implementation plan breaks down the Decision-Driven Execution App into incr
     - Highlight active tab
     - _Requirements: 12.3_
 
-- [ ] 15. Implement navigation
+- [x] 15. Implement navigation
   - [x] 15.1 Create navigation graph
     - Define routes for Home, Tasks, Focus, TaskDetail, AddEditTask, Settings
     - Set Home as start destination
     - Implement bottom navigation with NavController
     - _Requirements: 12.3_
 
-  - [ ] 15.2 Implement deep linking
+  - [x] 15.2 Implement deep linking
     - Handle "just_start" action from widgets/notifications
     - Handle "open_task/{taskId}" action
     - Handle "focus" action
@@ -370,8 +370,8 @@ This implementation plan breaks down the Decision-Driven Execution App into incr
 - [ ] 16. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 17. Implement background work - WorkManager
-  - [ ] 17.1 Create FocusTimerWorker
+- [x] 17. Implement background work - WorkManager
+  - [x] 17.1 Create FocusTimerWorker
     - Extend CoroutineWorker
     - Inject FocusSessionManager and NotificationHelper via @HiltWorker
     - Implement doWork() to check session state and update elapsed time
@@ -380,27 +380,31 @@ This implementation plan breaks down the Decision-Driven Execution App into incr
     - Show notifications on completion
     - _Requirements: 4.3, 4.4, 4.5, 13.1, 13.2, 13.3, 13.6_
 
-  - [ ] 17.2 Integrate WorkManager with FocusSessionManager
+  - [x] 17.2 Integrate WorkManager with FocusSessionManager
     - Schedule PeriodicWorkRequest (1-minute interval) when session starts
     - Cancel work when session ends
     - Use ExistingPeriodicWorkPolicy.REPLACE to avoid duplicates
     - _Requirements: 13.1, 13.6_
+    - **Implemented differently:** WorkManager clamps periodic work to 15 minutes, so a 1-minute
+      PeriodicWorkRequest can't work. Instead a OneTimeWorkRequest (ExistingWorkPolicy.REPLACE) is
+      scheduled for when the current phase ends, and elapsed time is derived from persisted timestamps
+      so it survives process death.
 
-  - [ ] 17.3 Write unit tests for FocusTimerWorker
+  - [x] 17.3 Write unit tests for FocusTimerWorker
     - Test worker updates session state correctly
     - Test worker triggers notifications on completion
     - Test worker cancels when session ends
     - _Requirements: 13.1, 13.2, 13.3_
 
-- [ ] 18. Implement notifications
-  - [ ] 18.1 Create NotificationHelper class
+- [x] 18. Implement notifications
+  - [x] 18.1 Create NotificationHelper class
     - Create notification channel for focus notifications
     - Implement showFocusCompleteNotification() with deep link to break screen
     - Implement showBreakCompleteNotification() with deep link to home screen
     - Handle notification permission for Android 13+
     - _Requirements: 13.2, 13.3, 13.4, 13.5_
 
-  - [ ] 18.2 Request notification permission
+  - [x] 18.2 Request notification permission
     - Check and request POST_NOTIFICATIONS permission on Android 13+
     - Gracefully degrade if permission denied (continue timer without notifications)
     - _Requirements: 13.2_

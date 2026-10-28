@@ -121,6 +121,7 @@ dependencies {
     testRuntimeOnly("org.junit.vintage:junit-vintage-engine:5.10.1")
     testImplementation(platform("androidx.compose:compose-bom:2023.10.01"))
     testImplementation("androidx.compose.ui:ui-test-junit4")
+    testImplementation("androidx.work:work-testing:2.9.0")
     
     // Testing - Android
     androidTestImplementation("androidx.test.ext:junit:1.1.5")

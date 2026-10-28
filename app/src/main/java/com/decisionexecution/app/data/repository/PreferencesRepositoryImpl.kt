@@ -1,6 +1,7 @@
 package com.decisionexecution.app.data.repository
 
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
@@ -33,6 +34,7 @@ class PreferencesRepositoryImpl @Inject constructor(
         val SESSION_BREAK_DURATION_SECONDS = intPreferencesKey("session_break_duration_seconds")
         val SESSION_IS_PAUSED = booleanPreferencesKey("session_is_paused")
         val SESSION_PAUSED_AT_SECONDS = intPreferencesKey("session_paused_at_seconds")
+        val SESSION_IS_ON_BREAK = booleanPreferencesKey("session_is_on_break")
     }
     
     override fun getPreferences(): Flow<UserPreferences> {
@@ -69,14 +71,33 @@ class PreferencesRepositoryImpl @Inject constructor(
     
     override suspend fun saveFocusSession(sessionData: FocusSessionData) {
         dataStore.edit { prefs ->
-            sessionData.taskId?.let { prefs[PreferencesKeys.SESSION_TASK_ID] = it }
-            sessionData.taskTitle?.let { prefs[PreferencesKeys.SESSION_TASK_TITLE] = it }
-            sessionData.startTimestamp?.let { prefs[PreferencesKeys.SESSION_START_TIMESTAMP] = it }
-            sessionData.focusDurationSeconds?.let { prefs[PreferencesKeys.SESSION_FOCUS_DURATION_SECONDS] = it }
-            sessionData.breakDurationSeconds?.let { prefs[PreferencesKeys.SESSION_BREAK_DURATION_SECONDS] = it }
+            // Null fields are removed rather than skipped, so stale values never leak into the next read
+            prefs.setOrRemove(PreferencesKeys.SESSION_TASK_ID, sessionData.taskId)
+            prefs.setOrRemove(PreferencesKeys.SESSION_TASK_TITLE, sessionData.taskTitle)
+            prefs.setOrRemove(PreferencesKeys.SESSION_START_TIMESTAMP, sessionData.startTimestamp)
+            prefs.setOrRemove(PreferencesKeys.SESSION_FOCUS_DURATION_SECONDS, sessionData.focusDurationSeconds)
+            prefs.setOrRemove(PreferencesKeys.SESSION_BREAK_DURATION_SECONDS, sessionData.breakDurationSeconds)
             prefs[PreferencesKeys.SESSION_IS_PAUSED] = sessionData.isPaused
-            sessionData.pausedAtSeconds?.let { prefs[PreferencesKeys.SESSION_PAUSED_AT_SECONDS] = it }
+            prefs.setOrRemove(PreferencesKeys.SESSION_PAUSED_AT_SECONDS, sessionData.pausedAtSeconds)
+            prefs[PreferencesKeys.SESSION_IS_ON_BREAK] = sessionData.isOnBreak
         }
+    }
+    
+    override suspend fun clearFocusSession() {
+        dataStore.edit { prefs ->
+            prefs.remove(PreferencesKeys.SESSION_TASK_ID)
+            prefs.remove(PreferencesKeys.SESSION_TASK_TITLE)
+            prefs.remove(PreferencesKeys.SESSION_START_TIMESTAMP)
+            prefs.remove(PreferencesKeys.SESSION_FOCUS_DURATION_SECONDS)
+            prefs.remove(PreferencesKeys.SESSION_BREAK_DURATION_SECONDS)
+            prefs.remove(PreferencesKeys.SESSION_IS_PAUSED)
+            prefs.remove(PreferencesKeys.SESSION_PAUSED_AT_SECONDS)
+            prefs.remove(PreferencesKeys.SESSION_IS_ON_BREAK)
+        }
+    }
+    
+    private fun <T> MutablePreferences.setOrRemove(key: Preferences.Key<T>, value: T?) {
+        if (value == null) remove(key) else this[key] = value
     }
     
     override suspend fun getFocusSession(): FocusSessionData? {
@@ -93,7 +114,8 @@ class PreferencesRepositoryImpl @Inject constructor(
             focusDurationSeconds = preferences[PreferencesKeys.SESSION_FOCUS_DURATION_SECONDS],
             breakDurationSeconds = preferences[PreferencesKeys.SESSION_BREAK_DURATION_SECONDS],
             isPaused = preferences[PreferencesKeys.SESSION_IS_PAUSED] ?: false,
-            pausedAtSeconds = preferences[PreferencesKeys.SESSION_PAUSED_AT_SECONDS]
+            pausedAtSeconds = preferences[PreferencesKeys.SESSION_PAUSED_AT_SECONDS],
+            isOnBreak = preferences[PreferencesKeys.SESSION_IS_ON_BREAK] ?: false
         )
     }
 }

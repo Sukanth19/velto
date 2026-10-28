@@ -171,3 +171,28 @@ private fun StatTile(label: String, value: String, modifier: Modifier = Modifier
         }
     }
 }
+
+/**
+ * Headless destination for the just_start deep link: starts the best task and moves on.
+ * Requirements: 3.1, 8.6
+ */
+@Composable
+fun JustStartRoute(
+    onStarted: () -> Unit,
+    onFailed: () -> Unit,
+    viewModel: HomeViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) { viewModel.onJustStartClicked() }
+    LaunchedEffect(uiState.focusSessionStarted, uiState.error) {
+        when {
+            uiState.focusSessionStarted -> {
+                viewModel.onNavigatedToFocus()
+                onStarted()
+            }
+            // Home shows its own empty state, so the error needs no extra surface here
+            uiState.error != null -> onFailed()
+        }
+    }
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+}

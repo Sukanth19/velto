@@ -13,6 +13,8 @@ import io.kotest.property.Arb
 import io.kotest.property.arbitrary.*
 import io.kotest.property.checkAll
 import io.mockk.mockk
+import com.decisionexecution.app.testutil.FakeTimeSource
+import com.decisionexecution.app.testutil.focusSessionManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -36,7 +38,8 @@ class FocusViewModelPropertyTest : StringSpec({
         // Validates: Requirements 5.2
 
         checkAll(100, taskArb(), Arb.int(5..90), Arb.int(1..30), Arb.boolean()) { task, focus, brk, paused ->
-            val manager = FocusSessionManager(mockk<PreferencesRepository>(relaxed = true))
+            val clock = FakeTimeSource()
+            val manager = focusSessionManager(clock = clock)
             val viewModel = createViewModel(manager)
 
             manager.startSession(task, focus, brk)
@@ -55,7 +58,8 @@ class FocusViewModelPropertyTest : StringSpec({
         // Validates: Requirements 5.6
 
         checkAll(100, taskArb(), Arb.int(5..90), Arb.int(1..30)) { task, focus, brk ->
-            val manager = FocusSessionManager(mockk<PreferencesRepository>(relaxed = true))
+            val clock = FakeTimeSource()
+            val manager = focusSessionManager(clock = clock)
             val viewModel = createViewModel(manager)
 
             manager.startSession(task, focus, brk)
@@ -74,22 +78,27 @@ class FocusViewModelPropertyTest : StringSpec({
 
     "remaining time is total minus elapsed and never negative" {
         // Requirements: 5.3
-        checkAll(100, taskArb(), Arb.int(5..90), Arb.int(0..10_000)) { task, focus, elapsed ->
-            val manager = FocusSessionManager(mockk<PreferencesRepository>(relaxed = true))
+        checkAll(100, taskArb(), Arb.int(5..90), Arb.int(0..10_000)) { task, focus, rawElapsed ->
+            // Stay inside the focus phase; going past it correctly moves to the break
+            val elapsed = rawElapsed % (focus * 60)
+            val clock = FakeTimeSource()
+            val manager = focusSessionManager(clock = clock)
             val viewModel = createViewModel(manager)
 
             manager.startSession(task, focus, 5)
-            manager.updateElapsedSeconds(elapsed)
+            clock.advanceSeconds(elapsed)
+            manager.sync()
 
             val state = viewModel.uiState.value as FocusUiState.Focus
-            state.remainingSeconds shouldBe maxOf(0, focus * 60 - elapsed)
+            state.remainingSeconds shouldBe focus * 60 - elapsed
         }
     }
 
     "ending a session returns UI to idle" {
         // Requirements: 4.8
         checkAll(100, taskArb()) { task ->
-            val manager = FocusSessionManager(mockk<PreferencesRepository>(relaxed = true))
+            val clock = FakeTimeSource()
+            val manager = focusSessionManager(clock = clock)
             val viewModel = createViewModel(manager)
 
             manager.startSession(task, 25, 5)
