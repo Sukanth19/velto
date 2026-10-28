@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
+import com.decisionexecution.app.data.local.dao.FocusSessionDao
 import com.decisionexecution.app.data.local.dao.TaskDao
 import com.decisionexecution.app.data.local.dao.TaskCompletionDao
 import com.decisionexecution.app.data.repository.PerformanceRepositoryImpl
@@ -47,6 +48,7 @@ object RepositoryModule {
     @Provides
     @Singleton
     fun providePerformanceRepository(
-        taskCompletionDao: TaskCompletionDao
-    ): PerformanceRepository = PerformanceRepositoryImpl(taskCompletionDao)
+        taskCompletionDao: TaskCompletionDao,
+        focusSessionDao: FocusSessionDao
+    ): PerformanceRepository = PerformanceRepositoryImpl(taskCompletionDao, focusSessionDao)
 }

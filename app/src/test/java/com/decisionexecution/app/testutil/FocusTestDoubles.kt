@@ -3,6 +3,7 @@ package com.decisionexecution.app.testutil
 import com.decisionexecution.app.domain.model.FocusSessionData
 import com.decisionexecution.app.domain.model.Task
 import com.decisionexecution.app.domain.model.UserPreferences
+import com.decisionexecution.app.domain.repository.PerformanceRepository
 import com.decisionexecution.app.domain.repository.PreferencesRepository
 import com.decisionexecution.app.domain.repository.TaskRepository
 import com.decisionexecution.app.domain.service.FocusNotifier
@@ -95,5 +96,6 @@ fun focusSessionManager(
     tasks: TaskRepository = taskRepositoryOf(),
     clock: TimeSource = FakeTimeSource(),
     scheduler: FocusTimerScheduler = RecordingScheduler(),
-    notifier: FocusNotifier = RecordingNotifier()
-) = FocusSessionManager(preferences, tasks, scheduler, notifier, clock)
+    notifier: FocusNotifier = RecordingNotifier(),
+    performance: PerformanceRepository = mockk(relaxed = true)
+) = FocusSessionManager(preferences, tasks, performance, scheduler, notifier, clock)

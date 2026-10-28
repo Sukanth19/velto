@@ -3,6 +3,7 @@ package com.decisionexecution.app.domain.service
 import com.decisionexecution.app.domain.model.FocusSessionData
 import com.decisionexecution.app.domain.model.FocusSessionState
 import com.decisionexecution.app.domain.model.Task
+import com.decisionexecution.app.domain.repository.PerformanceRepository
 import com.decisionexecution.app.domain.repository.PreferencesRepository
 import com.decisionexecution.app.domain.repository.TaskRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,12 +23,13 @@ import javax.inject.Singleton
  * [sync] brings the in-memory state up to date: the Focus screen calls it every second while
  * visible, and a scheduled background check calls it when a phase should end.
  *
- * Requirements: 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 13.1, 13.6
+ * Requirements: 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 13.1, 13.6
  */
 @Singleton
 class FocusSessionManager @Inject constructor(
     private val preferencesRepository: PreferencesRepository,
     private val taskRepository: TaskRepository,
+    private val performanceRepository: PerformanceRepository,
     private val scheduler: FocusTimerScheduler,
     private val notifier: FocusNotifier,
     private val timeSource: TimeSource
@@ -144,6 +146,9 @@ class FocusSessionManager @Inject constructor(
             pausedAtSeconds = 0
         )
         save(onBreak)
+        current.taskId?.let { taskId ->
+            performanceRepository.recordFocusSession(taskId, breakStartedAt, (current.focusDurationSeconds ?: 0) / 60)
+        }
         notifier.onFocusComplete(task?.title ?: current.taskTitle.orEmpty())
         scheduler.scheduleCheck(remainingMillis(onBreak, now))
     }
@@ -152,8 +157,6 @@ class FocusSessionManager @Inject constructor(
         clear()
         scheduler.cancel()
         notifier.onBreakComplete()
-        // TODO: Record focus time in PerformanceRepository (Requirement 4.9); the completions
-        //  table can't tell a focus session from a completed task yet
     }
 
     private suspend fun clear() {

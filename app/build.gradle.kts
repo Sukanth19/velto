@@ -51,11 +51,21 @@ android {
         unitTests.isIncludeAndroidResources = true
     }
 
+    sourceSets {
+        // Robolectric reads the merged app assets, so the schemas ride along in debug builds only
+        getByName("debug").assets.srcDir("$projectDir/schemas")
+    }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+}
+
+ksp {
+    // Exported schemas are checked in so migrations can be tested against them
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 dependencies {

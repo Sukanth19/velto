@@ -8,6 +8,9 @@ import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.int
 import io.kotest.property.checkAll
+import com.decisionexecution.app.domain.repository.PerformanceRepository
+import io.mockk.coVerify
+import io.mockk.mockk
 
 /**
  * Clock-driven timer behaviour of FocusSessionManager: phase ends, background checks,
@@ -184,6 +187,25 @@ class FocusTimerTest : StringSpec({
 
         revived.sessionState.value shouldBe FocusSessionState.Idle
         prefs.getFocusSession() shouldBe null
+    }
+
+    "a finished focus phase records its minutes once; ending early records nothing" {
+        // Requirements: 4.9, 7.3
+        val clock = FakeTimeSource()
+        val performance = mockk<PerformanceRepository>(relaxed = true)
+        val manager = focusSessionManager(clock = clock, performance = performance)
+        manager.startSession(task, focusDuration = 25, breakDuration = 5)
+        val focusEndedAt = clock.now + 25 * 60 * 1000L
+
+        clock.advanceSeconds(25 * 60 + 30)
+        repeat(3) { manager.sync() }
+        coVerify(exactly = 1) { performance.recordFocusSession("t-1", focusEndedAt, 25) }
+
+        val early = focusSessionManager(clock = clock, performance = performance)
+        early.startSession(task, focusDuration = 25, breakDuration = 5)
+        clock.advanceSeconds(600)
+        early.endSession()
+        coVerify(exactly = 1) { performance.recordFocusSession(any(), any(), any()) }
     }
 
     "ending early clears storage so nothing is restored later" {

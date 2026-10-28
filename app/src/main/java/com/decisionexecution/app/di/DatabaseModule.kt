@@ -4,7 +4,9 @@ import android.content.Context
 import androidx.room.Room
 import com.decisionexecution.app.data.local.database.AppDatabase
 import com.decisionexecution.app.data.local.dao.TaskDao
+import com.decisionexecution.app.data.local.dao.FocusSessionDao
 import com.decisionexecution.app.data.local.dao.TaskCompletionDao
+import com.decisionexecution.app.data.local.database.MIGRATION_1_2
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -23,7 +25,7 @@ object DatabaseModule {
             context,
             AppDatabase::class.java,
             "decision_execution_db"
-        ).build()
+        ).addMigrations(MIGRATION_1_2).build()
     }
     
     @Provides
@@ -32,4 +34,7 @@ object DatabaseModule {
     @Provides
     fun provideTaskCompletionDao(database: AppDatabase): TaskCompletionDao = 
         database.taskCompletionDao()
+    
+    @Provides
+    fun provideFocusSessionDao(database: AppDatabase): FocusSessionDao = database.focusSessionDao()
 }

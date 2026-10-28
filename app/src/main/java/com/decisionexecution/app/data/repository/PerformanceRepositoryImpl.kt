@@ -1,16 +1,20 @@
 package com.decisionexecution.app.data.repository
 
+import com.decisionexecution.app.data.local.dao.FocusSessionDao
 import com.decisionexecution.app.data.local.dao.TaskCompletionDao
+import com.decisionexecution.app.data.local.entity.FocusSessionEntity
 import com.decisionexecution.app.data.local.entity.TaskCompletionEntity
 import com.decisionexecution.app.domain.repository.PerformanceRepository
 import com.decisionexecution.app.domain.repository.TaskCompletion
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import java.util.UUID
 import javax.inject.Inject
 
 class PerformanceRepositoryImpl @Inject constructor(
-    private val taskCompletionDao: TaskCompletionDao
+    private val taskCompletionDao: TaskCompletionDao,
+    private val focusSessionDao: FocusSessionDao
 ) : PerformanceRepository {
     
     override suspend fun recordCompletion(taskId: String, timestamp: Long, focusDuration: Int?) {
@@ -24,6 +28,12 @@ class PerformanceRepositoryImpl @Inject constructor(
         taskCompletionDao.insertCompletion(completion)
     }
     
+    override suspend fun recordFocusSession(taskId: String, timestamp: Long, durationMinutes: Int) {
+        focusSessionDao.insertFocusSession(
+            FocusSessionEntity(taskId = taskId, completedAt = timestamp, durationMinutes = durationMinutes)
+        )
+    }
+    
     override fun getCompletionsInPeriod(startTimestamp: Long, endTimestamp: Long): Flow<List<TaskCompletion>> {
         return taskCompletionDao.getCompletionsInPeriod(startTimestamp, endTimestamp).map { entities ->
             entities.map { it.toDomainModel() }
@@ -31,9 +41,11 @@ class PerformanceRepositoryImpl @Inject constructor(
     }
     
     override fun getTotalFocusTimeInPeriod(startTimestamp: Long, endTimestamp: Long): Flow<Int> {
-        return taskCompletionDao.getTotalFocusTimeInPeriod(startTimestamp, endTimestamp).map { total ->
-            total ?: 0
-        }
+        // Focus time comes from finished focus phases, plus any focus minutes attached to a completion
+        return combine(
+            focusSessionDao.getTotalFocusMinutesInPeriod(startTimestamp, endTimestamp),
+            taskCompletionDao.getTotalFocusTimeInPeriod(startTimestamp, endTimestamp)
+        ) { sessions, completions -> (sessions ?: 0) + (completions ?: 0) }
     }
     
     override fun getConsistencyScore(days: Int): Flow<Double> {

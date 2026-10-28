@@ -143,6 +143,35 @@ class PerformanceRepositoryPropertyTest {
     }
     
     @Test
+    fun `Property 23 Total Focus Time includes finished focus sessions`() = runTest {
+        // Feature: decision-driven-execution-app, Property 23: focus minutes from finished focus
+        // phases count toward total focus time, and never toward completed tasks.
+        // **Validates: Requirements 4.9, 7.2, 7.3**
+
+        checkAll(
+            100,
+            Arb.list(Arb.pair(Arb.long(1000000000000L..2000000000000L), Arb.int(5..90)), 0..20),
+            Arb.long(1000000000000L..1500000000000L),
+            Arb.long(1500000000001L..2000000000000L)
+        ) { sessions, startTimestamp, endTimestamp ->
+            val database = createInMemoryDatabase()
+            val repository = createRepository(database)
+
+            try {
+                sessions.forEach { (timestamp, minutes) ->
+                    repository.recordFocusSession(UUID.randomUUID().toString(), timestamp, minutes)
+                }
+
+                val expected = sessions.filter { it.first in startTimestamp..endTimestamp }.sumOf { it.second }
+                repository.getTotalFocusTimeInPeriod(startTimestamp, endTimestamp).first() shouldBe expected
+                repository.getCompletionsInPeriod(startTimestamp, endTimestamp).first().size shouldBe 0
+            } finally {
+                database.close()
+            }
+        }
+    }
+
+    @Test
     fun `Property 24 Consistency Score Calculation`() = runTest {
         // Feature: decision-driven-execution-app, Property 24: For any set of completions
         // over a time period, the consistency score should equal
@@ -197,7 +226,8 @@ private fun createInMemoryDatabase(): AppDatabase {
 
 private fun createRepository(database: AppDatabase): PerformanceRepository {
     return PerformanceRepositoryImpl(
-        taskCompletionDao = database.taskCompletionDao()
+        taskCompletionDao = database.taskCompletionDao(),
+        focusSessionDao = database.focusSessionDao()
     )
 }
 
