@@ -409,8 +409,8 @@ This implementation plan breaks down the Decision-Driven Execution App into incr
     - Gracefully degrade if permission denied (continue timer without notifications)
     - _Requirements: 13.2_
 
-- [ ] 19. Implement widgets with Glance
-  - [ ] 19.1 Create BestTaskWidget
+- [x] 19. Implement widgets with Glance
+  - [x] 19.1 Create BestTaskWidget
     - Extend GlanceAppWidget
     - Display "Next Task" label and best task title
     - Display task category and effort
@@ -419,19 +419,24 @@ This implementation plan breaks down the Decision-Driven Execution App into incr
     - Update widget when task list changes (via WorkManager periodic sync every 15 minutes)
     - _Requirements: 8.1, 8.3, 8.4, 8.7_
 
-  - [ ] 19.2 Create FocusTimerWidget
+  - [x] 19.2 Create FocusTimerWidget
     - Extend GlanceAppWidget
     - Display current task title and timer (MM:SS)
     - Update every minute while session is active
     - Show "No active session" when idle
     - Add tap action to open Focus screen
     - _Requirements: 8.2, 8.5, 8.6_
+    - **Implemented differently:** the countdown is a system Chronometer that ticks by itself, so the
+      widget is redrawn only on phase changes (start, pause, break, end) instead of every minute.
 
-  - [ ] 19.3 Create widget update workers
+  - [x] 19.3 Create widget update workers
     - Create BestTaskWidgetUpdateWorker to refresh best task widget every 15 minutes
     - Create FocusTimerWidgetUpdateWorker to refresh timer widget every minute during active session
     - Schedule workers appropriately
     - _Requirements: 8.4, 8.5_
+    - **Implemented differently:** a per-minute timer worker isn't possible (15-minute minimum) or needed
+      (see 19.2). Widgets refresh immediately on changes while the app runs, with a 15-minute periodic
+      worker as the best-task fallback.
 
 - [ ] 20. Implement error handling and edge cases
   - [ ] 20.1 Add validation error handling
@@ -446,7 +451,7 @@ This implementation plan breaks down the Decision-Driven Execution App into incr
     - Display error messages and retry options in UI
     - _Requirements: 10.1, 10.6_
 
-  - [ ] 20.3 Add WorkManager error handling
+  - [x] 20.3 Add WorkManager error handling
     - Implement retry with exponential backoff for worker failures (max 3 retries)
     - Handle timer drift by recalculating from stored start timestamp
     - Restore session state from DataStore on app restart after process death
