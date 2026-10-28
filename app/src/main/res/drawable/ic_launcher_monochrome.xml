@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 13 themed icons tint this layer -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M35,47 L50,69 L74,34"
+        android:strokeColor="#FF000000"
+        android:strokeWidth="10"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M38,30 Q39,35 44,36 Q39,37 38,42 Q37,37 32,36 Q37,35 38,30 Z" />
+</vector>

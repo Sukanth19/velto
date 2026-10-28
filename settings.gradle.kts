@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "DecisionDrivenExecutionApp"
+rootProject.name = "Velto"
 include(":app")

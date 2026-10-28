@@ -2,6 +2,7 @@ package com.decisionexecution.app.presentation
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.drawable.AdaptiveIconDrawable
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.semantics.SemanticsActions
@@ -28,7 +29,7 @@ import com.decisionexecution.app.presentation.settings.SettingsScreen
 import com.decisionexecution.app.presentation.settings.SettingsViewModel
 import com.decisionexecution.app.presentation.tasks.TasksScreen
 import com.decisionexecution.app.presentation.tasks.TasksViewModel
-import com.decisionexecution.app.presentation.theme.DecisionExecutionTheme
+import com.decisionexecution.app.presentation.theme.VeltoTheme
 import io.kotest.matchers.shouldBe
 import io.mockk.coVerify
 import io.mockk.every
@@ -185,6 +186,41 @@ class ScreensRenderTest {
         composeRule.onNodeWithText("10 min").assertIsDisplayed()
     }
 
+    @Test
+    fun launcherIcon() {
+        // Draws the real adaptive icon as a launcher would, plus the themed (monochrome) variant
+        val context = composeRule.activity
+        val icon = context.getDrawable(com.decisionexecution.app.R.mipmap.ic_launcher) as AdaptiveIconDrawable
+        val size = 432
+        val bitmap = Bitmap.createBitmap(size * 3, size, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        canvas.drawColor(android.graphics.Color.WHITE)
+        val mask = icon.iconMask
+        val scale = size / 108f * (108f / 100f)
+        fun drawMasked(left: Int, layers: List<android.graphics.drawable.Drawable>, tint: Int?) {
+            canvas.save()
+            canvas.translate(left.toFloat(), 0f)
+            val path = android.graphics.Path(mask).apply {
+                transform(android.graphics.Matrix().apply { setScale(scale * 100 / 108f, scale * 100 / 108f) })
+            }
+            canvas.clipPath(path)
+            layers.forEachIndexed { i, d ->
+                d.setBounds(-size / 6, -size / 6, size + size / 6, size + size / 6)
+                // Themed icons tint only the monochrome (top) layer
+                if (tint != null && i == layers.lastIndex) d.setTint(tint)
+                d.draw(canvas)
+            }
+            canvas.restore()
+        }
+        drawMasked(0, listOf(icon.background, icon.foreground), null)
+        canvas.drawRect(size.toFloat(), 0f, size * 2f, size.toFloat(), android.graphics.Paint().apply { color = android.graphics.Color.rgb(28, 27, 32) })
+        drawMasked(size, listOf(icon.background, icon.foreground), null)
+        val themedBg = android.graphics.drawable.ColorDrawable(android.graphics.Color.rgb(230, 222, 255))
+        drawMasked(size * 2, listOf(themedBg, icon.monochrome!!.mutate()), android.graphics.Color.rgb(53, 22, 143))
+        val dir = File("build/screenshots").apply { mkdirs() }
+        File(dir, "launcher_icon.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+    }
+
     private fun tasksViewModel(): TasksViewModel {
         val getAll = mockk<GetAllTasksUseCase>()
         every { getAll() } returns flowOf(tasks)
@@ -198,7 +234,7 @@ class ScreensRenderTest {
     }
 
     private fun render(name: String, themeMode: ThemeMode = ThemeMode.LIGHT, content: @Composable () -> Unit) {
-        composeRule.setContent { DecisionExecutionTheme(themeMode = themeMode) { content() } }
+        composeRule.setContent { VeltoTheme(themeMode = themeMode, dynamicColor = false) { content() } }
         composeRule.waitForIdle()
         save(name)
     }

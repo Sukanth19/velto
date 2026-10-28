@@ -23,7 +23,7 @@ import com.decisionexecution.app.domain.repository.PreferencesRepository
 import com.decisionexecution.app.presentation.navigation.AppNavHost
 import com.decisionexecution.app.presentation.navigation.openDeepLink
 import com.decisionexecution.app.presentation.notifications.NotificationHelper
-import com.decisionexecution.app.presentation.theme.DecisionExecutionTheme
+import com.decisionexecution.app.presentation.theme.VeltoTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.channels.Channel
 import javax.inject.Inject
@@ -53,7 +53,7 @@ class MainActivity : ComponentActivity() {
             }
             RequestNotificationPermission()
 
-            DecisionExecutionTheme(themeMode = preferences.themeMode) {
+            VeltoTheme(themeMode = preferences.themeMode) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
