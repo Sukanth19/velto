@@ -27,6 +27,7 @@ import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
+import androidx.glance.layout.wrapContentSize
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
@@ -151,7 +152,8 @@ class FocusTimerWidget : GlanceAppWidget() {
                         maxLines = 1,
                         style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 14.sp)
                     )
-                    AndroidRemoteViews(countdown(context, state))
+                    // Without wrapContentSize the RemoteViews box fills the widget and pins the time top-left
+                    AndroidRemoteViews(countdown(context, state), GlanceModifier.wrapContentSize())
                 }
             }
         }

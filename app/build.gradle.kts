@@ -132,6 +132,7 @@ dependencies {
     testImplementation(platform("androidx.compose:compose-bom:2023.10.01"))
     testImplementation("androidx.compose.ui:ui-test-junit4")
     testImplementation("androidx.work:work-testing:2.9.0")
+    testImplementation("androidx.navigation:navigation-testing:2.7.5")
     
     // Testing - Android
     androidTestImplementation("androidx.test.ext:junit:1.1.5")

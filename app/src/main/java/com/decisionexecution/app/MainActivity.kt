@@ -2,6 +2,7 @@ package com.decisionexecution.app
 
 import android.Manifest
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -20,10 +21,11 @@ import androidx.navigation.compose.rememberNavController
 import com.decisionexecution.app.domain.model.UserPreferences
 import com.decisionexecution.app.domain.repository.PreferencesRepository
 import com.decisionexecution.app.presentation.navigation.AppNavHost
+import com.decisionexecution.app.presentation.navigation.openDeepLink
 import com.decisionexecution.app.presentation.notifications.NotificationHelper
 import com.decisionexecution.app.presentation.theme.DecisionExecutionTheme
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.channels.Channel
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -35,17 +37,19 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var notificationHelper: NotificationHelper
 
-    // Deep links arriving while the activity is already open (singleTop)
-    private val newIntents = MutableSharedFlow<Intent>(extraBufferCapacity = 1)
+    // Deep links from notifications and widgets, both at launch and while open (singleTop)
+    private val deepLinks = Channel<Uri>(Channel.BUFFERED)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // A recreated activity has already handled its launch link
+        if (savedInstanceState == null) intent?.data?.let(deepLinks::trySend)
         setContent {
             val preferences by preferencesRepository.getPreferences().collectAsState(initial = UserPreferences())
             val navController = rememberNavController()
 
             LaunchedEffect(navController) {
-                newIntents.collect { navController.handleDeepLink(it) }
+                for (uri in deepLinks) navController.openDeepLink(uri)
             }
             RequestNotificationPermission()
 
@@ -62,7 +66,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        newIntents.tryEmit(intent)
+        intent.data?.let(deepLinks::trySend)
     }
 
     /**

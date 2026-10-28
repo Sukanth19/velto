@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import android.net.Uri
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -23,7 +24,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import androidx.navigation.navDeepLink
 import com.decisionexecution.app.presentation.home.JustStartRoute
 import com.decisionexecution.app.presentation.addedit.AddEditTaskScreen
 import com.decisionexecution.app.presentation.addedit.AddEditTaskViewModel
@@ -38,11 +38,11 @@ import com.decisionexecution.app.presentation.tasks.TasksScreen
  * In-app deep links for notifications and widgets. Requirements: 8.6, 8.7, 13.4, 13.5
  */
 object DeepLinks {
-    private const val BASE = "decisionexecution://"
+    const val SCHEME = "decisionexecution"
+    private const val BASE = "$SCHEME://"
     const val HOME = "${BASE}home"
     const val FOCUS = "${BASE}focus"
     const val JUST_START = "${BASE}just_start"
-    const val OPEN_TASK = "${BASE}open_task/{${TaskDetailViewModel.TASK_ID_ARG}}"
 
     fun openTask(taskId: String) = "${BASE}open_task/$taskId"
 }
@@ -79,6 +79,25 @@ fun NavHostController.navigateToTab(route: String) {
 }
 
 /**
+ * Opens a deep link the way a user would get there. NavHost's own deep-link handling builds a
+ * synthetic Home -> target stack inside the Home tab, so tapping Home afterwards brought the
+ * target back; switching tabs explicitly keeps each tab's history separate.
+ *
+ * @return false if the link isn't one of ours
+ */
+fun NavHostController.openDeepLink(uri: Uri): Boolean {
+    if (uri.scheme != DeepLinks.SCHEME) return false
+    when (uri.host) {
+        "home" -> navigateToTab(Routes.HOME)
+        "focus" -> navigateToTab(Routes.FOCUS)
+        "just_start" -> navigate(Routes.JUST_START)
+        "open_task" -> navigate(Routes.taskDetail(uri.pathSegments.firstOrNull() ?: return false))
+        else -> return false
+    }
+    return true
+}
+
+/**
  * Bottom navigation with Home, Tasks and Focus, plus the secondary screens.
  * Requirements: 12.3
  */
@@ -109,7 +128,7 @@ fun AppNavHost(navController: NavHostController = rememberNavController()) {
             startDestination = Routes.HOME,
             modifier = Modifier.padding(padding)
         ) {
-            composable(Routes.HOME, deepLinks = listOf(navDeepLink { uriPattern = DeepLinks.HOME })) {
+            composable(Routes.HOME) {
                 HomeScreen(
                     onNavigateToFocus = { navController.navigateToTab(Routes.FOCUS) },
                     onOpenTask = { navController.navigate(Routes.taskDetail(it)) },
@@ -124,20 +143,18 @@ fun AppNavHost(navController: NavHostController = rememberNavController()) {
                     onAddTask = { navController.navigate(Routes.addTask()) }
                 )
             }
-            composable(Routes.FOCUS, deepLinks = listOf(navDeepLink { uriPattern = DeepLinks.FOCUS })) {
+            composable(Routes.FOCUS) {
                 FocusScreen(onGoHome = { navController.navigateToTab(Routes.HOME) })
             }
-            composable(Routes.JUST_START, deepLinks = listOf(navDeepLink { uriPattern = DeepLinks.JUST_START })) {
+            composable(Routes.JUST_START) {
                 JustStartRoute(
                     onStarted = {
-                        navController.navigate(Routes.FOCUS) {
-                            popUpTo(Routes.JUST_START) { inclusive = true }
-                        }
+                        navController.popBackStack()
+                        navController.navigateToTab(Routes.FOCUS)
                     },
                     onFailed = {
-                        navController.navigate(Routes.HOME) {
-                            popUpTo(Routes.JUST_START) { inclusive = true }
-                        }
+                        navController.popBackStack()
+                        navController.navigateToTab(Routes.HOME)
                     }
                 )
             }
@@ -146,8 +163,7 @@ fun AppNavHost(navController: NavHostController = rememberNavController()) {
             }
             composable(
                 Routes.TASK_DETAIL,
-                arguments = listOf(navArgument(TaskDetailViewModel.TASK_ID_ARG) { type = NavType.StringType }),
-                deepLinks = listOf(navDeepLink { uriPattern = DeepLinks.OPEN_TASK })
+                arguments = listOf(navArgument(TaskDetailViewModel.TASK_ID_ARG) { type = NavType.StringType })
             ) {
                 TaskDetailScreen(
                     onBack = { navController.popBackStack() },
