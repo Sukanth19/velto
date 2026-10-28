@@ -51,6 +51,7 @@ class HomeViewModelTest : StringSpec({
         viewModel.onJustStartClicked()
 
         viewModel.uiState.value.error shouldBe HomeViewModel.NO_TASKS_ERROR
+        viewModel.uiState.value.focusSessionStarted shouldBe false
     }
 
     "Just Start with tasks should trigger session without error" {
@@ -64,6 +65,10 @@ class HomeViewModelTest : StringSpec({
 
         coVerify(exactly = 1) { justStart() }
         viewModel.uiState.value.error shouldBe null
+        viewModel.uiState.value.focusSessionStarted shouldBe true
+
+        viewModel.onNavigatedToFocus()
+        viewModel.uiState.value.focusSessionStarted shouldBe false
     }
 
     "Just Start failure should surface error instead of crashing" {

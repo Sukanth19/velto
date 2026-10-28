@@ -25,7 +25,8 @@ data class HomeUiState(
     val totalFocusTimeToday: Int = 0,
     val consistencyScore: Double = 0.0,
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val focusSessionStarted: Boolean = false
 )
 
 /**
@@ -77,7 +78,7 @@ class HomeViewModel @Inject constructor(
             try {
                 when (justStartUseCase()) {
                     is JustStartResult.Success -> {
-                        // Navigation handled by UI observing focus session state
+                        _uiState.update { it.copy(focusSessionStarted = true) }
                     }
                     is JustStartResult.NoTasksAvailable -> {
                         _uiState.update { it.copy(error = NO_TASKS_ERROR) }
@@ -87,6 +88,10 @@ class HomeViewModel @Inject constructor(
                 _uiState.update { it.copy(error = e.message ?: "Failed to start focus session") }
             }
         }
+    }
+
+    fun onNavigatedToFocus() {
+        _uiState.update { it.copy(focusSessionStarted = false) }
     }
 
     fun onErrorShown() {

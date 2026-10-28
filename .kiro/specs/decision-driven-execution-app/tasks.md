@@ -292,14 +292,14 @@ This implementation plan breaks down the Decision-Driven Execution App into incr
     - **Property 32: Break Duration Validation**
     - **Validates: Requirements 11.1, 11.2**
 
-- [ ] 14. Implement presentation layer - Compose UI screens
-  - [ ] 14.1 Create Material 3 theme
+- [x] 14. Implement presentation layer - Compose UI screens
+  - [x] 14.1 Create Material 3 theme
     - Define DecisionExecutionTheme with Material 3 color scheme
     - Support light and dark mode based on system settings
     - Define typography and spacing tokens
     - _Requirements: 12.1, 12.2, 12.8_
 
-  - [ ] 14.2 Create HomeScreen composable
+  - [x] 14.2 Create HomeScreen composable
     - Display "Just Start" button prominently
     - Display BestTaskCard showing next task with title, category, effort
     - Display ProductivityStats showing completedToday, focusTimeToday, consistencyScore
@@ -307,7 +307,7 @@ This implementation plan breaks down the Decision-Driven Execution App into incr
     - Wire up HomeViewModel
     - _Requirements: 12.4, 7.7_
 
-  - [ ] 14.3 Create TasksScreen composable
+  - [x] 14.3 Create TasksScreen composable
     - Display tasks grouped by category with headers
     - Implement SwipeToDismiss for complete (swipe right) and delete/edit (swipe left)
     - Display task attributes: urgency, importance, effort, energy tag
@@ -316,7 +316,7 @@ This implementation plan breaks down the Decision-Driven Execution App into incr
     - Wire up TasksViewModel
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 12.5_
 
-  - [ ] 14.4 Create FocusScreen composable
+  - [x] 14.4 Create FocusScreen composable
     - Implement full-screen layout with minimal UI
     - Display task title prominently
     - Display CircularProgressIndicator showing elapsed/total time
@@ -326,13 +326,13 @@ This implementation plan breaks down the Decision-Driven Execution App into incr
     - Wire up FocusViewModel
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 12.6_
 
-  - [ ] 14.5 Create TaskDetailScreen composable
+  - [x] 14.5 Create TaskDetailScreen composable
     - Display all task attributes
     - Provide edit and delete actions
     - Navigate back on save or delete
     - _Requirements: 1.7, 1.8_
 
-  - [ ] 14.6 Create AddEditTaskScreen composable
+  - [x] 14.6 Create AddEditTaskScreen composable
     - Create form with TextField for title and description
     - Create dropdowns for category, effort, energy tag
     - Create sliders for urgency (1-5) and importance (1-5)
@@ -340,21 +340,21 @@ This implementation plan breaks down the Decision-Driven Execution App into incr
     - Call CreateTaskUseCase or UpdateTaskUseCase on save
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7_
 
-  - [ ] 14.7 Create SettingsScreen composable
+  - [x] 14.7 Create SettingsScreen composable
     - Create sliders for focus duration (5-90) and break duration (1-30)
     - Display current values
     - Create theme mode selector (Light, Dark, System)
     - Wire up SettingsViewModel
     - _Requirements: 11.1, 11.2, 11.3_
 
-  - [ ] 14.8 Create bottom navigation bar
+  - [x] 14.8 Create bottom navigation bar
     - Define three tabs: Home, Tasks, Focus
     - Implement navigation between screens
     - Highlight active tab
     - _Requirements: 12.3_
 
 - [ ] 15. Implement navigation
-  - [ ] 15.1 Create navigation graph
+  - [x] 15.1 Create navigation graph
     - Define routes for Home, Tasks, Focus, TaskDetail, AddEditTask, Settings
     - Set Home as start destination
     - Implement bottom navigation with NavController
