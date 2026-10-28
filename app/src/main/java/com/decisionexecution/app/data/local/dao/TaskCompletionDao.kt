@@ -8,6 +8,9 @@ import kotlinx.coroutines.flow.Flow
 interface TaskCompletionDao {
     @Insert
     suspend fun insertCompletion(completion: TaskCompletionEntity)
+
+    @Query("DELETE FROM task_completions WHERE taskId = :taskId AND completedAt = :completedAt")
+    suspend fun deleteCompletion(taskId: String, completedAt: Long)
     
     @Query("SELECT * FROM task_completions WHERE completedAt >= :startTimestamp AND completedAt <= :endTimestamp ORDER BY completedAt DESC")
     fun getCompletionsInPeriod(startTimestamp: Long, endTimestamp: Long): Flow<List<TaskCompletionEntity>>

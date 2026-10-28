@@ -1,16 +1,22 @@
 package com.decisionexecution.app.presentation
 
+import com.decisionexecution.app.domain.service.EisenhowerClassifier
+import com.decisionexecution.app.testutil.emptyInsights
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.AdaptiveIconDrawable
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.lifecycle.SavedStateHandle
@@ -24,6 +30,8 @@ import com.decisionexecution.app.presentation.addedit.AddEditTaskViewModel
 import com.decisionexecution.app.presentation.focus.FocusScreen
 import com.decisionexecution.app.presentation.focus.FocusViewModel
 import com.decisionexecution.app.presentation.home.HomeScreen
+import com.decisionexecution.app.presentation.insights.InsightsScreen
+import com.decisionexecution.app.presentation.insights.InsightsViewModel
 import com.decisionexecution.app.presentation.home.HomeViewModel
 import com.decisionexecution.app.presentation.settings.SettingsScreen
 import com.decisionexecution.app.presentation.settings.SettingsViewModel
@@ -31,6 +39,7 @@ import com.decisionexecution.app.presentation.tasks.TasksScreen
 import com.decisionexecution.app.presentation.tasks.TasksViewModel
 import com.decisionexecution.app.presentation.theme.VeltoTheme
 import io.kotest.matchers.shouldBe
+import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
@@ -71,13 +80,13 @@ class ScreensRenderTest {
         every { getBest() } returns flowOf(tasks[0])
         val metrics = mockk<GetProductivityMetricsUseCase>()
         every { metrics(any(), any(), any()) } returns flowOf(ProductivityMetrics(3, 85, 71.4))
-        val viewModel = HomeViewModel(getBest, mockk(relaxed = true), metrics)
+        val viewModel = HomeViewModel(getBest, mockk(relaxed = true), metrics, emptyInsights())
 
         render("home") { HomeScreen({}, {}, {}, {}, viewModel) }
 
         composeRule.onNodeWithText("Just Start").assertIsDisplayed()
         composeRule.onNodeWithText("Finish quarterly report").assertIsDisplayed()
-        composeRule.onNodeWithText("85m").assertIsDisplayed()
+        composeRule.onNodeWithText("1h 25m").assertIsDisplayed()
     }
 
     @Test
@@ -86,7 +95,7 @@ class ScreensRenderTest {
         every { getBest() } returns flowOf(null)
         val metrics = mockk<GetProductivityMetricsUseCase>()
         every { metrics(any(), any(), any()) } returns flowOf(ProductivityMetrics(0, 0, 0.0))
-        val viewModel = HomeViewModel(getBest, mockk(relaxed = true), metrics)
+        val viewModel = HomeViewModel(getBest, mockk(relaxed = true), metrics, emptyInsights())
 
         render("home_empty_dark", ThemeMode.DARK) { HomeScreen({}, {}, {}, {}, viewModel) }
 
@@ -98,15 +107,15 @@ class ScreensRenderTest {
         val viewModel = tasksViewModel()
 
         render("tasks") { TasksScreen({}, {}, {}, viewModel) }
-        composeRule.onNodeWithText("Tasks · 4 active").assertIsDisplayed()
+        composeRule.onNodeWithText("4 active").assertIsDisplayed()
         composeRule.onNodeWithText("Buy groceries").assertIsDisplayed()
 
-        composeRule.onNodeWithText("School").performClick()
+        composeRule.onAllNodesWithText("School").onFirst().performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithText("Study for calculus exam").assertIsDisplayed()
         assertNotVisible("Buy groceries")
         // Count still reflects every active task
-        composeRule.onNodeWithText("Tasks · 4 active").assertIsDisplayed()
+        composeRule.onNodeWithText("4 active").assertIsDisplayed()
         save("tasks_filtered_school")
     }
 
@@ -116,7 +125,7 @@ class ScreensRenderTest {
         val complete = mockk<CompleteTaskUseCase>(relaxed = true)
         val getAll = mockk<GetAllTasksUseCase>()
         every { getAll() } returns flowOf(tasks)
-        val viewModel = TasksViewModel(getAll, complete, mockk(relaxed = true), ScoringEngine())
+        val viewModel = TasksViewModel(getAll, complete, mockk(relaxed = true), ScoringEngine(), EisenhowerClassifier(), mockk(relaxed = true), mockk(relaxed = true))
         render("tasks_a11y") { TasksScreen({}, {}, {}, viewModel) }
 
         // Swipe-only actions are also offered as accessibility actions
@@ -150,13 +159,13 @@ class ScreensRenderTest {
         composeRule.onNodeWithText("15:25").assertIsDisplayed()
         composeRule.onNodeWithText("FOCUS").assertIsDisplayed()
 
-        composeRule.onNodeWithText("Pause").performClick()
+        composeRule.onNodeWithContentDescription("Pause").performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithText("PAUSED").assertIsDisplayed()
-        composeRule.onNodeWithText("Resume").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Resume").assertIsDisplayed()
         save("focus_paused")
 
-        composeRule.onNodeWithText("Resume").performClick()
+        composeRule.onNodeWithContentDescription("Resume").performClick()
         runBlocking { manager.transitionToBreak() }
         composeRule.waitForIdle()
         composeRule.onNodeWithText("BREAK").assertIsDisplayed()
@@ -184,6 +193,56 @@ class ScreensRenderTest {
         render("settings") { SettingsScreen({}, SettingsViewModel(prefs)) }
         composeRule.onNodeWithText("45 min").assertIsDisplayed()
         composeRule.onNodeWithText("10 min").assertIsDisplayed()
+    }
+
+    @Test
+    fun tappingTheCircleCompletesAndOffersUndo() {
+        val complete = mockk<CompleteTaskUseCase>()
+        coEvery { complete(any(), any()) } returns 123L
+        val undo = mockk<UndoCompleteTaskUseCase>(relaxed = true)
+        val getAll = mockk<GetAllTasksUseCase>()
+        every { getAll() } returns flowOf(tasks)
+        val viewModel = TasksViewModel(getAll, complete, mockk(relaxed = true), ScoringEngine(), EisenhowerClassifier(), undo, mockk(relaxed = true))
+        render("tasks_undo_before") { TasksScreen({}, {}, {}, viewModel) }
+
+        // The first "Complete task" circle belongs to the first task listed (School section)
+        val circles = composeRule.onAllNodes(
+            SemanticsMatcher("complete circle") { it.config.getOrNull(SemanticsActions.OnClick)?.label == "Complete task" }
+        )
+        circles.onFirst().performClick()
+        composeRule.waitForIdle()
+        coVerify { complete("3", any()) }
+        composeRule.onNodeWithText("Undo").assertIsDisplayed()
+        save("tasks_undo_snackbar")
+
+        composeRule.onNodeWithText("Undo").performClick()
+        composeRule.waitForIdle()
+        coVerify { undo("3", 123L) }
+    }
+
+    @Test
+    fun tasksMatrixView() {
+        val viewModel = tasksViewModel()
+        render("tasks_matrix") { TasksScreen({}, {}, {}, viewModel) }
+        composeRule.onNodeWithContentDescription("Priority matrix").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("Do first").assertIsDisplayed()
+        composeRule.onNodeWithText("• Finish quarterly report").assertIsDisplayed()
+        save("tasks_matrix")
+    }
+
+    @Test
+    fun insightsScreen() {
+        val today = java.time.LocalDate.now()
+        val week = (6 downTo 0).map { ago ->
+            DayStats(today.minusDays(ago.toLong()), completedTasks = listOf(1, 0, 2, 3, 0, 1, 2)[6 - ago], focusMinutes = listOf(25, 0, 50, 75, 0, 25, 100)[6 - ago])
+        }
+        val useCase = mockk<GetInsightsUseCase>()
+        every { useCase(any(), any()) } returns flowOf(Insights(week, streakDays = 3))
+
+        render("insights") { InsightsScreen(InsightsViewModel(useCase)) }
+        composeRule.onNodeWithText("3 days").assertIsDisplayed()
+        composeRule.onNodeWithText("4h 35m").assertIsDisplayed()
     }
 
     @Test
@@ -224,7 +283,7 @@ class ScreensRenderTest {
     private fun tasksViewModel(): TasksViewModel {
         val getAll = mockk<GetAllTasksUseCase>()
         every { getAll() } returns flowOf(tasks)
-        return TasksViewModel(getAll, mockk(relaxed = true), mockk(relaxed = true), ScoringEngine())
+        return TasksViewModel(getAll, mockk(relaxed = true), mockk(relaxed = true), ScoringEngine(), EisenhowerClassifier(), mockk(relaxed = true), mockk(relaxed = true))
     }
 
     // LazyColumn may keep removed items composed for reuse, so check visibility rather than existence

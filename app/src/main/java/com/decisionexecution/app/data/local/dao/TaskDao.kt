@@ -26,4 +26,7 @@ interface TaskDao {
     
     @Query("UPDATE tasks SET isCompleted = 1, completedAt = :timestamp WHERE id = :taskId")
     suspend fun completeTask(taskId: String, timestamp: Long)
+
+    @Query("UPDATE tasks SET isCompleted = 0, completedAt = NULL WHERE id = :taskId")
+    suspend fun uncompleteTask(taskId: String)
 }

@@ -11,10 +11,15 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.decisionexecution.app.R
 import com.decisionexecution.app.domain.model.ThemeMode
 
 // Purple fallback for devices without Material You (before Android 12); matches the launcher icon.
@@ -29,6 +34,8 @@ private val LightColors = lightColorScheme(
     // Break mode gets its own calm tone so it never reads as focus time (Requirement 5.6)
     tertiary = Color(0xFF2E7D6B),
     onTertiary = Color.White,
+    tertiaryContainer = Color(0xFFC8F0E3),
+    onTertiaryContainer = Color(0xFF00201A),
     background = Color(0xFFFCFAFF),
     onBackground = Color(0xFF1C1B20),
     surface = Color(0xFFFCFAFF),
@@ -48,6 +55,8 @@ private val DarkColors = darkColorScheme(
     onSecondaryContainer = Color(0xFFE6DEFF),
     tertiary = Color(0xFF7FD6BF),
     onTertiary = Color(0xFF00382D),
+    tertiaryContainer = Color(0xFF005143),
+    onTertiaryContainer = Color(0xFFA5F2DA),
     background = Color(0xFF141218),
     onBackground = Color(0xFFE6E1E9),
     surface = Color(0xFF141218),
@@ -58,27 +67,43 @@ private val DarkColors = darkColorScheme(
     error = Color(0xFFFFB4AB)
 )
 
+// Plus Jakarta Sans (SIL OFL, see third_party/), one variable font file for every weight
+@OptIn(ExperimentalTextApi::class)
+private fun jakarta(weight: Int) = Font(
+    R.font.plus_jakarta_sans,
+    weight = FontWeight(weight),
+    variationSettings = FontVariation.Settings(FontVariation.weight(weight))
+)
+
+private val Jakarta = FontFamily(jakarta(400), jakarta(500), jakarta(600), jakarta(700), jakarta(800))
+
 private val AppTypography = Typography(
-    displayLarge = TextStyle(fontSize = 64.sp, fontWeight = FontWeight.Light, letterSpacing = (-1).sp),
-    headlineMedium = TextStyle(fontSize = 26.sp, fontWeight = FontWeight.SemiBold),
-    headlineSmall = TextStyle(fontSize = 22.sp, fontWeight = FontWeight.SemiBold),
-    titleLarge = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Medium),
-    titleMedium = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Medium),
-    bodyLarge = TextStyle(fontSize = 16.sp),
-    bodyMedium = TextStyle(fontSize = 14.sp),
-    labelLarge = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Medium),
-    labelMedium = TextStyle(fontSize = 12.sp, fontWeight = FontWeight.Medium)
+    displayLarge = TextStyle(fontFamily = Jakarta, fontSize = 64.sp, fontWeight = FontWeight.W300, letterSpacing = (-2).sp),
+    displaySmall = TextStyle(fontFamily = Jakarta, fontSize = 34.sp, fontWeight = FontWeight.W700, letterSpacing = (-0.5).sp),
+    headlineMedium = TextStyle(fontFamily = Jakarta, fontSize = 26.sp, fontWeight = FontWeight.W700, letterSpacing = (-0.3).sp),
+    headlineSmall = TextStyle(fontFamily = Jakarta, fontSize = 22.sp, fontWeight = FontWeight.W700),
+    titleLarge = TextStyle(fontFamily = Jakarta, fontSize = 20.sp, fontWeight = FontWeight.W700),
+    titleMedium = TextStyle(fontFamily = Jakarta, fontSize = 16.sp, fontWeight = FontWeight.W600),
+    titleSmall = TextStyle(fontFamily = Jakarta, fontSize = 14.sp, fontWeight = FontWeight.W600),
+    bodyLarge = TextStyle(fontFamily = Jakarta, fontSize = 16.sp, fontWeight = FontWeight.W400),
+    bodyMedium = TextStyle(fontFamily = Jakarta, fontSize = 14.sp, fontWeight = FontWeight.W400),
+    bodySmall = TextStyle(fontFamily = Jakarta, fontSize = 12.sp, fontWeight = FontWeight.W400),
+    labelLarge = TextStyle(fontFamily = Jakarta, fontSize = 14.sp, fontWeight = FontWeight.W600),
+    labelMedium = TextStyle(fontFamily = Jakarta, fontSize = 12.sp, fontWeight = FontWeight.W600),
+    labelSmall = TextStyle(fontFamily = Jakarta, fontSize = 11.sp, fontWeight = FontWeight.W600, letterSpacing = 0.5.sp)
 )
 
 /**
  * Spacing tokens so every screen uses the same rhythm. Requirements: 12.7
  */
 object Spacing {
+    val xxs = 2.dp
     val xs = 4.dp
     val sm = 8.dp
     val md = 16.dp
     val lg = 24.dp
     val xl = 32.dp
+    val xxl = 48.dp
 }
 
 /**

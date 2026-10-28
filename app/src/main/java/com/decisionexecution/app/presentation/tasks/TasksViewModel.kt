@@ -2,12 +2,16 @@ package com.decisionexecution.app.presentation.tasks
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.decisionexecution.app.domain.model.EisenhowerQuadrant
 import com.decisionexecution.app.domain.model.Task
 import com.decisionexecution.app.domain.model.TaskCategory
+import com.decisionexecution.app.domain.service.EisenhowerClassifier
 import com.decisionexecution.app.domain.service.ScoringEngine
 import com.decisionexecution.app.domain.usecase.CompleteTaskUseCase
+import com.decisionexecution.app.domain.usecase.CreateTaskUseCase
 import com.decisionexecution.app.domain.usecase.DeleteTaskUseCase
 import com.decisionexecution.app.domain.usecase.GetAllTasksUseCase
+import com.decisionexecution.app.domain.usecase.UndoCompleteTaskUseCase
 import com.decisionexecution.app.presentation.common.toUserMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -27,8 +31,22 @@ data class TasksUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     /** The error came from loading, so the UI can offer Retry */
-    val canRetry: Boolean = false
+    val canRetry: Boolean = false,
+    /** Tasks by priority quadrant, for the matrix view (respects the category filter) */
+    val matrix: Map<EisenhowerQuadrant, List<Task>> = emptyMap(),
+    val viewMode: TasksViewMode = TasksViewMode.LIST,
+    /** The last complete or delete, offered for undo */
+    val undo: UndoAction? = null
 )
+
+enum class TasksViewMode { LIST, MATRIX }
+
+sealed class UndoAction {
+    abstract val task: Task
+
+    data class Completed(override val task: Task, val completedAt: Long) : UndoAction()
+    data class Deleted(override val task: Task) : UndoAction()
+}
 
 /**
  * Groups tasks by category, sorted by descending score within each group.
@@ -62,7 +80,10 @@ class TasksViewModel @Inject constructor(
     private val getAllTasksUseCase: GetAllTasksUseCase,
     private val completeTaskUseCase: CompleteTaskUseCase,
     private val deleteTaskUseCase: DeleteTaskUseCase,
-    private val scoringEngine: ScoringEngine
+    private val scoringEngine: ScoringEngine,
+    private val eisenhowerClassifier: EisenhowerClassifier,
+    private val undoCompleteTaskUseCase: UndoCompleteTaskUseCase,
+    private val createTaskUseCase: CreateTaskUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TasksUiState(isLoading = true))
@@ -71,6 +92,7 @@ class TasksViewModel @Inject constructor(
     private val selectedCategory = MutableStateFlow<TaskCategory?>(null)
 
     private var loadJob: Job? = null
+    private var allTasks: List<Task> = emptyList()
 
     init {
         loadTasks()
@@ -81,8 +103,12 @@ class TasksViewModel @Inject constructor(
         loadJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null, canRetry = false) }
             combine(getAllTasksUseCase(), selectedCategory) { tasks, category ->
+                allTasks = tasks
+                val grouped = filterByCategory(groupTasksByCategory(tasks, scoringEngine), category)
                 _uiState.value.copy(
-                    tasksByCategory = filterByCategory(groupTasksByCategory(tasks, scoringEngine), category),
+                    tasksByCategory = grouped,
+                    matrix = eisenhowerClassifier.groupByQuadrant(grouped.values.flatten())
+                        .mapValues { (_, inQuadrant) -> inQuadrant.sortedByDescending(scoringEngine::calculateScore) },
                     selectedCategory = category,
                     activeTaskCount = tasks.size,
                     isLoading = false
@@ -96,9 +122,11 @@ class TasksViewModel @Inject constructor(
     }
 
     fun onTaskComplete(taskId: String) {
+        val task = allTasks.find { it.id == taskId }
         viewModelScope.launch {
             try {
-                completeTaskUseCase(taskId)
+                val completedAt = completeTaskUseCase(taskId)
+                task?.let { done -> _uiState.update { it.copy(undo = UndoAction.Completed(done, completedAt)) } }
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.toUserMessage("complete the task")) }
             }
@@ -106,9 +134,11 @@ class TasksViewModel @Inject constructor(
     }
 
     fun onTaskDelete(taskId: String) {
+        val task = allTasks.find { it.id == taskId }
         viewModelScope.launch {
             try {
                 deleteTaskUseCase(taskId)
+                task?.let { gone -> _uiState.update { it.copy(undo = UndoAction.Deleted(gone)) } }
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.toUserMessage("delete the task")) }
             }
@@ -124,4 +154,28 @@ class TasksViewModel @Inject constructor(
     }
 
     fun onRetry() = loadTasks()
+
+    fun onViewModeChange(mode: TasksViewMode) {
+        _uiState.update { it.copy(viewMode = mode) }
+    }
+
+    fun onUndo() {
+        val action = _uiState.value.undo ?: return
+        _uiState.update { it.copy(undo = null) }
+        viewModelScope.launch {
+            try {
+                when (action) {
+                    is UndoAction.Completed -> undoCompleteTaskUseCase(action.task.id, action.completedAt)
+                    // Re-inserting keeps the original id and creation time, so its score is unchanged
+                    is UndoAction.Deleted -> createTaskUseCase(action.task)
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.toUserMessage("undo that")) }
+            }
+        }
+    }
+
+    fun onUndoDismissed() {
+        _uiState.update { it.copy(undo = null) }
+    }
 }

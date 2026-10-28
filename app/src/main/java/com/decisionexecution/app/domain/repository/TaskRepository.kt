@@ -11,5 +11,6 @@ interface TaskRepository {
     suspend fun updateTask(task: Task)
     suspend fun deleteTask(taskId: String)
     suspend fun completeTask(taskId: String, completionTimestamp: Long)
+    suspend fun uncompleteTask(taskId: String)
     fun getTasksByCategory(category: TaskCategory): Flow<List<Task>>
 }

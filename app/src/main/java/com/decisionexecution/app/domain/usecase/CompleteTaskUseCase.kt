@@ -21,8 +21,9 @@ class CompleteTaskUseCase @Inject constructor(
      * 
      * @param taskId The ID of the task to complete
      * @param focusDuration Optional focus duration in minutes if completed via focus session
+     * @return The completion timestamp, needed to undo it
      */
-    suspend operator fun invoke(taskId: String, focusDuration: Int? = null) {
+    suspend operator fun invoke(taskId: String, focusDuration: Int? = null): Long {
         val timestamp = System.currentTimeMillis()
         
         // Mark task as complete
@@ -30,5 +31,6 @@ class CompleteTaskUseCase @Inject constructor(
         
         // Record completion for performance tracking
         performanceRepository.recordCompletion(taskId, timestamp, focusDuration)
+        return timestamp
     }
 }

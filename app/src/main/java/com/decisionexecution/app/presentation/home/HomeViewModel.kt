@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.decisionexecution.app.domain.model.JustStartResult
 import com.decisionexecution.app.domain.model.Task
 import com.decisionexecution.app.domain.usecase.GetBestTaskUseCase
+import com.decisionexecution.app.domain.usecase.GetInsightsUseCase
 import com.decisionexecution.app.domain.usecase.GetProductivityMetricsUseCase
 import com.decisionexecution.app.domain.usecase.JustStartUseCase
 import com.decisionexecution.app.presentation.common.toUserMessage
@@ -26,6 +27,7 @@ data class HomeUiState(
     val completedTasksToday: Int = 0,
     val totalFocusTimeToday: Int = 0,
     val consistencyScore: Double = 0.0,
+    val streakDays: Int = 0,
     val isLoading: Boolean = false,
     val error: String? = null,
     /** The error came from loading, so the UI can offer Retry */
@@ -42,7 +44,8 @@ data class HomeUiState(
 class HomeViewModel @Inject constructor(
     private val getBestTaskUseCase: GetBestTaskUseCase,
     private val justStartUseCase: JustStartUseCase,
-    private val getProductivityMetricsUseCase: GetProductivityMetricsUseCase
+    private val getProductivityMetricsUseCase: GetProductivityMetricsUseCase,
+    private val getInsightsUseCase: GetInsightsUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -65,13 +68,15 @@ class HomeViewModel @Inject constructor(
 
             combine(
                 getBestTaskUseCase(),
-                getProductivityMetricsUseCase(startOfToday, endOfToday, CONSISTENCY_DAYS)
-            ) { bestTask, metrics ->
+                getProductivityMetricsUseCase(startOfToday, endOfToday, CONSISTENCY_DAYS),
+                getInsightsUseCase()
+            ) { bestTask, metrics, insights ->
                 _uiState.value.copy(
                     bestTask = bestTask,
                     completedTasksToday = metrics.completedTasks,
                     totalFocusTimeToday = metrics.totalFocusTime,
                     consistencyScore = metrics.consistencyScore,
+                    streakDays = insights.streakDays,
                     isLoading = false
                 )
             }

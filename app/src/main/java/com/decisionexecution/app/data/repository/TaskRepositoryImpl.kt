@@ -45,6 +45,10 @@ class TaskRepositoryImpl @Inject constructor(
         taskDao.completeTask(taskId, completionTimestamp)
     }
     
+    override suspend fun uncompleteTask(taskId: String) {
+        taskDao.uncompleteTask(taskId)
+    }
+    
     override fun getTasksByCategory(category: TaskCategory): Flow<List<Task>> {
         return taskDao.getTasksByCategory(category.name).map { entities ->
             entities.map { it.toDomainModel() }

@@ -4,6 +4,7 @@ import com.decisionexecution.app.data.local.dao.FocusSessionDao
 import com.decisionexecution.app.data.local.dao.TaskCompletionDao
 import com.decisionexecution.app.data.local.entity.FocusSessionEntity
 import com.decisionexecution.app.data.local.entity.TaskCompletionEntity
+import com.decisionexecution.app.domain.repository.FocusSessionRecord
 import com.decisionexecution.app.domain.repository.PerformanceRepository
 import com.decisionexecution.app.domain.repository.TaskCompletion
 import kotlinx.coroutines.flow.Flow
@@ -32,6 +33,16 @@ class PerformanceRepositoryImpl @Inject constructor(
         focusSessionDao.insertFocusSession(
             FocusSessionEntity(taskId = taskId, completedAt = timestamp, durationMinutes = durationMinutes)
         )
+    }
+    
+    override suspend fun removeCompletion(taskId: String, timestamp: Long) {
+        taskCompletionDao.deleteCompletion(taskId, timestamp)
+    }
+    
+    override fun getFocusSessionsInPeriod(startTimestamp: Long, endTimestamp: Long): Flow<List<FocusSessionRecord>> {
+        return focusSessionDao.getFocusSessionsInPeriod(startTimestamp, endTimestamp).map { entities ->
+            entities.map { FocusSessionRecord(it.taskId, it.completedAt, it.durationMinutes) }
+        }
     }
     
     override fun getCompletionsInPeriod(startTimestamp: Long, endTimestamp: Long): Flow<List<TaskCompletion>> {

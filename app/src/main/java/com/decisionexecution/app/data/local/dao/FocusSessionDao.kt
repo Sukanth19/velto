@@ -11,6 +11,9 @@ interface FocusSessionDao {
     @Insert
     suspend fun insertFocusSession(session: FocusSessionEntity)
 
+    @Query("SELECT * FROM focus_sessions WHERE completedAt >= :startTimestamp AND completedAt <= :endTimestamp")
+    fun getFocusSessionsInPeriod(startTimestamp: Long, endTimestamp: Long): Flow<List<FocusSessionEntity>>
+
     @Query("SELECT SUM(durationMinutes) FROM focus_sessions WHERE completedAt >= :startTimestamp AND completedAt <= :endTimestamp")
     fun getTotalFocusMinutesInPeriod(startTimestamp: Long, endTimestamp: Long): Flow<Int?>
 }

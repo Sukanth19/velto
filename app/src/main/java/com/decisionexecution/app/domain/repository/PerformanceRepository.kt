@@ -5,6 +5,8 @@ import kotlinx.coroutines.flow.Flow
 interface PerformanceRepository {
     suspend fun recordCompletion(taskId: String, timestamp: Long, focusDuration: Int?)
     suspend fun recordFocusSession(taskId: String, timestamp: Long, durationMinutes: Int)
+    suspend fun removeCompletion(taskId: String, timestamp: Long)
+    fun getFocusSessionsInPeriod(startTimestamp: Long, endTimestamp: Long): Flow<List<FocusSessionRecord>>
     fun getCompletionsInPeriod(startTimestamp: Long, endTimestamp: Long): Flow<List<TaskCompletion>>
     fun getTotalFocusTimeInPeriod(startTimestamp: Long, endTimestamp: Long): Flow<Int>
     fun getConsistencyScore(days: Int): Flow<Double>
@@ -16,4 +18,10 @@ data class TaskCompletion(
     val taskTitle: String,
     val completedAt: Long,
     val focusDuration: Int?
+)
+
+data class FocusSessionRecord(
+    val taskId: String,
+    val completedAt: Long,
+    val durationMinutes: Int
 )

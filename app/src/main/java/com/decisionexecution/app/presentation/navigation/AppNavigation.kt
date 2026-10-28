@@ -1,10 +1,18 @@
 package com.decisionexecution.app.presentation.navigation
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Insights
+import androidx.compose.material.icons.outlined.TaskAlt
+import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.Insights
+import androidx.compose.material.icons.rounded.TaskAlt
+import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -29,6 +37,7 @@ import com.decisionexecution.app.presentation.addedit.AddEditTaskScreen
 import com.decisionexecution.app.presentation.addedit.AddEditTaskViewModel
 import com.decisionexecution.app.presentation.focus.FocusScreen
 import com.decisionexecution.app.presentation.home.HomeScreen
+import com.decisionexecution.app.presentation.insights.InsightsScreen
 import com.decisionexecution.app.presentation.settings.SettingsScreen
 import com.decisionexecution.app.presentation.taskdetail.TaskDetailScreen
 import com.decisionexecution.app.presentation.taskdetail.TaskDetailViewModel
@@ -52,6 +61,7 @@ object Routes {
     const val TASKS = "tasks"
     const val FOCUS = "focus"
     const val SETTINGS = "settings"
+    const val INSIGHTS = "insights"
     const val JUST_START = "just_start"
     const val TASK_DETAIL = "task/{${TaskDetailViewModel.TASK_ID_ARG}}"
     const val ADD_EDIT_TASK = "task_edit?${AddEditTaskViewModel.TASK_ID_ARG}={${AddEditTaskViewModel.TASK_ID_ARG}}"
@@ -61,10 +71,11 @@ object Routes {
     fun editTask(taskId: String) = "task_edit?${AddEditTaskViewModel.TASK_ID_ARG}=$taskId"
 }
 
-private enum class TopLevelTab(val route: String, val label: String, val icon: ImageVector) {
-    HOME(Routes.HOME, "Home", Icons.Default.Home),
-    TASKS(Routes.TASKS, "Tasks", Icons.Default.List),
-    FOCUS(Routes.FOCUS, "Focus", Icons.Default.PlayArrow)
+private enum class TopLevelTab(val route: String, val label: String, val icon: ImageVector, val selectedIcon: ImageVector) {
+    HOME(Routes.HOME, "Home", Icons.Outlined.Home, Icons.Rounded.Home),
+    TASKS(Routes.TASKS, "Tasks", Icons.Outlined.TaskAlt, Icons.Rounded.TaskAlt),
+    FOCUS(Routes.FOCUS, "Focus", Icons.Outlined.Timer, Icons.Rounded.Timer),
+    INSIGHTS(Routes.INSIGHTS, "Insights", Icons.Outlined.Insights, Icons.Rounded.Insights)
 }
 
 /**
@@ -101,6 +112,7 @@ fun NavHostController.openDeepLink(uri: Uri): Boolean {
  * Bottom navigation with Home, Tasks and Focus, plus the secondary screens.
  * Requirements: 12.3
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AppNavHost(navController: NavHostController = rememberNavController()) {
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -108,14 +120,17 @@ fun AppNavHost(navController: NavHostController = rememberNavController()) {
     val showBottomBar = TopLevelTab.entries.any { it.route == currentDestination?.route }
 
     Scaffold(
+        // Edge to edge: each screen handles the status bar itself; the bar below handles the nav bar
+        contentWindowInsets = WindowInsets(0),
         bottomBar = {
             if (showBottomBar) {
                 NavigationBar {
                     TopLevelTab.entries.forEach { tab ->
+                        val selected = currentDestination?.hierarchy?.any { it.route == tab.route } == true
                         NavigationBarItem(
-                            selected = currentDestination?.hierarchy?.any { it.route == tab.route } == true,
+                            selected = selected,
                             onClick = { navController.navigateToTab(tab.route) },
-                            icon = { Icon(tab.icon, contentDescription = null) },
+                            icon = { Icon(if (selected) tab.selectedIcon else tab.icon, contentDescription = null) },
                             label = { Text(tab.label) }
                         )
                     }
@@ -126,14 +141,15 @@ fun AppNavHost(navController: NavHostController = rememberNavController()) {
         NavHost(
             navController = navController,
             startDestination = Routes.HOME,
-            modifier = Modifier.padding(padding)
+            modifier = Modifier.padding(padding).consumeWindowInsets(padding)
         ) {
             composable(Routes.HOME) {
                 HomeScreen(
                     onNavigateToFocus = { navController.navigateToTab(Routes.FOCUS) },
                     onOpenTask = { navController.navigate(Routes.taskDetail(it)) },
                     onAddTask = { navController.navigate(Routes.addTask()) },
-                    onOpenSettings = { navController.navigate(Routes.SETTINGS) }
+                    onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+                    onOpenInsights = { navController.navigateToTab(Routes.INSIGHTS) }
                 )
             }
             composable(Routes.TASKS) {
@@ -142,6 +158,9 @@ fun AppNavHost(navController: NavHostController = rememberNavController()) {
                     onEditTask = { navController.navigate(Routes.editTask(it)) },
                     onAddTask = { navController.navigate(Routes.addTask()) }
                 )
+            }
+            composable(Routes.INSIGHTS) {
+                InsightsScreen()
             }
             composable(Routes.FOCUS) {
                 FocusScreen(onGoHome = { navController.navigateToTab(Routes.HOME) })

@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -41,6 +42,8 @@ class MainActivity : ComponentActivity() {
     private val deepLinks = Channel<Uri>(Channel.BUFFERED)
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Draw behind the status and navigation bars; screens pad themselves where needed
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         // A recreated activity has already handled its launch link
         if (savedInstanceState == null) intent?.data?.let(deepLinks::trySend)

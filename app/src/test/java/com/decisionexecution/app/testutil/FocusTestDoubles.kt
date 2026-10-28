@@ -99,3 +99,12 @@ fun focusSessionManager(
     notifier: FocusNotifier = RecordingNotifier(),
     performance: PerformanceRepository = mockk(relaxed = true)
 ) = FocusSessionManager(preferences, tasks, performance, scheduler, notifier, clock)
+
+/** Insights use case with no activity, for screens that only need it to exist. */
+fun emptyInsights(): com.decisionexecution.app.domain.usecase.GetInsightsUseCase {
+    val useCase = mockk<com.decisionexecution.app.domain.usecase.GetInsightsUseCase>()
+    every { useCase(any(), any()) } returns flowOf(
+        com.decisionexecution.app.domain.usecase.Insights(week = emptyList(), streakDays = 0)
+    )
+    return useCase
+}

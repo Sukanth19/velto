@@ -1,5 +1,6 @@
 package com.decisionexecution.app.presentation.tasks
 
+import com.decisionexecution.app.domain.service.EisenhowerClassifier
 import com.decisionexecution.app.testutil.PROPERTY_ITERATIONS
 import com.decisionexecution.app.domain.model.*
 import com.decisionexecution.app.domain.service.ScoringEngine
@@ -113,12 +114,10 @@ class TasksViewModelPropertyTest : StringSpec({
 private fun createViewModel(tasks: List<Task>): TasksViewModel {
     val getAllTasks = mockk<GetAllTasksUseCase>()
     every { getAllTasks() } returns flowOf(tasks)
-    return TasksViewModel(
-        getAllTasks,
+    return TasksViewModel(getAllTasks,
         mockk<CompleteTaskUseCase>(relaxed = true),
         mockk<DeleteTaskUseCase>(relaxed = true),
-        ScoringEngine()
-    )
+        ScoringEngine(), EisenhowerClassifier(), mockk(relaxed = true), mockk(relaxed = true))
 }
 
 private fun taskArb(): Arb<Task> = arbitrary {

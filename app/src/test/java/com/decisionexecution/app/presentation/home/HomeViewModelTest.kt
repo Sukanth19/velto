@@ -1,5 +1,6 @@
 package com.decisionexecution.app.presentation.home
 
+import com.decisionexecution.app.testutil.emptyInsights
 import com.decisionexecution.app.domain.model.*
 import com.decisionexecution.app.domain.usecase.GetBestTaskUseCase
 import com.decisionexecution.app.domain.usecase.GetProductivityMetricsUseCase
@@ -94,7 +95,7 @@ class HomeViewModelTest : StringSpec({
         }
         val metrics = mockk<GetProductivityMetricsUseCase>()
         every { metrics(any(), any(), any()) } returns flowOf(ProductivityMetrics(0, 0, 0.0))
-        val viewModel = HomeViewModel(getBest, mockk(relaxed = true), metrics)
+        val viewModel = HomeViewModel(getBest, mockk(relaxed = true), metrics, emptyInsights())
 
         viewModel.uiState.value.canRetry shouldBe true
         viewModel.uiState.value.error shouldBe "Couldn't load today's data. Please try again."
@@ -127,7 +128,7 @@ private fun createViewModel(
     every { getBestTask() } returns flowOf(bestTask)
     val getMetrics = mockk<GetProductivityMetricsUseCase>()
     every { getMetrics(any(), any(), any()) } returns flowOf(metrics)
-    return HomeViewModel(getBestTask, justStartUseCase, getMetrics)
+    return HomeViewModel(getBestTask, justStartUseCase, getMetrics, emptyInsights())
 }
 
 private fun createTestTask(): Task = Task(
