@@ -1,18 +1,23 @@
 package com.decisionexecution.app.data.repository
 
 import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import androidx.room.Room
 import com.decisionexecution.app.data.local.database.AppDatabase
 import com.decisionexecution.app.domain.repository.PerformanceRepository
-import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.doubles.shouldBeGreaterThanOrEqual
 import io.kotest.matchers.doubles.shouldBeLessThanOrEqual
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.*
 import io.kotest.property.checkAll
-import io.mockk.mockk
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
@@ -20,19 +25,23 @@ import java.util.concurrent.TimeUnit
  * Property-based tests for PerformanceRepository.
  * Feature: decision-driven-execution-app
  */
-class PerformanceRepositoryPropertyTest : StringSpec({
+// Room needs a real SQLite, so these run under Robolectric rather than as Kotest specs
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
+class PerformanceRepositoryPropertyTest {
     
-    "Property 21: Completion Timestamp Recording" {
+    @Test
+    fun `Property 21 Completion Timestamp Recording`() = runTest {
         // Feature: decision-driven-execution-app, Property 21: For any completed task,
         // the performance tracker should store a completion record with a timestamp
         // matching the completion time.
         // **Validates: Requirements 7.1**
         
         checkAll(
+            100,
             Arb.string(10..50),
             Arb.long(1000000000000L..2000000000000L),
-            Arb.int(5..90).orNull(),
-            100
+            Arb.int(5..90).orNull()
         ) { taskId, timestamp, focusDuration ->
             val database = createInMemoryDatabase()
             val repository = createRepository(database)
@@ -48,7 +57,7 @@ class PerformanceRepositoryPropertyTest : StringSpec({
                 
                 // Verify completion record exists with matching timestamp
                 val completion = completions.find { it.taskId == taskId }
-                completion shouldBe org.junit.jupiter.api.Assertions.assertNotNull(completion)
+                completion shouldNotBe null
                 completion!!.completedAt shouldBe timestamp
                 completion.focusDuration shouldBe focusDuration
             } finally {
@@ -57,17 +66,18 @@ class PerformanceRepositoryPropertyTest : StringSpec({
         }
     }
     
-    "Property 22: Completed Tasks Count" {
+    @Test
+    fun `Property 22 Completed Tasks Count`() = runTest {
         // Feature: decision-driven-execution-app, Property 22: For any time period
         // and set of completions, the count of completed tasks in that period should
         // equal the number of completions with timestamps within the period bounds.
         // **Validates: Requirements 7.2**
         
         checkAll(
+            100,
             Arb.list(completionDataArb(), 0..20),
             Arb.long(1000000000000L..1500000000000L),
-            Arb.long(1500000000001L..2000000000000L),
-            100
+            Arb.long(1500000000001L..2000000000000L)
         ) { completions, startTimestamp, endTimestamp ->
             val database = createInMemoryDatabase()
             val repository = createRepository(database)
@@ -94,17 +104,18 @@ class PerformanceRepositoryPropertyTest : StringSpec({
         }
     }
     
-    "Property 23: Total Focus Time Calculation" {
+    @Test
+    fun `Property 23 Total Focus Time Calculation`() = runTest {
         // Feature: decision-driven-execution-app, Property 23: For any time period
         // and set of completions with focus durations, the total focus time should
         // equal the sum of all focus durations within the period.
         // **Validates: Requirements 7.3**
         
         checkAll(
+            100,
             Arb.list(completionDataArb(), 0..20),
             Arb.long(1000000000000L..1500000000000L),
-            Arb.long(1500000000001L..2000000000000L),
-            100
+            Arb.long(1500000000001L..2000000000000L)
         ) { completions, startTimestamp, endTimestamp ->
             val database = createInMemoryDatabase()
             val repository = createRepository(database)
@@ -131,16 +142,17 @@ class PerformanceRepositoryPropertyTest : StringSpec({
         }
     }
     
-    "Property 24: Consistency Score Calculation" {
+    @Test
+    fun `Property 24 Consistency Score Calculation`() = runTest {
         // Feature: decision-driven-execution-app, Property 24: For any set of completions
         // over a time period, the consistency score should equal
         // (days with completions / total days) * 100.
         // **Validates: Requirements 7.4**
         
         checkAll(
+            100,
             Arb.int(1..30),
-            Arb.list(Arb.int(0..29), 0..30),
-            100
+            Arb.list(Arb.int(0..29), 0..30)
         ) { totalDays, daysWithCompletionsIndices ->
             val database = createInMemoryDatabase()
             val repository = createRepository(database)
@@ -173,11 +185,11 @@ class PerformanceRepositoryPropertyTest : StringSpec({
             }
         }
     }
-})
+}
 
 // Test helper functions
 private fun createInMemoryDatabase(): AppDatabase {
-    val context = mockk<Context>(relaxed = true)
+    val context = ApplicationProvider.getApplicationContext<Context>()
     return Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
         .allowMainThreadQueries()
         .build()

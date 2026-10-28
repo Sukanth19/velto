@@ -44,6 +44,14 @@ class FocusSessionManager @Inject constructor(
         // TODO: Schedule WorkManager worker for background timing
     }
     
+    fun updateElapsedSeconds(elapsedSeconds: Int) {
+        _sessionState.value = when (val currentState = _sessionState.value) {
+            is FocusSessionState.Focusing -> currentState.copy(elapsedSeconds = elapsedSeconds)
+            is FocusSessionState.Breaking -> currentState.copy(elapsedSeconds = elapsedSeconds)
+            else -> currentState
+        }
+    }
+    
     suspend fun pauseSession() {
         val currentState = _sessionState.value
         if (currentState is FocusSessionState.Focusing) {

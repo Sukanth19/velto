@@ -221,18 +221,18 @@ This implementation plan breaks down the Decision-Driven Execution App into incr
     - Return metrics: completedTasks, totalFocusTime, consistencyScore
     - _Requirements: 7.2, 7.3, 7.4, 7.5_
 
-- [ ] 11. Checkpoint - Ensure all tests pass
+- [x] 11. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 12. Implement dependency injection with Hilt
-  - [ ] 12.1 Create Hilt modules
+- [x] 12. Implement dependency injection with Hilt
+  - [x] 12.1 Create Hilt modules
     - Create DatabaseModule providing AppDatabase, TaskDao, TaskCompletionDao
     - Create RepositoryModule providing TaskRepository, PreferencesRepository, PerformanceRepository
     - Create DomainModule providing ScoringEngine, EisenhowerClassifier, FocusSessionManager
     - Annotate modules with @Module and @InstallIn(SingletonComponent::class)
     - _Requirements: All (enables dependency injection)_
 
-  - [ ] 12.2 Create Application class
+  - [x] 12.2 Create Application class
     - Create DecisionExecutionApp extending Application
     - Annotate with @HiltAndroidApp
     - Register in AndroidManifest.xml

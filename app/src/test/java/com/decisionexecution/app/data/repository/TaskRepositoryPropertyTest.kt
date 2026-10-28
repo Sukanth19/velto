@@ -1,11 +1,11 @@
 package com.decisionexecution.app.data.repository
 
 import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import androidx.room.Room
 import com.decisionexecution.app.data.local.database.AppDatabase
 import com.decisionexecution.app.domain.model.*
 import com.decisionexecution.app.domain.repository.TaskRepository
-import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.collections.shouldContain
@@ -13,23 +13,31 @@ import io.kotest.matchers.collections.shouldNotContain
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.*
 import io.kotest.property.checkAll
-import io.mockk.mockk
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import java.util.UUID
 
 /**
  * Property-based tests for TaskRepository.
  * Feature: decision-driven-execution-app
  */
-class TaskRepositoryPropertyTest : StringSpec({
+// Room needs a real SQLite, so these run under Robolectric rather than as Kotest specs
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
+class TaskRepositoryPropertyTest {
     
-    "Property 2: Task CRUD Operations" {
+    @Test
+    fun `Property 2 Task CRUD Operations`() = runTest {
         // Feature: decision-driven-execution-app, Property 2: For any valid task,
         // creating it, then retrieving it by ID should return an equivalent task
         // with all attributes preserved.
         // **Validates: Requirements 1.1**
         
-        checkAll(taskArb(), 100) { task ->
+        checkAll(100, taskArb()) { task ->
             val database = createInMemoryDatabase()
             val repository = createRepository(database)
             
@@ -57,13 +65,14 @@ class TaskRepositoryPropertyTest : StringSpec({
         }
     }
     
-    "Property 3: Task Update Persistence" {
+    @Test
+    fun `Property 3 Task Update Persistence`() = runTest {
         // Feature: decision-driven-execution-app, Property 3: For any existing task
         // and any valid attribute changes, updating the task should result in the
         // modified attributes being persisted and retrievable.
         // **Validates: Requirements 1.7**
         
-        checkAll(taskArb(), taskArb(), 100) { originalTask, updatedAttributes ->
+        checkAll(100, taskArb(), taskArb()) { originalTask, updatedAttributes ->
             val database = createInMemoryDatabase()
             val repository = createRepository(database)
             
@@ -101,12 +110,13 @@ class TaskRepositoryPropertyTest : StringSpec({
         }
     }
     
-    "Property 4: Task Deletion" {
+    @Test
+    fun `Property 4 Task Deletion`() = runTest {
         // Feature: decision-driven-execution-app, Property 4: For any existing task,
         // deleting it should result in the task no longer appearing in any task queries.
         // **Validates: Requirements 1.8**
         
-        checkAll(taskArb(), 100) { task ->
+        checkAll(100, taskArb()) { task ->
             val database = createInMemoryDatabase()
             val repository = createRepository(database)
             
@@ -133,13 +143,14 @@ class TaskRepositoryPropertyTest : StringSpec({
         }
     }
     
-    "Property 5: Task Completion Recording" {
+    @Test
+    fun `Property 5 Task Completion Recording`() = runTest {
         // Feature: decision-driven-execution-app, Property 5: For any active task,
         // marking it as complete should result in the task having a completion timestamp
         // and not appearing in active task lists.
         // **Validates: Requirements 1.9**
         
-        checkAll(taskArb(), Arb.long(1000000000000L..2000000000000L), 100) { task, completionTimestamp ->
+        checkAll(100, taskArb(), Arb.long(1000000000000L..2000000000000L)) { task, completionTimestamp ->
             val database = createInMemoryDatabase()
             val repository = createRepository(database)
             
@@ -163,13 +174,14 @@ class TaskRepositoryPropertyTest : StringSpec({
         }
     }
     
-    "Property 29: Task Persistence Round Trip" {
+    @Test
+    fun `Property 29 Task Persistence Round Trip`() = runTest {
         // Feature: decision-driven-execution-app, Property 29: For any valid task,
         // persisting it to the database and then retrieving all tasks should result
         // in a list containing an equivalent task.
         // **Validates: Requirements 1.1, 1.7, 1.8, 1.9, 10.1, 10.3, 10.6**
         
-        checkAll(taskArb(), 100) { task ->
+        checkAll(100, taskArb()) { task ->
             val database = createInMemoryDatabase()
             val repository = createRepository(database)
             
@@ -187,11 +199,11 @@ class TaskRepositoryPropertyTest : StringSpec({
             }
         }
     }
-})
+}
 
 // Test helper functions
 private fun createInMemoryDatabase(): AppDatabase {
-    val context = mockk<Context>(relaxed = true)
+    val context = ApplicationProvider.getApplicationContext<Context>()
     return Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java)
         .allowMainThreadQueries()
         .build()

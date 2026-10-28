@@ -22,7 +22,7 @@ class ScoringEnginePropertyTest : StringSpec({
         // to all other tasks in the list.
         // Validates: Requirements 2.1, 2.2
         
-        checkAll(Arb.list(taskArb(), range = 1..100), 100) { tasks ->
+        checkAll(100, Arb.list(taskArb(), range = 1..100)) { tasks ->
             val scoringEngine = ScoringEngine()
             val bestTask = scoringEngine.getBestTask(tasks)
             
@@ -41,7 +41,7 @@ class ScoringEnginePropertyTest : StringSpec({
         // three tasks, the top three tasks returned should be in descending order by score.
         // Validates: Requirements 2.3
         
-        checkAll(Arb.list(taskArb(), range = 3..100), 100) { tasks ->
+        checkAll(100, Arb.list(taskArb(), range = 3..100)) { tasks ->
             val scoringEngine = ScoringEngine()
             val topThree = scoringEngine.getTopThreeTasks(tasks)
             
@@ -66,7 +66,7 @@ class ScoringEnginePropertyTest : StringSpec({
         // scores, the task with the earliest creation timestamp should be ranked higher.
         // Validates: Requirements 2.4
         
-        checkAll(Arb.int(1..5), Arb.int(1..5), 100) { urgency, importance ->
+        checkAll(100, Arb.int(1..5), Arb.int(1..5)) { urgency, importance ->
             val scoringEngine = ScoringEngine()
             
             // Create tasks with identical attributes but different timestamps

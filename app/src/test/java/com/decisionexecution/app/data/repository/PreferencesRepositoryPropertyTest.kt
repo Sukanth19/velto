@@ -1,10 +1,6 @@
 package com.decisionexecution.app.data.repository
 
-import android.content.Context
-import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.preferencesDataStoreFile
 import com.decisionexecution.app.domain.model.FocusSessionData
 import com.decisionexecution.app.domain.model.ThemeMode
 import com.decisionexecution.app.domain.model.UserPreferences
@@ -13,13 +9,9 @@ import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.arbitrary.*
 import io.kotest.property.checkAll
-import io.mockk.every
-import io.mockk.mockk
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import org.junit.Rule
-import org.junit.rules.TemporaryFolder
 import java.io.File
 
 /**
@@ -38,7 +30,7 @@ class PreferencesRepositoryPropertyTest : StringSpec({
         val breakDurationArb = Arb.int(1..30)
         val themeModeArb = Arb.enum<ThemeMode>()
         
-        checkAll(focusDurationArb, breakDurationArb, themeModeArb, 100) { focusDuration, breakDuration, themeMode ->
+        checkAll(100, focusDurationArb, breakDurationArb, themeModeArb) { focusDuration, breakDuration, themeMode ->
             // Create a test DataStore with a unique file for each test iteration
             val testDispatcher = UnconfinedTestDispatcher()
             val testScope = TestScope(testDispatcher)
@@ -50,11 +42,8 @@ class PreferencesRepositoryPropertyTest : StringSpec({
                     produceFile = { File(tempDir, "test_preferences_${System.nanoTime()}.preferences_pb") }
                 )
                 
-                val mockContext = mockk<Context>(relaxed = true)
-                every { mockContext.applicationContext } returns mockContext
-                
                 // Create repository with test DataStore
-                val repository = TestPreferencesRepositoryImpl(testDataStore)
+                val repository = PreferencesRepositoryImpl(testDataStore)
                 
                 // Create preferences to save
                 val originalPreferences = UserPreferences(
@@ -94,14 +83,14 @@ class PreferencesRepositoryPropertyTest : StringSpec({
         val pausedAtSecondsArb = Arb.int(0..5400).orNull()
         
         checkAll(
+            100,
             taskIdArb,
             taskTitleArb,
             timestampArb,
             focusDurationSecondsArb,
             breakDurationSecondsArb,
             isPausedArb,
-            pausedAtSecondsArb,
-            100
+            pausedAtSecondsArb
         ) { taskId, taskTitle, timestamp, focusDuration, breakDuration, isPaused, pausedAt ->
             val testDispatcher = UnconfinedTestDispatcher()
             val testScope = TestScope(testDispatcher)
@@ -113,7 +102,7 @@ class PreferencesRepositoryPropertyTest : StringSpec({
                     produceFile = { File(tempDir, "test_session_${System.nanoTime()}.preferences_pb") }
                 )
                 
-                val repository = TestPreferencesRepositoryImpl(testDataStore)
+                val repository = PreferencesRepositoryImpl(testDataStore)
                 
                 // Create session data to save
                 val originalSessionData = FocusSessionData(
@@ -155,7 +144,7 @@ class PreferencesRepositoryPropertyTest : StringSpec({
                 produceFile = { File(tempDir, "test_empty_session.preferences_pb") }
             )
             
-            val repository = TestPreferencesRepositoryImpl(testDataStore)
+            val repository = PreferencesRepositoryImpl(testDataStore)
             
             // Retrieve session data without saving anything
             val retrievedSessionData = repository.getFocusSession()
@@ -167,72 +156,3 @@ class PreferencesRepositoryPropertyTest : StringSpec({
         }
     }
 })
-
-/**
- * Test implementation that accepts a DataStore directly for testing.
- */
-private class TestPreferencesRepositoryImpl(
-    private val dataStore: DataStore<Preferences>
-) : PreferencesRepositoryImpl(mockk(relaxed = true)) {
-    
-    private object PreferencesKeys {
-        val FOCUS_DURATION = androidx.datastore.preferences.core.intPreferencesKey("focus_duration_minutes")
-        val BREAK_DURATION = androidx.datastore.preferences.core.intPreferencesKey("break_duration_minutes")
-        val THEME_MODE = androidx.datastore.preferences.core.stringPreferencesKey("theme_mode")
-        
-        val SESSION_TASK_ID = androidx.datastore.preferences.core.stringPreferencesKey("session_task_id")
-        val SESSION_TASK_TITLE = androidx.datastore.preferences.core.stringPreferencesKey("session_task_title")
-        val SESSION_START_TIMESTAMP = androidx.datastore.preferences.core.longPreferencesKey("session_start_timestamp")
-        val SESSION_FOCUS_DURATION_SECONDS = androidx.datastore.preferences.core.intPreferencesKey("session_focus_duration_seconds")
-        val SESSION_BREAK_DURATION_SECONDS = androidx.datastore.preferences.core.intPreferencesKey("session_break_duration_seconds")
-        val SESSION_IS_PAUSED = androidx.datastore.preferences.core.booleanPreferencesKey("session_is_paused")
-        val SESSION_PAUSED_AT_SECONDS = androidx.datastore.preferences.core.intPreferencesKey("session_paused_at_seconds")
-    }
-    
-    override fun getPreferences() = dataStore.data.map { preferences ->
-        UserPreferences(
-            focusDurationMinutes = preferences[PreferencesKeys.FOCUS_DURATION] ?: 25,
-            breakDurationMinutes = preferences[PreferencesKeys.BREAK_DURATION] ?: 5,
-            themeMode = preferences[PreferencesKeys.THEME_MODE]?.let { 
-                ThemeMode.valueOf(it) 
-            } ?: ThemeMode.SYSTEM
-        )
-    }
-    
-    override suspend fun savePreferences(preferences: UserPreferences) {
-        dataStore.edit { prefs ->
-            prefs[PreferencesKeys.FOCUS_DURATION] = preferences.focusDurationMinutes
-            prefs[PreferencesKeys.BREAK_DURATION] = preferences.breakDurationMinutes
-            prefs[PreferencesKeys.THEME_MODE] = preferences.themeMode.name
-        }
-    }
-    
-    override suspend fun saveFocusSession(sessionData: FocusSessionData) {
-        dataStore.edit { prefs ->
-            sessionData.taskId?.let { prefs[PreferencesKeys.SESSION_TASK_ID] = it }
-            sessionData.taskTitle?.let { prefs[PreferencesKeys.SESSION_TASK_TITLE] = it }
-            sessionData.startTimestamp?.let { prefs[PreferencesKeys.SESSION_START_TIMESTAMP] = it }
-            sessionData.focusDurationSeconds?.let { prefs[PreferencesKeys.SESSION_FOCUS_DURATION_SECONDS] = it }
-            sessionData.breakDurationSeconds?.let { prefs[PreferencesKeys.SESSION_BREAK_DURATION_SECONDS] = it }
-            prefs[PreferencesKeys.SESSION_IS_PAUSED] = sessionData.isPaused
-            sessionData.pausedAtSeconds?.let { prefs[PreferencesKeys.SESSION_PAUSED_AT_SECONDS] = it }
-        }
-    }
-    
-    override suspend fun getFocusSession(): FocusSessionData? {
-        val preferences = dataStore.data.first()
-        val taskId = preferences[PreferencesKeys.SESSION_TASK_ID]
-        
-        if (taskId == null) return null
-        
-        return FocusSessionData(
-            taskId = taskId,
-            taskTitle = preferences[PreferencesKeys.SESSION_TASK_TITLE],
-            startTimestamp = preferences[PreferencesKeys.SESSION_START_TIMESTAMP],
-            focusDurationSeconds = preferences[PreferencesKeys.SESSION_FOCUS_DURATION_SECONDS],
-            breakDurationSeconds = preferences[PreferencesKeys.SESSION_BREAK_DURATION_SECONDS],
-            isPaused = preferences[PreferencesKeys.SESSION_IS_PAUSED] ?: false,
-            pausedAtSeconds = preferences[PreferencesKeys.SESSION_PAUSED_AT_SECONDS]
-        )
-    }
-}

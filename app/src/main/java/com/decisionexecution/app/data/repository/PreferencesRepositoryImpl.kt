@@ -1,6 +1,5 @@
 package com.decisionexecution.app.data.repository
 
-import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -8,7 +7,6 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
 import com.decisionexecution.app.domain.repository.PreferencesRepository
 import com.decisionexecution.app.domain.model.UserPreferences
 import com.decisionexecution.app.domain.model.FocusSessionData
@@ -18,10 +16,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
-private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "user_preferences")
-
 class PreferencesRepositoryImpl @Inject constructor(
-    private val context: Context
+    private val dataStore: DataStore<Preferences>
 ) : PreferencesRepository {
     
     private object PreferencesKeys {
@@ -40,7 +36,7 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
     
     override fun getPreferences(): Flow<UserPreferences> {
-        return context.dataStore.data.map { preferences ->
+        return dataStore.data.map { preferences ->
             UserPreferences(
                 focusDurationMinutes = preferences[PreferencesKeys.FOCUS_DURATION] ?: 25,
                 breakDurationMinutes = preferences[PreferencesKeys.BREAK_DURATION] ?: 5,
@@ -52,7 +48,7 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
     
     override suspend fun savePreferences(preferences: UserPreferences) {
-        context.dataStore.edit { prefs ->
+        dataStore.edit { prefs ->
             prefs[PreferencesKeys.FOCUS_DURATION] = preferences.focusDurationMinutes
             prefs[PreferencesKeys.BREAK_DURATION] = preferences.breakDurationMinutes
             prefs[PreferencesKeys.THEME_MODE] = preferences.themeMode.name
@@ -60,19 +56,19 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
     
     override suspend fun updateFocusDuration(minutes: Int) {
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[PreferencesKeys.FOCUS_DURATION] = minutes
         }
     }
     
     override suspend fun updateBreakDuration(minutes: Int) {
-        context.dataStore.edit { preferences ->
+        dataStore.edit { preferences ->
             preferences[PreferencesKeys.BREAK_DURATION] = minutes
         }
     }
     
     override suspend fun saveFocusSession(sessionData: FocusSessionData) {
-        context.dataStore.edit { prefs ->
+        dataStore.edit { prefs ->
             sessionData.taskId?.let { prefs[PreferencesKeys.SESSION_TASK_ID] = it }
             sessionData.taskTitle?.let { prefs[PreferencesKeys.SESSION_TASK_TITLE] = it }
             sessionData.startTimestamp?.let { prefs[PreferencesKeys.SESSION_START_TIMESTAMP] = it }
@@ -84,7 +80,7 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
     
     override suspend fun getFocusSession(): FocusSessionData? {
-        val preferences = context.dataStore.data.first()
+        val preferences = dataStore.data.first()
         val taskId = preferences[PreferencesKeys.SESSION_TASK_ID]
         
         // If no task ID, no session exists

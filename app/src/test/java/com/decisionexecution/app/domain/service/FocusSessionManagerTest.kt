@@ -50,9 +50,7 @@ class FocusSessionManagerTest : StringSpec({
         manager.startSession(task, focusDuration = 25, breakDuration = 5)
         
         // Simulate 10 minutes elapsed (600 seconds)
-        val focusingState = manager.sessionState.value as FocusSessionState.Focusing
-        val updatedState = focusingState.copy(elapsedSeconds = 600)
-        (manager.sessionState as MutableStateFlow).value = updatedState
+        manager.updateElapsedSeconds(600)
         
         // Pause the session
         manager.pauseSession()
@@ -246,9 +244,7 @@ class FocusSessionManagerTest : StringSpec({
         manager.startSession(task, focusDuration = 25, breakDuration = 5)
         
         // Simulate elapsed time
-        val focusingState = manager.sessionState.value as FocusSessionState.Focusing
-        val updatedState = focusingState.copy(elapsedSeconds = 300)
-        (manager.sessionState as MutableStateFlow).value = updatedState
+        manager.updateElapsedSeconds(300)
         
         manager.pauseSession()
         

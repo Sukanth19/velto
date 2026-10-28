@@ -63,7 +63,7 @@ class TaskPropertyTest : StringSpec({
         // Feature: decision-driven-execution-app, Property 1
         // Validates: Requirements 1.2
         
-        checkAll(Arb.int(1..5), Arb.int(1..5), 100) { urgency, importance ->
+        checkAll(100, Arb.int(1..5), Arb.int(1..5)) { urgency, importance ->
             val task = Task(
                 id = UUID.randomUUID().toString(),
                 title = "Test Task",
@@ -90,7 +90,7 @@ class TaskPropertyTest : StringSpec({
             Arb.int(6..Int.MAX_VALUE)
         )
         
-        checkAll(invalidUrgencyValues, Arb.int(1..5), 100) { urgency, importance ->
+        checkAll(100, invalidUrgencyValues, Arb.int(1..5)) { urgency, importance ->
             shouldThrow<IllegalArgumentException> {
                 Task(
                     id = UUID.randomUUID().toString(),
@@ -116,7 +116,7 @@ class TaskPropertyTest : StringSpec({
             Arb.int(6..Int.MAX_VALUE)
         )
         
-        checkAll(Arb.int(1..5), invalidImportanceValues, 100) { urgency, importance ->
+        checkAll(100, Arb.int(1..5), invalidImportanceValues) { urgency, importance ->
             shouldThrow<IllegalArgumentException> {
                 Task(
                     id = UUID.randomUUID().toString(),
