@@ -238,8 +238,8 @@ This implementation plan breaks down the Decision-Driven Execution App into incr
     - Register in AndroidManifest.xml
     - _Requirements: All (enables Hilt)_
 
-- [ ] 13. Implement presentation layer - ViewModels
-  - [ ] 13.1 Create HomeViewModel
+- [x] 13. Implement presentation layer - ViewModels
+  - [x] 13.1 Create HomeViewModel
     - Define HomeUiState data class (bestTask, completedTasksToday, totalFocusTimeToday, consistencyScore, isLoading, error)
     - Inject GetBestTaskUseCase, JustStartUseCase, GetProductivityMetricsUseCase
     - Expose uiState as StateFlow
@@ -247,39 +247,39 @@ This implementation plan breaks down the Decision-Driven Execution App into incr
     - Implement onJustStartClicked() triggering JustStartUseCase
     - _Requirements: 2.2, 3.1, 3.4, 7.2, 7.3, 7.4, 12.4_
 
-  - [ ] 13.2 Write unit tests for HomeViewModel
+  - [x] 13.2 Write unit tests for HomeViewModel
     - Test initial state loading
     - Test Just Start with no tasks shows error
     - Test Just Start with tasks triggers session
     - _Requirements: 3.4, 12.4_
 
-  - [ ] 13.3 Create TasksViewModel
+  - [x] 13.3 Create TasksViewModel
     - Define TasksUiState data class (tasksByCategory, selectedCategory, isLoading, error)
     - Inject GetAllTasksUseCase, CompleteTaskUseCase, DeleteTaskUseCase, ScoringEngine
     - Implement grouping tasks by category and sorting by score within category
     - Implement onTaskComplete(taskId), onTaskDelete(taskId), onCategoryFilter(category)
     - _Requirements: 9.1, 9.2, 9.3, 9.4, 9.6, 9.7_
 
-  - [ ] 13.4 Write property tests for task grouping and sorting
+  - [x] 13.4 Write property tests for task grouping and sorting
     - **Property 25: Task Grouping by Category**
     - **Property 26: Task Sorting by Score Within Category**
     - **Property 27: Category Filtering**
     - **Property 28: Active Task Count**
     - **Validates: Requirements 9.1, 9.2, 9.6, 9.7**
 
-  - [ ] 13.5 Create FocusViewModel
+  - [x] 13.5 Create FocusViewModel
     - Define FocusUiState based on FocusSessionState
     - Inject FocusSessionManager, PauseFocusSessionUseCase, ResumeFocusSessionUseCase, EndFocusSessionUseCase
     - Expose sessionState from FocusSessionManager
     - Implement onPause(), onResume(), onEnd()
     - _Requirements: 4.6, 4.7, 4.8, 5.1, 5.2, 5.3, 5.4, 5.6_
 
-  - [ ] 13.6 Write property tests for FocusViewModel
+  - [x] 13.6 Write property tests for FocusViewModel
     - **Property 14: Focus UI Task Display**
     - **Property 15: Focus vs Break State Distinction**
     - **Validates: Requirements 5.2, 5.6**
 
-  - [ ] 13.7 Create SettingsViewModel
+  - [x] 13.7 Create SettingsViewModel
     - Define SettingsUiState data class (focusDuration, breakDuration, themeMode)
     - Inject PreferencesRepository
     - Implement onFocusDurationChanged(minutes) with validation (5-90)
@@ -287,7 +287,7 @@ This implementation plan breaks down the Decision-Driven Execution App into incr
     - Implement onThemeModeChanged(mode)
     - _Requirements: 11.1, 11.2, 11.3, 11.4_
 
-  - [ ] 13.8 Write property tests for preferences validation
+  - [x] 13.8 Write property tests for preferences validation
     - **Property 31: Focus Duration Validation**
     - **Property 32: Break Duration Validation**
     - **Validates: Requirements 11.1, 11.2**

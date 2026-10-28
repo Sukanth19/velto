@@ -1,0 +1,91 @@
+package com.decisionexecution.app.presentation.settings
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.decisionexecution.app.domain.model.ThemeMode
+import com.decisionexecution.app.domain.model.UserPreferences
+import com.decisionexecution.app.domain.repository.PreferencesRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+data class SettingsUiState(
+    val focusDuration: Int = 25,
+    val breakDuration: Int = 5,
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val error: String? = null
+)
+
+val FOCUS_DURATION_RANGE = 5..90
+val BREAK_DURATION_RANGE = 1..30
+
+fun isValidFocusDuration(minutes: Int): Boolean = minutes in FOCUS_DURATION_RANGE
+
+fun isValidBreakDuration(minutes: Int): Boolean = minutes in BREAK_DURATION_RANGE
+
+/**
+ * ViewModel for the Settings screen. Rejects out-of-range durations instead of saving them.
+ *
+ * Requirements: 11.1, 11.2, 11.3, 11.4
+ */
+@HiltViewModel
+class SettingsViewModel @Inject constructor(
+    private val preferencesRepository: PreferencesRepository
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow(SettingsUiState())
+    val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            preferencesRepository.getPreferences().collect { prefs ->
+                _uiState.update {
+                    it.copy(
+                        focusDuration = prefs.focusDurationMinutes,
+                        breakDuration = prefs.breakDurationMinutes,
+                        themeMode = prefs.themeMode
+                    )
+                }
+            }
+        }
+    }
+
+    fun onFocusDurationChanged(minutes: Int) {
+        if (!isValidFocusDuration(minutes)) {
+            _uiState.update {
+                it.copy(error = "Focus duration must be ${FOCUS_DURATION_RANGE.first}-${FOCUS_DURATION_RANGE.last} minutes")
+            }
+            return
+        }
+        _uiState.update { it.copy(error = null) }
+        viewModelScope.launch { preferencesRepository.updateFocusDuration(minutes) }
+    }
+
+    fun onBreakDurationChanged(minutes: Int) {
+        if (!isValidBreakDuration(minutes)) {
+            _uiState.update {
+                it.copy(error = "Break duration must be ${BREAK_DURATION_RANGE.first}-${BREAK_DURATION_RANGE.last} minutes")
+            }
+            return
+        }
+        _uiState.update { it.copy(error = null) }
+        viewModelScope.launch { preferencesRepository.updateBreakDuration(minutes) }
+    }
+
+    fun onThemeModeChanged(mode: ThemeMode) {
+        viewModelScope.launch {
+            val current = _uiState.value
+            preferencesRepository.savePreferences(
+                UserPreferences(
+                    focusDurationMinutes = current.focusDuration,
+                    breakDurationMinutes = current.breakDuration,
+                    themeMode = mode
+                )
+            )
+        }
+    }
+}

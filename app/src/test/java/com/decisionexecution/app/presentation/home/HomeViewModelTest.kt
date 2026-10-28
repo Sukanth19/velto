@@ -1,0 +1,114 @@
+package com.decisionexecution.app.presentation.home
+
+import com.decisionexecution.app.domain.model.*
+import com.decisionexecution.app.domain.usecase.GetBestTaskUseCase
+import com.decisionexecution.app.domain.usecase.GetProductivityMetricsUseCase
+import com.decisionexecution.app.domain.usecase.JustStartUseCase
+import com.decisionexecution.app.domain.usecase.ProductivityMetrics
+import io.kotest.core.spec.style.StringSpec
+import io.kotest.matchers.shouldBe
+import io.mockk.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
+
+/**
+ * Unit tests for HomeViewModel.
+ * Feature: decision-driven-execution-app
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
+class HomeViewModelTest : StringSpec({
+
+    beforeTest { Dispatchers.setMain(UnconfinedTestDispatcher()) }
+    afterTest { Dispatchers.resetMain() }
+
+    "should load best task and today's metrics on init" {
+        // Requirements: 2.2, 7.2, 7.3, 7.4
+        val task = createTestTask()
+        val viewModel = createViewModel(
+            bestTask = task,
+            metrics = ProductivityMetrics(completedTasks = 3, totalFocusTime = 75, consistencyScore = 42.5)
+        )
+
+        val state = viewModel.uiState.value
+        state.bestTask shouldBe task
+        state.completedTasksToday shouldBe 3
+        state.totalFocusTimeToday shouldBe 75
+        state.consistencyScore shouldBe 42.5
+        state.isLoading shouldBe false
+        state.error shouldBe null
+    }
+
+    "Just Start with no tasks should show error" {
+        // Requirements: 3.4, 12.4
+        val justStart = mockk<JustStartUseCase>()
+        coEvery { justStart() } returns JustStartResult.NoTasksAvailable
+        val viewModel = createViewModel(bestTask = null, justStartUseCase = justStart)
+
+        viewModel.onJustStartClicked()
+
+        viewModel.uiState.value.error shouldBe HomeViewModel.NO_TASKS_ERROR
+    }
+
+    "Just Start with tasks should trigger session without error" {
+        // Requirements: 3.1
+        val task = createTestTask()
+        val justStart = mockk<JustStartUseCase>()
+        coEvery { justStart() } returns JustStartResult.Success(task)
+        val viewModel = createViewModel(bestTask = task, justStartUseCase = justStart)
+
+        viewModel.onJustStartClicked()
+
+        coVerify(exactly = 1) { justStart() }
+        viewModel.uiState.value.error shouldBe null
+    }
+
+    "Just Start failure should surface error instead of crashing" {
+        // Requirements: 12.4
+        val justStart = mockk<JustStartUseCase>()
+        coEvery { justStart() } throws IllegalStateException("database unavailable")
+        val viewModel = createViewModel(bestTask = createTestTask(), justStartUseCase = justStart)
+
+        viewModel.onJustStartClicked()
+
+        viewModel.uiState.value.error shouldBe "database unavailable"
+    }
+
+    "onErrorShown should clear error" {
+        val justStart = mockk<JustStartUseCase>()
+        coEvery { justStart() } returns JustStartResult.NoTasksAvailable
+        val viewModel = createViewModel(bestTask = null, justStartUseCase = justStart)
+
+        viewModel.onJustStartClicked()
+        viewModel.onErrorShown()
+
+        viewModel.uiState.value.error shouldBe null
+    }
+})
+
+private fun createViewModel(
+    bestTask: Task?,
+    metrics: ProductivityMetrics = ProductivityMetrics(0, 0, 0.0),
+    justStartUseCase: JustStartUseCase = mockk(relaxed = true)
+): HomeViewModel {
+    val getBestTask = mockk<GetBestTaskUseCase>()
+    every { getBestTask() } returns flowOf(bestTask)
+    val getMetrics = mockk<GetProductivityMetricsUseCase>()
+    every { getMetrics(any(), any(), any()) } returns flowOf(metrics)
+    return HomeViewModel(getBestTask, justStartUseCase, getMetrics)
+}
+
+private fun createTestTask(): Task = Task(
+    id = "task-1",
+    title = "Write report",
+    description = null,
+    category = TaskCategory.WORK,
+    urgency = 4,
+    importance = 5,
+    effort = TaskEffort.MEDIUM,
+    energyTag = EnergyTag.DEEP_WORK,
+    createdAt = 1_700_000_000_000L
+)
