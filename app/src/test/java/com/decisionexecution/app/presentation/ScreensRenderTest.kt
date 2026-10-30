@@ -1,6 +1,7 @@
 package com.decisionexecution.app.presentation
 
 import com.decisionexecution.app.domain.service.EisenhowerClassifier
+import com.decisionexecution.app.testutil.taskRepositoryWithSteps
 import com.decisionexecution.app.testutil.InMemoryPreferencesRepository
 import com.decisionexecution.app.testutil.emptyInsights
 import com.decisionexecution.app.testutil.InMemoryHabitRepository
@@ -102,8 +103,10 @@ class ScreensRenderTest {
     private val tasks = listOf(
         task("1", "Finish quarterly report", TaskCategory.WORK, 5, 5, TaskEffort.HIGH, EnergyTag.DEEP_WORK),
         task("2", "Reply to client email", TaskCategory.WORK, 4, 2, TaskEffort.LOW, EnergyTag.LOW),
-        task("3", "Study for calculus exam", TaskCategory.SCHOOL, 4, 5, TaskEffort.HIGH, EnergyTag.DEEP_WORK),
+        task("3", "Study for calculus exam", TaskCategory.SCHOOL, 4, 5, TaskEffort.HIGH, EnergyTag.DEEP_WORK)
+            .copy(dueDate = LocalDate.now().plusDays(1)),
         task("4", "Buy groceries", TaskCategory.PERSONAL, 2, 3, TaskEffort.LOW, null)
+            .copy(dueDate = LocalDate.now().plusDays(4), recurrence = Recurrence.WEEKLY)
     )
 
     @Test
@@ -194,7 +197,12 @@ class ScreensRenderTest {
             PauseFocusSessionUseCase(manager),
             ResumeFocusSessionUseCase(manager),
             EndFocusSessionUseCase(manager),
-            ExtendFocusSessionUseCase(manager)
+            ExtendFocusSessionUseCase(manager),
+            taskRepositoryWithSteps(
+                Subtask("s-1", tasks[0].id, "Pull the Q3 numbers", true, 0),
+                Subtask("s-2", tasks[0].id, "Draft the summary", false, 1),
+                Subtask("s-3", tasks[0].id, "Send it to the team", false, 2)
+            )
         )
 
         render("focus") { FocusScreen({}, viewModel) }
@@ -218,7 +226,7 @@ class ScreensRenderTest {
     @Test
     fun addTaskScreenShowsTitleError() {
         val getTask = mockk<GetTaskByIdUseCase>()
-        val viewModel = AddEditTaskViewModel(SavedStateHandle(), getTask, mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true))
+        val viewModel = AddEditTaskViewModel(SavedStateHandle(), getTask, mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true), taskRepositoryWithSteps())
 
         render("add_task") { AddEditTaskScreen({}, viewModel) }
         composeRule.onNodeWithText("Save").performClick()
@@ -240,7 +248,8 @@ class ScreensRenderTest {
     @Test
     fun tappingTheCircleCompletesAndOffersUndo() {
         val complete = mockk<CompleteTaskUseCase>()
-        coEvery { complete(any(), any()) } returns 123L
+        val receipt = CompletionReceipt("3", 123L)
+        coEvery { complete(any(), any(), any()) } returns receipt
         val undo = mockk<UndoCompleteTaskUseCase>(relaxed = true)
         val getAll = mockk<GetAllTasksUseCase>()
         every { getAll() } returns flowOf(tasks)
@@ -253,13 +262,13 @@ class ScreensRenderTest {
         )
         circles.onFirst().performClick()
         composeRule.waitForIdle()
-        coVerify { complete("3", any()) }
+        coVerify { complete("3", any(), any()) }
         composeRule.onNodeWithText("Undo").assertIsDisplayed()
         save("tasks_undo_snackbar")
 
         composeRule.onNodeWithText("Undo").performClick()
         composeRule.waitForIdle()
-        coVerify { undo("3", 123L) }
+        coVerify { undo(receipt) }
     }
 
     @Test

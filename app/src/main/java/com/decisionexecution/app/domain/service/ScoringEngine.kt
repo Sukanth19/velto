@@ -3,8 +3,12 @@ package com.decisionexecution.app.domain.service
 import com.decisionexecution.app.domain.model.Task
 import com.decisionexecution.app.domain.model.TaskEffort
 import com.decisionexecution.app.domain.model.EnergyTag
+import java.time.LocalDate
 
-class ScoringEngine {
+/**
+ * Priority score for a task. Urgency is taken as of today, so due dates raise it automatically.
+ */
+class ScoringEngine(private val today: () -> LocalDate = LocalDate::now) {
     
     private companion object {
         const val URGENCY_WEIGHT = 2.0
@@ -13,7 +17,7 @@ class ScoringEngine {
     }
     
     fun calculateScore(task: Task): Double {
-        val urgencyScore = URGENCY_WEIGHT * task.urgency
+        val urgencyScore = URGENCY_WEIGHT * effectiveUrgency(task, today())
         val importanceScore = IMPORTANCE_WEIGHT * task.importance
         val effortValue = when (task.effort) {
             TaskEffort.LOW -> 1

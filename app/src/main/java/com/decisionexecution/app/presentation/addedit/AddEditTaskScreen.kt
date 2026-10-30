@@ -8,6 +8,20 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.unit.dp
+import com.decisionexecution.app.domain.model.Recurrence
+import com.decisionexecution.app.domain.model.Subtask
+import com.decisionexecution.app.domain.service.dueLabel
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.decisionexecution.app.domain.model.EnergyTag
@@ -90,6 +104,23 @@ fun AddEditTaskScreen(
                 viewModel::onEffortChange
             )
 
+            DueDatePicker(uiState.dueDate, viewModel::onDueDateChange)
+            ChoiceGroup(
+                "Repeat",
+                listOf<Recurrence?>(null) + Recurrence.entries,
+                uiState.recurrence,
+                { it?.label ?: "Never" },
+                viewModel::onRecurrenceChange
+            )
+
+            StepsEditor(
+                steps = uiState.steps,
+                draft = uiState.stepDraft,
+                onDraftChange = viewModel::onStepDraftChange,
+                onAdd = viewModel::onAddStep,
+                onRemove = viewModel::onRemoveStep
+            )
+
             ChoiceGroup(
                 "Energy",
                 listOf<EnergyTag?>(null) + EnergyTag.entries,
@@ -98,6 +129,98 @@ fun AddEditTaskScreen(
                 viewModel::onEnergyTagChange
             )
         }
+    }
+}
+
+/** Quick picks for the common cases, and a calendar for anything else */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun DueDatePicker(due: LocalDate?, onChange: (LocalDate?) -> Unit) {
+    val today = remember { LocalDate.now() }
+    var showCalendar by remember { mutableStateOf(false) }
+    val quick = listOf<Pair<String, LocalDate?>>(
+        "None" to null,
+        "Today" to today,
+        "Tomorrow" to today.plusDays(1),
+        "Next week" to today.plusWeeks(1)
+    )
+    val custom = due != null && quick.none { it.second == due }
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+        Text("Due", style = MaterialTheme.typography.labelLarge)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            quick.forEach { (label, date) ->
+                FilterChip(selected = due == date, onClick = { onChange(date) }, label = { Text(label) })
+            }
+            FilterChip(
+                selected = custom,
+                onClick = { showCalendar = true },
+                leadingIcon = { Icon(Icons.Rounded.CalendarMonth, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                label = { Text(if (custom) dueLabel(due!!, today) else "Pick a date") }
+            )
+        }
+    }
+    if (showCalendar) {
+        val zone = ZoneOffset.UTC
+        val state = rememberDatePickerState(
+            initialSelectedDateMillis = (due ?: today).atStartOfDay(zone).toInstant().toEpochMilli(),
+            selectableDates = object : SelectableDates {
+                // Due dates in the past aren't useful to set
+                override fun isSelectableDate(utcTimeMillis: Long) =
+                    !Instant.ofEpochMilli(utcTimeMillis).atZone(zone).toLocalDate().isBefore(today)
+            }
+        )
+        DatePickerDialog(
+            onDismissRequest = { showCalendar = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    state.selectedDateMillis?.let { onChange(Instant.ofEpochMilli(it).atZone(zone).toLocalDate()) }
+                    showCalendar = false
+                }) { Text("Set") }
+            },
+            dismissButton = { TextButton(onClick = { showCalendar = false }) { Text("Cancel") } }
+        ) { DatePicker(state) }
+    }
+}
+
+/** Break the task into steps; Focus shows the next one while you work */
+@Composable
+private fun StepsEditor(
+    steps: List<Subtask>,
+    draft: String,
+    onDraftChange: (String) -> Unit,
+    onAdd: () -> Unit,
+    onRemove: (String) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+        Text("Steps", style = MaterialTheme.typography.labelLarge)
+        steps.forEachIndexed { index, step ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "${index + 1}.",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.width(28.dp)
+                )
+                Text(step.title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                IconButton(onClick = { onRemove(step.id) }) {
+                    Icon(Icons.Default.Close, contentDescription = "Remove step ${step.title}")
+                }
+            }
+        }
+        OutlinedTextField(
+            value = draft,
+            onValueChange = onDraftChange,
+            placeholder = { Text(if (steps.isEmpty()) "First step, e.g. open the doc" else "Next step") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { onAdd() }),
+            trailingIcon = {
+                IconButton(onClick = onAdd, enabled = draft.isNotBlank()) {
+                    Icon(Icons.Rounded.Add, contentDescription = "Add step")
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 

@@ -7,6 +7,7 @@ import com.decisionexecution.app.data.local.dao.HabitDao
 import com.decisionexecution.app.data.local.dao.InboxDao
 import com.decisionexecution.app.data.local.dao.MoodDao
 import com.decisionexecution.app.data.local.dao.StatsDao
+import com.decisionexecution.app.data.local.dao.SubtaskDao
 import com.decisionexecution.app.data.local.dao.TaskDao
 import com.decisionexecution.app.data.local.dao.FocusSessionDao
 import com.decisionexecution.app.data.local.dao.TaskCompletionDao
@@ -17,6 +18,7 @@ import com.decisionexecution.app.data.local.entity.HabitCheckInEntity
 import com.decisionexecution.app.data.local.entity.HabitEntity
 import com.decisionexecution.app.data.local.entity.InboxItemEntity
 import com.decisionexecution.app.data.local.entity.MoodEntryEntity
+import com.decisionexecution.app.data.local.entity.SubtaskEntity
 
 @Database(
     entities = [
@@ -26,9 +28,10 @@ import com.decisionexecution.app.data.local.entity.MoodEntryEntity
         HabitEntity::class,
         HabitCheckInEntity::class,
         InboxItemEntity::class,
-        MoodEntryEntity::class
+        MoodEntryEntity::class,
+        SubtaskEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -40,4 +43,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun moodDao(): MoodDao
     abstract fun statsDao(): StatsDao
     abstract fun backupDao(): BackupDao
+    abstract fun subtaskDao(): SubtaskDao
 }

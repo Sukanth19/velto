@@ -1,6 +1,7 @@
 package com.decisionexecution.app.presentation.focus
 
 import com.decisionexecution.app.testutil.PROPERTY_ITERATIONS
+import com.decisionexecution.app.testutil.taskRepositoryWithSteps
 import com.decisionexecution.app.domain.model.*
 import com.decisionexecution.app.domain.repository.PreferencesRepository
 import com.decisionexecution.app.domain.service.FocusSessionManager
@@ -111,7 +112,8 @@ private fun createViewModel(manager: FocusSessionManager) = FocusViewModel(
     PauseFocusSessionUseCase(manager),
     ResumeFocusSessionUseCase(manager),
     EndFocusSessionUseCase(manager),
-    ExtendFocusSessionUseCase(manager)
+    ExtendFocusSessionUseCase(manager),
+    taskRepositoryWithSteps()
 )
 
 private fun taskArb(): Arb<Task> = arbitrary {

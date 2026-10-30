@@ -3,7 +3,9 @@ package com.decisionexecution.app.presentation.taskdetail
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.decisionexecution.app.domain.model.Subtask
 import com.decisionexecution.app.domain.model.Task
+import com.decisionexecution.app.domain.repository.TaskRepository
 import com.decisionexecution.app.domain.usecase.CompleteTaskUseCase
 import com.decisionexecution.app.domain.usecase.DeleteTaskUseCase
 import com.decisionexecution.app.domain.usecase.GetTaskByIdUseCase
@@ -19,20 +21,23 @@ import javax.inject.Inject
 
 data class TaskDetailUiState(
     val task: Task? = null,
+    val steps: List<Subtask> = emptyList(),
     val isLoading: Boolean = true,
     val isFinished: Boolean = false,
     val error: String? = null
 )
 
 /**
- * ViewModel for the task detail screen. `isFinished` tells the UI to navigate back.
+ * ViewModel for the task detail screen: the task, its steps to tick off, complete and delete.
+ * `isFinished` tells the UI to navigate back.
  */
 @HiltViewModel
 class TaskDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     getTaskByIdUseCase: GetTaskByIdUseCase,
     private val completeTaskUseCase: CompleteTaskUseCase,
-    private val deleteTaskUseCase: DeleteTaskUseCase
+    private val deleteTaskUseCase: DeleteTaskUseCase,
+    private val taskRepository: TaskRepository
 ) : ViewModel() {
 
     private val taskId: String = checkNotNull(savedStateHandle[TASK_ID_ARG])
@@ -46,9 +51,16 @@ class TaskDetailViewModel @Inject constructor(
                 .catch { e -> _uiState.update { it.copy(isLoading = false, error = e.toUserMessage("load the task")) } }
                 .collect { task -> _uiState.update { it.copy(task = task, isLoading = false) } }
         }
+        viewModelScope.launch {
+            taskRepository.getSubtasks(taskId).catch { }.collect { steps -> _uiState.update { it.copy(steps = steps) } }
+        }
     }
 
     fun onComplete() = finishWith("complete the task") { completeTaskUseCase(taskId) }
+
+    fun onToggleStep(subtaskId: String, done: Boolean) {
+        viewModelScope.launch { runCatching { taskRepository.setSubtaskDone(subtaskId, done) } }
+    }
 
     fun onDelete() = finishWith("delete the task") { deleteTaskUseCase(taskId) }
 

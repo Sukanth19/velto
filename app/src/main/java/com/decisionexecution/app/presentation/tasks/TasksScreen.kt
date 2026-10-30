@@ -83,7 +83,12 @@ fun TasksScreen(
     }
     LaunchedEffect(uiState.undo) {
         uiState.undo?.let { action ->
-            val verb = if (action is UndoAction.Completed) "Completed" else "Deleted"
+            val verb = when {
+                action is UndoAction.Deleted -> "Deleted"
+                // A repeating task isn't gone, it's moved on to its next date
+                action.task.recurrence != null -> "Done for now:"
+                else -> "Completed"
+            }
             val result = snackbarHostState.showSnackbar(
                 message = "$verb \"${action.task.title}\"",
                 actionLabel = "Undo",

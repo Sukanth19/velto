@@ -2,6 +2,7 @@ package com.decisionexecution.app.domain.service
 
 import com.decisionexecution.app.domain.model.EisenhowerQuadrant
 import com.decisionexecution.app.domain.model.Task
+import java.time.LocalDate
 
 /**
  * Domain service for classifying tasks into Eisenhower Matrix quadrants.
@@ -12,7 +13,7 @@ import com.decisionexecution.app.domain.model.Task
  * - URGENT_NOT_IMPORTANT: urgency >= 4 AND importance <= 3
  * - NEITHER: urgency <= 3 AND importance <= 3
  */
-class EisenhowerClassifier {
+class EisenhowerClassifier(private val today: () -> LocalDate = LocalDate::now) {
     
     /**
      * Classifies a single task into an Eisenhower quadrant based on its urgency and importance.
@@ -21,10 +22,12 @@ class EisenhowerClassifier {
      * @return The EisenhowerQuadrant the task belongs to
      */
     fun classify(task: Task): EisenhowerQuadrant {
+        // A close due date makes a task urgent, whatever urgency it was given
+        val urgency = effectiveUrgency(task, today())
         return when {
-            task.urgency >= 4 && task.importance >= 4 -> EisenhowerQuadrant.URGENT_IMPORTANT
-            task.urgency <= 3 && task.importance >= 4 -> EisenhowerQuadrant.NOT_URGENT_IMPORTANT
-            task.urgency >= 4 && task.importance <= 3 -> EisenhowerQuadrant.URGENT_NOT_IMPORTANT
+            urgency >= 4 && task.importance >= 4 -> EisenhowerQuadrant.URGENT_IMPORTANT
+            urgency <= 3 && task.importance >= 4 -> EisenhowerQuadrant.NOT_URGENT_IMPORTANT
+            urgency >= 4 && task.importance <= 3 -> EisenhowerQuadrant.URGENT_NOT_IMPORTANT
             else -> EisenhowerQuadrant.NEITHER
         }
     }

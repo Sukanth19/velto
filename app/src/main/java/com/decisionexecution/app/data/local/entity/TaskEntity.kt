@@ -16,5 +16,7 @@ data class TaskEntity(
     val energyTag: String?, // "LOW", "DEEP_WORK", or null
     val createdAt: Long,
     val isCompleted: Boolean = false,
-    val completedAt: Long? = null
+    val completedAt: Long? = null,
+    val dueDate: Long? = null,     // epoch day
+    val recurrence: String? = null // "DAILY", "WEEKDAYS", "WEEKLY", "MONTHLY", or null
 )

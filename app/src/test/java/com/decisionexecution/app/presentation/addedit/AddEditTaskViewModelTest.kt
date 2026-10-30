@@ -1,6 +1,7 @@
 package com.decisionexecution.app.presentation.addedit
 
 import com.decisionexecution.app.testutil.PROPERTY_ITERATIONS
+import com.decisionexecution.app.testutil.taskRepositoryWithSteps
 import androidx.lifecycle.SavedStateHandle
 import com.decisionexecution.app.domain.model.*
 import com.decisionexecution.app.domain.usecase.CreateTaskUseCase
@@ -116,5 +117,5 @@ private fun createViewModel(
     val getTask = mockk<GetTaskByIdUseCase>()
     every { getTask(any()) } returns flowOf(existing)
     val handle = SavedStateHandle(mapOf(AddEditTaskViewModel.TASK_ID_ARG to taskId))
-    return AddEditTaskViewModel(handle, getTask, create, update, mockk(relaxed = true))
+    return AddEditTaskViewModel(handle, getTask, create, update, mockk(relaxed = true), taskRepositoryWithSteps())
 }

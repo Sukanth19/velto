@@ -12,6 +12,7 @@ import com.decisionexecution.app.domain.usecase.CreateTaskUseCase
 import com.decisionexecution.app.domain.usecase.DeleteTaskUseCase
 import com.decisionexecution.app.domain.usecase.GetAllTasksUseCase
 import com.decisionexecution.app.domain.usecase.UndoCompleteTaskUseCase
+import com.decisionexecution.app.domain.usecase.CompletionReceipt
 import com.decisionexecution.app.presentation.common.toUserMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -44,7 +45,7 @@ enum class TasksViewMode { LIST, MATRIX }
 sealed class UndoAction {
     abstract val task: Task
 
-    data class Completed(override val task: Task, val completedAt: Long) : UndoAction()
+    data class Completed(override val task: Task, val receipt: CompletionReceipt) : UndoAction()
     data class Deleted(override val task: Task) : UndoAction()
 }
 
@@ -123,8 +124,8 @@ class TasksViewModel @Inject constructor(
         val task = allTasks.find { it.id == taskId }
         viewModelScope.launch {
             try {
-                val completedAt = completeTaskUseCase(taskId)
-                task?.let { done -> _uiState.update { it.copy(undo = UndoAction.Completed(done, completedAt)) } }
+                val receipt = completeTaskUseCase(taskId)
+                task?.let { done -> _uiState.update { it.copy(undo = UndoAction.Completed(done, receipt)) } }
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.toUserMessage("complete the task")) }
             }
@@ -163,7 +164,7 @@ class TasksViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 when (action) {
-                    is UndoAction.Completed -> undoCompleteTaskUseCase(action.task.id, action.completedAt)
+                    is UndoAction.Completed -> undoCompleteTaskUseCase(action.receipt)
                     // Re-inserting keeps the original id and creation time, so its score is unchanged
                     is UndoAction.Deleted -> createTaskUseCase(action.task)
                 }

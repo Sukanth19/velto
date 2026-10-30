@@ -139,6 +139,7 @@ class TaskUseCasesTest : StringSpec({
         val taskId = "task-123"
         val focusDuration = 25
         
+        every { taskRepository.getTaskById(any()) } returns flowOf(null)
         coEvery { taskRepository.completeTask(any(), any()) } just Runs
         coEvery { performanceRepository.recordCompletion(any(), any(), any()) } just Runs
         
@@ -166,6 +167,7 @@ class TaskUseCasesTest : StringSpec({
         
         val taskId = "task-456"
         
+        every { taskRepository.getTaskById(any()) } returns flowOf(null)
         coEvery { taskRepository.completeTask(any(), any()) } just Runs
         coEvery { performanceRepository.recordCompletion(any(), any(), any()) } just Runs
         

@@ -75,6 +75,9 @@ fun TaskAttributeRow(task: Task, modifier: Modifier = Modifier) {
         horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
         verticalArrangement = Arrangement.spacedBy(Spacing.xs)
     ) {
+        // The deadline matters most, so it leads
+        task.dueDate?.let { DueChip(it, recurrence = task.recurrence) }
+        if (task.dueDate == null) task.recurrence?.let { AttributeTag("Repeats ${it.label.lowercase()}") }
         // Compact on screen, spelled out for screen readers
         AttributeTag("U${task.urgency}", spokenText = "Urgency ${task.urgency} of 5")
         AttributeTag("I${task.importance}", spokenText = "Importance ${task.importance} of 5")

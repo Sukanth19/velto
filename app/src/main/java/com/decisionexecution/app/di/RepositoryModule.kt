@@ -14,6 +14,7 @@ import com.decisionexecution.app.data.local.dao.HabitDao
 import com.decisionexecution.app.data.local.dao.InboxDao
 import com.decisionexecution.app.data.local.dao.MoodDao
 import com.decisionexecution.app.data.local.dao.StatsDao
+import com.decisionexecution.app.data.local.dao.SubtaskDao
 import com.decisionexecution.app.data.repository.HabitRepositoryImpl
 import com.decisionexecution.app.data.repository.InboxRepositoryImpl
 import com.decisionexecution.app.data.repository.MoodRepositoryImpl
@@ -46,8 +47,9 @@ object RepositoryModule {
     @Singleton
     fun provideTaskRepository(
         taskDao: TaskDao,
-        taskCompletionDao: TaskCompletionDao
-    ): TaskRepository = TaskRepositoryImpl(taskDao, taskCompletionDao)
+        taskCompletionDao: TaskCompletionDao,
+        subtaskDao: SubtaskDao
+    ): TaskRepository = TaskRepositoryImpl(taskDao, taskCompletionDao, subtaskDao)
     
     @Provides
     @Singleton

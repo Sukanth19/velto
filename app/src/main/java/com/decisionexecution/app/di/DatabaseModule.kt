@@ -13,6 +13,8 @@ import com.decisionexecution.app.data.local.dao.MoodDao
 import com.decisionexecution.app.data.local.dao.StatsDao
 import com.decisionexecution.app.data.local.database.MIGRATION_1_2
 import com.decisionexecution.app.data.local.database.MIGRATION_2_3
+import com.decisionexecution.app.data.local.database.MIGRATION_3_4
+import com.decisionexecution.app.data.local.dao.SubtaskDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -31,7 +33,7 @@ object DatabaseModule {
             context,
             AppDatabase::class.java,
             "decision_execution_db"
-        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
+        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build()
     }
     
     @Provides
@@ -55,6 +57,9 @@ object DatabaseModule {
 
     @Provides
     fun provideStatsDao(database: AppDatabase): StatsDao = database.statsDao()
+
+    @Provides
+    fun provideSubtaskDao(database: AppDatabase): SubtaskDao = database.subtaskDao()
 
     @Provides
     fun provideBackupDao(database: AppDatabase): BackupDao = database.backupDao()

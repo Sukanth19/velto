@@ -207,7 +207,8 @@ private fun createInMemoryDatabase(): AppDatabase {
 private fun createRepository(database: AppDatabase): TaskRepository {
     return TaskRepositoryImpl(
         taskDao = database.taskDao(),
-        taskCompletionDao = database.taskCompletionDao()
+        taskCompletionDao = database.taskCompletionDao(),
+        subtaskDao = database.subtaskDao()
     )
 }
 

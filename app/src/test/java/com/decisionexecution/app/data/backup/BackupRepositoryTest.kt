@@ -9,6 +9,7 @@ import com.decisionexecution.app.data.local.entity.HabitCheckInEntity
 import com.decisionexecution.app.data.local.entity.HabitEntity
 import com.decisionexecution.app.data.local.entity.InboxItemEntity
 import com.decisionexecution.app.data.local.entity.MoodEntryEntity
+import com.decisionexecution.app.data.local.entity.SubtaskEntity
 import com.decisionexecution.app.data.local.entity.TaskCompletionEntity
 import com.decisionexecution.app.data.local.entity.TaskEntity
 import com.decisionexecution.app.domain.model.ThemeMode
@@ -61,7 +62,7 @@ class BackupRepositoryTest {
         val dao = source.backupDao()
         dao.insertTasks(
             listOf(
-                TaskEntity("t-1", "Write essay", "Draft first", "SCHOOL", 4, 5, "HIGH", "DEEP_WORK", 10),
+                TaskEntity("t-1", "Write essay", "Draft first", "SCHOOL", 4, 5, "HIGH", "DEEP_WORK", 10, dueDate = 20_100, recurrence = "WEEKLY"),
                 TaskEntity("t-2", "Done thing", null, "WORK", 2, 2, "LOW", null, 11, isCompleted = true, completedAt = 99)
             )
         )
@@ -71,6 +72,7 @@ class BackupRepositoryTest {
         dao.insertCheckIns(listOf(HabitCheckInEntity("h-1", 20_000), HabitCheckInEntity("h-1", 20_001)))
         dao.insertInboxItems(listOf(InboxItemEntity("i-1", "Idea, with commas\nand lines", 5, false)))
         dao.insertMoodEntries(listOf(MoodEntryEntity(20_001, 4, 2, "Tired but ok", 7)))
+        dao.insertSubtasks(listOf(SubtaskEntity("s-1", "t-1", "Outline", true, 0), SubtaskEntity("s-2", "t-1", "Draft", false, 1)))
         val prefs = InMemoryPreferencesRepository().apply {
             savePreferences(getPreferences().first().copy(focusDurationMinutes = 40, themeMode = ThemeMode.DARK))
         }
@@ -93,10 +95,29 @@ class BackupRepositoryTest {
         restored.checkIns().toSet() shouldBe dao.checkIns().toSet()
         restored.inboxItems() shouldBe dao.inboxItems()
         restored.moodEntries() shouldBe dao.moodEntries()
+        restored.subtasks().sortedBy { it.position } shouldBe dao.subtasks().sortedBy { it.position }
         restoredPrefs.getPreferences().first().focusDurationMinutes shouldBe 40
         restoredPrefs.getPreferences().first().themeMode shouldBe ThemeMode.DARK
         restoredProgress.getCelebratedLevel().first() shouldBe 4
         restoredProgress.getCelebratedAchievements().first() shouldBe setOf("FIRST_STEP")
+    }
+
+    @Test
+    fun `a format 1 backup from before due dates and steps still imports`(): Unit = runBlocking {
+        val json = """
+            {"app": "velto", "format": 1, "tasks": [
+              {"id": "t-1", "title": "Old task", "description": null, "category": "WORK", "urgency": 3,
+               "importance": 3, "effort": "LOW", "energyTag": null, "createdAt": 1, "isCompleted": false, "completedAt": null}
+            ]}
+        """.trimIndent()
+
+        repository(target).import(json)
+
+        target.backupDao().tasks().single().let {
+            it.title shouldBe "Old task"
+            it.dueDate shouldBe null
+            it.recurrence shouldBe null
+        }
     }
 
     @Test

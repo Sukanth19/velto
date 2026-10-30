@@ -7,6 +7,10 @@ import com.decisionexecution.app.domain.model.EnergyTag
 import com.decisionexecution.app.domain.model.Task
 import com.decisionexecution.app.domain.model.TaskCategory
 import com.decisionexecution.app.domain.model.TaskEffort
+import com.decisionexecution.app.domain.model.Recurrence
+import com.decisionexecution.app.domain.model.Subtask
+import com.decisionexecution.app.domain.repository.TaskRepository
+import java.time.LocalDate
 import com.decisionexecution.app.domain.repository.InboxRepository
 import com.decisionexecution.app.domain.usecase.CreateTaskUseCase
 import com.decisionexecution.app.domain.usecase.GetTaskByIdUseCase
@@ -31,6 +35,10 @@ data class AddEditTaskUiState(
     val importance: Int = 3,
     val effort: TaskEffort = TaskEffort.MEDIUM,
     val energyTag: EnergyTag? = null,
+    val dueDate: LocalDate? = null,
+    val recurrence: Recurrence? = null,
+    val steps: List<Subtask> = emptyList(),
+    val stepDraft: String = "",
     val titleError: String? = null,
     val error: String? = null,
     val isSaved: Boolean = false
@@ -46,7 +54,8 @@ class AddEditTaskViewModel @Inject constructor(
     private val getTaskByIdUseCase: GetTaskByIdUseCase,
     private val createTaskUseCase: CreateTaskUseCase,
     private val updateTaskUseCase: UpdateTaskUseCase,
-    private val inboxRepository: InboxRepository
+    private val inboxRepository: InboxRepository,
+    private val taskRepository: TaskRepository
 ) : ViewModel() {
 
     private val taskId: String? = savedStateHandle[TASK_ID_ARG]
@@ -75,7 +84,10 @@ class AddEditTaskViewModel @Inject constructor(
                         urgency = task.urgency,
                         importance = task.importance,
                         effort = task.effort,
-                        energyTag = task.energyTag
+                        energyTag = task.energyTag,
+                        dueDate = task.dueDate,
+                        recurrence = task.recurrence,
+                        steps = taskRepository.getSubtasks(task.id).first()
                     )
                 }
             }
@@ -89,6 +101,19 @@ class AddEditTaskViewModel @Inject constructor(
     fun onImportanceChange(value: Int) = _uiState.update { it.copy(importance = value.coerceIn(1, 5)) }
     fun onEffortChange(value: TaskEffort) = _uiState.update { it.copy(effort = value) }
     fun onEnergyTagChange(value: EnergyTag?) = _uiState.update { it.copy(energyTag = value) }
+    fun onDueDateChange(value: LocalDate?) = _uiState.update { it.copy(dueDate = value) }
+    fun onRecurrenceChange(value: Recurrence?) = _uiState.update { it.copy(recurrence = value) }
+    fun onStepDraftChange(value: String) = _uiState.update { it.copy(stepDraft = value) }
+
+    fun onAddStep() {
+        val title = _uiState.value.stepDraft.trim()
+        if (title.isEmpty()) return
+        _uiState.update {
+            it.copy(steps = it.steps + Subtask(UUID.randomUUID().toString(), taskId.orEmpty(), title, false, it.steps.size), stepDraft = "")
+        }
+    }
+
+    fun onRemoveStep(stepId: String) = _uiState.update { state -> state.copy(steps = state.steps.filterNot { it.id == stepId }) }
 
     fun onSave() {
         val state = _uiState.value
@@ -108,9 +133,17 @@ class AddEditTaskViewModel @Inject constructor(
                     importance = state.importance,
                     effort = state.effort,
                     energyTag = state.energyTag,
-                    createdAt = existing?.createdAt ?: System.currentTimeMillis()
+                    createdAt = existing?.createdAt ?: System.currentTimeMillis(),
+                    // A repeating task needs a date to repeat from; start today
+                    dueDate = state.dueDate ?: LocalDate.now().takeIf { state.recurrence != null },
+                    recurrence = state.recurrence
                 )
                 if (existing != null) updateTaskUseCase(task) else createTaskUseCase(task)
+                // Also catches a step typed but never added with the + button
+                val pending = state.stepDraft.trim().takeIf { it.isNotEmpty() }
+                    ?.let { Subtask(UUID.randomUUID().toString(), task.id, it, false, state.steps.size) }
+                val steps = state.steps + listOfNotNull(pending)
+                if (steps.isNotEmpty() || existing != null) taskRepository.replaceSubtasks(task.id, steps)
                 inboxItemId?.let { inboxRepository.delete(it) }
                 _uiState.update { it.copy(isSaved = true) }
             } catch (e: Exception) {

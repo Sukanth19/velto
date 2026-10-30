@@ -5,18 +5,21 @@ import com.decisionexecution.app.domain.repository.TaskRepository
 import javax.inject.Inject
 
 /**
- * Reverses [CompleteTaskUseCase]: the task becomes active again and its completion
- * record is removed so it no longer counts in metrics.
+ * Reverses [CompleteTaskUseCase]: a one-off task becomes active again, a repeating one goes back
+ * to its old date and ticked steps, and the completion no longer counts in metrics.
  */
 class UndoCompleteTaskUseCase @Inject constructor(
     private val taskRepository: TaskRepository,
     private val performanceRepository: PerformanceRepository
 ) {
-    /**
-     * @param completedAt The timestamp [CompleteTaskUseCase] returned
-     */
-    suspend operator fun invoke(taskId: String, completedAt: Long) {
-        taskRepository.uncompleteTask(taskId)
-        performanceRepository.removeCompletion(taskId, completedAt)
+    suspend operator fun invoke(receipt: CompletionReceipt) {
+        val previous = receipt.rescheduled
+        if (previous != null) {
+            taskRepository.updateTask(previous)
+            taskRepository.setDoneSubtasks(receipt.taskId, receipt.doneSubtaskIds)
+        } else {
+            taskRepository.uncompleteTask(receipt.taskId)
+        }
+        performanceRepository.removeCompletion(receipt.taskId, receipt.completedAt)
     }
 }

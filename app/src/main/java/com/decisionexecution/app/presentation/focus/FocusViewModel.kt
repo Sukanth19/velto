@@ -3,6 +3,12 @@ package com.decisionexecution.app.presentation.focus
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.decisionexecution.app.domain.model.FocusSessionState
+import com.decisionexecution.app.domain.model.Subtask
+import com.decisionexecution.app.domain.repository.TaskRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import com.decisionexecution.app.domain.service.FocusSessionManager
 import com.decisionexecution.app.domain.usecase.EndFocusSessionUseCase
 import com.decisionexecution.app.domain.usecase.ExtendFocusSessionUseCase
@@ -66,7 +72,8 @@ class FocusViewModel @Inject constructor(
     private val pauseFocusSessionUseCase: PauseFocusSessionUseCase,
     private val resumeFocusSessionUseCase: ResumeFocusSessionUseCase,
     private val endFocusSessionUseCase: EndFocusSessionUseCase,
-    private val extendFocusSessionUseCase: ExtendFocusSessionUseCase
+    private val extendFocusSessionUseCase: ExtendFocusSessionUseCase,
+    private val taskRepository: TaskRepository
 ) : ViewModel() {
 
     val uiState: StateFlow<FocusUiState> = focusSessionManager.sessionState
@@ -76,6 +83,24 @@ class FocusViewModel @Inject constructor(
             SharingStarted.Eagerly,
             focusSessionManager.sessionState.value.toUiState()
         )
+
+    /** Steps of the task being focused on, so the screen can show the next one */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val steps: StateFlow<List<Subtask>> = focusSessionManager.sessionState
+        .map { state ->
+            when (state) {
+                is FocusSessionState.Focusing -> state.task.id
+                is FocusSessionState.Paused -> state.task.id
+                else -> null
+            }
+        }
+        .distinctUntilChanged()
+        .flatMapLatest { id -> if (id == null) flowOf(emptyList()) else taskRepository.getSubtasks(id) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun onStepDone(step: Subtask) {
+        viewModelScope.launch { runCatching { taskRepository.setSubtaskDone(step.id, true) } }
+    }
 
     init {
         // Refresh from the clock once a second while the Focus screen exists; the background

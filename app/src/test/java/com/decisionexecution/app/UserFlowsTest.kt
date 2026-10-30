@@ -59,7 +59,7 @@ class UserFlowsTest {
         db = Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext<Context>(), AppDatabase::class.java)
             .allowMainThreadQueries()
             .build()
-        taskRepository = TaskRepositoryImpl(db.taskDao(), db.taskCompletionDao())
+        taskRepository = TaskRepositoryImpl(db.taskDao(), db.taskCompletionDao(), db.subtaskDao())
         performanceRepository = PerformanceRepositoryImpl(db.taskCompletionDao(), db.focusSessionDao())
     }
 

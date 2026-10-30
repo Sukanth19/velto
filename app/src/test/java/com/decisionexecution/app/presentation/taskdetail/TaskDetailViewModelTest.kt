@@ -1,6 +1,7 @@
 package com.decisionexecution.app.presentation.taskdetail
 
 import androidx.lifecycle.SavedStateHandle
+import com.decisionexecution.app.testutil.taskRepositoryWithSteps
 import com.decisionexecution.app.domain.model.*
 import com.decisionexecution.app.domain.usecase.CompleteTaskUseCase
 import com.decisionexecution.app.domain.usecase.DeleteTaskUseCase
@@ -72,5 +73,5 @@ private fun createViewModel(
     val getTask = mockk<GetTaskByIdUseCase>()
     every { getTask(any()) } returns flowOf(task)
     val handle = SavedStateHandle(mapOf(TaskDetailViewModel.TASK_ID_ARG to "t-1"))
-    return TaskDetailViewModel(handle, getTask, complete, delete)
+    return TaskDetailViewModel(handle, getTask, complete, delete, taskRepositoryWithSteps())
 }

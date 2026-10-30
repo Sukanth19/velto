@@ -387,6 +387,7 @@ private fun HeroCard(task: Task, onOpenTask: () -> Unit, onJustStart: () -> Unit
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 Text("UP NEXT", style = MaterialTheme.typography.labelSmall, color = scheme.onPrimaryContainer.copy(alpha = 0.7f))
                 QuadrantBadge(task.quadrant)
+                task.dueDate?.let { com.decisionexecution.app.presentation.components.DueChip(it, recurrence = task.recurrence) }
             }
             Text(
                 task.title,

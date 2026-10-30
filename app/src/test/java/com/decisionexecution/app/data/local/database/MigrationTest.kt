@@ -63,6 +63,29 @@ class MigrationTest {
         db.query("SELECT COUNT(*) FROM habit_check_ins").use { it.moveToFirst(); it.getInt(0) shouldBe 1 }
     }
 
+    @Test
+    fun `migrating 3 to 4 adds due dates, repeats and steps without touching tasks`() {
+        helper.createDatabase(DB_NAME, 3).use { db ->
+            db.execSQL(
+                "INSERT INTO tasks (id, title, description, category, urgency, importance, effort, energyTag, createdAt, isCompleted, completedAt) " +
+                    "VALUES ('t-1', 'Keep me', NULL, 'WORK', 3, 4, 'LOW', NULL, 1, 0, NULL)"
+            )
+        }
+
+        // Validates the migrated schema against 4.json
+        val db = helper.runMigrationsAndValidate(DB_NAME, 4, true, MIGRATION_3_4)
+
+        db.query("SELECT title, dueDate, recurrence FROM tasks").use {
+            it.moveToFirst()
+            it.getString(0) shouldBe "Keep me"
+            it.isNull(1) shouldBe true
+            it.isNull(2) shouldBe true
+        }
+        db.execSQL("UPDATE tasks SET dueDate = 20000, recurrence = 'WEEKLY'")
+        db.execSQL("INSERT INTO subtasks (id, taskId, title, isDone, position) VALUES ('s-1', 't-1', 'Outline', 0, 0)")
+        db.query("SELECT COUNT(*) FROM subtasks").use { it.moveToFirst(); it.getInt(0) shouldBe 1 }
+    }
+
     private companion object {
         const val DB_NAME = "migration-test"
     }

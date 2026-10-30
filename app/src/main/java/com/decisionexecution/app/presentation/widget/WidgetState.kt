@@ -6,6 +6,7 @@ import com.decisionexecution.app.domain.model.HabitWithHistory
 import com.decisionexecution.app.domain.model.Task
 import com.decisionexecution.app.presentation.components.label
 import com.decisionexecution.app.presentation.components.quadrant
+import com.decisionexecution.app.domain.service.dueText
 import com.decisionexecution.app.presentation.home.formatMinutes
 import kotlinx.coroutines.withTimeoutOrNull
 import java.time.LocalDate
@@ -158,8 +159,11 @@ data class TopTaskRow(
     val quadrantLabel: String
 )
 
-fun topTaskRows(tasks: List<Task>): List<TopTaskRow> =
-    tasks.take(TOP_TASKS_LIMIT).map { TopTaskRow(it.id, it.title, it.quadrant.label) }
+fun topTaskRows(tasks: List<Task>, today: LocalDate = LocalDate.now()): List<TopTaskRow> =
+    tasks.take(TOP_TASKS_LIMIT).map { task ->
+        val due = task.dueDate?.let { "${dueText(it, today)} · " }.orEmpty()
+        TopTaskRow(task.id, task.title, due + task.quadrant.label)
+    }
 
 const val TOP_TASKS_LIMIT = 3
 

@@ -16,7 +16,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.foundation.shape.RoundedCornerShape
+import com.decisionexecution.app.domain.model.Subtask
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.SelfImprovement
 import androidx.compose.material.icons.rounded.SkipNext
@@ -63,6 +66,7 @@ fun FocusScreen(
     viewModel: FocusViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val steps by viewModel.steps.collectAsStateWithLifecycle()
     val phaseColor = when (val s = state) {
         is FocusUiState.Break -> MaterialTheme.colorScheme.tertiary
         is FocusUiState.Focus -> if (s.isPaused) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.primary
@@ -93,7 +97,7 @@ fun FocusScreen(
                 FocusUiState.Idle::class -> IdleContent(onGoHome)
                 else -> when (val s = state) {
                     is FocusUiState.Focus -> FocusContent(
-                        s, phaseColor, viewModel::onPause, viewModel::onResume, viewModel::onEnd, viewModel::onExtend
+                        s, steps, phaseColor, viewModel::onPause, viewModel::onResume, viewModel::onEnd, viewModel::onExtend, viewModel::onStepDone
                     )
                     is FocusUiState.Break -> BreakContent(s, phaseColor, viewModel::onEnd)
                     FocusUiState.Idle -> IdleContent(onGoHome)
@@ -106,11 +110,13 @@ fun FocusScreen(
 @Composable
 private fun FocusContent(
     state: FocusUiState.Focus,
+    steps: List<Subtask>,
     color: Color,
     onPause: () -> Unit,
     onResume: () -> Unit,
     onEnd: () -> Unit,
-    onExtend: () -> Unit
+    onExtend: () -> Unit,
+    onStepDone: (Subtask) -> Unit
 ) {
     val haptics = LocalHapticFeedback.current
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.lg)) {
@@ -122,6 +128,7 @@ private fun FocusContent(
             maxLines = 3,
             overflow = TextOverflow.Ellipsis
         )
+        if (steps.isNotEmpty()) NextStepCard(steps, onStepDone)
         // The wave goes flat while paused, so the ring itself shows the timer has stopped
         TimerRing(state.remainingSeconds, state.totalSeconds, color, wavy = !state.isPaused)
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md), verticalAlignment = Alignment.CenterVertically) {
@@ -185,6 +192,45 @@ private fun BreakContent(state: FocusUiState.Break, color: Color, onSkip: () -> 
             Icon(Icons.Rounded.SkipNext, contentDescription = null)
             Spacer(Modifier.width(Spacing.sm))
             Text("Skip break")
+        }
+    }
+}
+
+/** The next unticked step, so "Just Start" really starts with step one */
+@Composable
+private fun NextStepCard(steps: List<Subtask>, onDone: (Subtask) -> Unit) {
+    val haptics = LocalHapticFeedback.current
+    val next = steps.firstOrNull { !it.isDone }
+    val done = steps.count { it.isDone }
+    Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+        Row(
+            Modifier.fillMaxWidth().padding(start = Spacing.md, end = Spacing.sm, top = Spacing.sm, bottom = Spacing.sm),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    if (next == null) "ALL STEPS DONE" else "STEP ${done + 1} OF ${steps.size}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                AnimatedContent(targetState = next?.title, label = "step") { title ->
+                    Text(
+                        title ?: "Wrap up, or keep going",
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+            if (next != null) {
+                FilledTonalIconButton(
+                    onClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                        onDone(next)
+                    },
+                    shapes = IconButtonDefaults.shapes()
+                ) { Icon(Icons.Rounded.Check, contentDescription = "Step done: ${next.title}") }
+            }
         }
     }
 }

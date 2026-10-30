@@ -8,6 +8,7 @@ import com.decisionexecution.app.data.local.entity.HabitCheckInEntity
 import com.decisionexecution.app.data.local.entity.HabitEntity
 import com.decisionexecution.app.data.local.entity.InboxItemEntity
 import com.decisionexecution.app.data.local.entity.MoodEntryEntity
+import com.decisionexecution.app.data.local.entity.SubtaskEntity
 import com.decisionexecution.app.data.local.entity.TaskCompletionEntity
 import com.decisionexecution.app.data.local.entity.TaskEntity
 import com.decisionexecution.app.domain.model.ThemeMode
@@ -46,6 +47,7 @@ class BackupRepositoryImpl @Inject constructor(
             .put("checkIns", backupDao.checkIns().toJson { JSONObject().put("habitId", it.habitId).put("day", it.day) })
             .put("inbox", backupDao.inboxItems().toJson { it.toJson() })
             .put("moods", backupDao.moodEntries().toJson { it.toJson() })
+            .put("subtasks", backupDao.subtasks().toJson { it.toJson() })
             .put(
                 "preferences", JSONObject()
                     .put("focusDurationMinutes", prefs.focusDurationMinutes)
@@ -73,6 +75,7 @@ class BackupRepositoryImpl @Inject constructor(
             backupDao.clearHabits()
             backupDao.clearCompletions()
             backupDao.clearFocusSessions()
+            backupDao.clearSubtasks()
             backupDao.clearTasks()
             backupDao.clearInboxItems()
             backupDao.clearMoodEntries()
@@ -83,6 +86,7 @@ class BackupRepositoryImpl @Inject constructor(
             backupDao.insertCheckIns(backup.checkIns)
             backupDao.insertInboxItems(backup.inbox)
             backupDao.insertMoodEntries(backup.moods)
+            backupDao.insertSubtasks(backup.subtasks)
         }
         backup.preferences?.let { p ->
             val current = preferencesRepository.getPreferences().first()
@@ -111,6 +115,7 @@ class BackupRepositoryImpl @Inject constructor(
         val checkIns: List<HabitCheckInEntity>,
         val inbox: List<InboxItemEntity>,
         val moods: List<MoodEntryEntity>,
+        val subtasks: List<SubtaskEntity>,
         val preferences: JSONObject?,
         val progress: JSONObject?
     )
@@ -125,8 +130,7 @@ class BackupRepositoryImpl @Inject constructor(
             HabitEntity(it.getString("id"), it.getString("name"), it.getString("icon"), it.getLong("createdAt"))
         }
         val habitIds = habits.map { it.id }.toSet()
-        return Backup(
-            tasks = root.list("tasks") {
+        val tasks = root.list("tasks") {
                 TaskEntity(
                     id = it.getString("id"),
                     title = it.getString("title"),
@@ -138,9 +142,15 @@ class BackupRepositoryImpl @Inject constructor(
                     energyTag = it.optStringOrNull("energyTag"),
                     createdAt = it.getLong("createdAt"),
                     isCompleted = it.optBoolean("isCompleted", false),
-                    completedAt = if (it.isNull("completedAt")) null else it.getLong("completedAt")
+                    completedAt = if (it.isNull("completedAt")) null else it.getLong("completedAt"),
+                    // Format 1 backups have neither
+                    dueDate = if (it.isNull("dueDate")) null else it.getLong("dueDate"),
+                    recurrence = it.optStringOrNull("recurrence")
                 )
-            },
+            }
+        val taskIds = tasks.map { it.id }.toSet()
+        return Backup(
+            tasks = tasks,
             completions = root.list("completions") {
                 TaskCompletionEntity(
                     it.getString("id"), it.getString("taskId"), it.getString("taskTitle"), it.getLong("completedAt"),
@@ -161,6 +171,10 @@ class BackupRepositoryImpl @Inject constructor(
             moods = root.list("moods") {
                 MoodEntryEntity(it.getLong("day"), it.getInt("mood"), it.getInt("energy"), it.optStringOrNull("note"), it.getLong("loggedAt"))
             },
+            // Like check-ins, a step for a task that isn't in the file is dropped
+            subtasks = root.list("subtasks") {
+                SubtaskEntity(it.getString("id"), it.getString("taskId"), it.getString("title"), it.optBoolean("isDone", false), it.optInt("position", 0))
+            }.filter { it.taskId in taskIds },
             preferences = root.optJSONObject("preferences"),
             progress = root.optJSONObject("progress")
         )
@@ -168,8 +182,8 @@ class BackupRepositoryImpl @Inject constructor(
 
     private companion object {
         const val APP = "velto"
-        /** Bump when the shape changes, and keep reading older formats */
-        const val FORMAT = 1
+        /** Bump when the shape changes, and keep reading older formats. 2 added due dates, repeats and steps */
+        const val FORMAT = 2
     }
 }
 
@@ -187,6 +201,7 @@ private fun TaskEntity.toJson() = JSONObject()
     .put("category", category).put("urgency", urgency).put("importance", importance)
     .put("effort", effort).put("energyTag", energyTag ?: JSONObject.NULL).put("createdAt", createdAt)
     .put("isCompleted", isCompleted).put("completedAt", completedAt ?: JSONObject.NULL)
+    .put("dueDate", dueDate ?: JSONObject.NULL).put("recurrence", recurrence ?: JSONObject.NULL)
 
 private fun TaskCompletionEntity.toJson() = JSONObject()
     .put("id", id).put("taskId", taskId).put("taskTitle", taskTitle).put("completedAt", completedAt)
@@ -201,3 +216,6 @@ private fun InboxItemEntity.toJson() = JSONObject().put("id", id).put("text", te
 
 private fun MoodEntryEntity.toJson() = JSONObject()
     .put("day", day).put("mood", mood).put("energy", energy).put("note", note ?: JSONObject.NULL).put("loggedAt", loggedAt)
+
+private fun SubtaskEntity.toJson() = JSONObject()
+    .put("id", id).put("taskId", taskId).put("title", title).put("isDone", isDone).put("position", position)
