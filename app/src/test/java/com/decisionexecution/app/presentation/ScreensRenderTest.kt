@@ -37,6 +37,20 @@ import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Insights
+import androidx.compose.material.icons.outlined.LocalFireDepartment
+import androidx.compose.material.icons.outlined.TaskAlt
+import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.Insights
+import androidx.compose.material.icons.rounded.LocalFireDepartment
+import androidx.compose.material.icons.rounded.TaskAlt
+import androidx.compose.material.icons.rounded.Timer
 import androidx.lifecycle.SavedStateHandle
 import com.decisionexecution.app.domain.model.*
 import com.decisionexecution.app.domain.repository.PreferencesRepository
@@ -388,6 +402,35 @@ class ScreensRenderTest {
         composeRule.mainClock.advanceTimeBy(5_000)
         composeRule.onNodeWithText("Reply to client email").assertIsDisplayed()
         save("decide")
+    }
+
+    @Test
+    fun navBar() {
+        var selected by androidx.compose.runtime.mutableStateOf("Home")
+        val tabs = listOf(
+            Triple("Home", androidx.compose.material.icons.Icons.Rounded.Home, androidx.compose.material.icons.Icons.Outlined.Home),
+            Triple("Tasks", androidx.compose.material.icons.Icons.Rounded.TaskAlt, androidx.compose.material.icons.Icons.Outlined.TaskAlt),
+            Triple("Habits", androidx.compose.material.icons.Icons.Rounded.LocalFireDepartment, androidx.compose.material.icons.Icons.Outlined.LocalFireDepartment),
+            Triple("Focus", androidx.compose.material.icons.Icons.Rounded.Timer, androidx.compose.material.icons.Icons.Outlined.Timer),
+            Triple("Progress", androidx.compose.material.icons.Icons.Rounded.Insights, androidx.compose.material.icons.Icons.Outlined.Insights)
+        )
+        render("navbar", ThemeMode.DARK) {
+            androidx.compose.foundation.layout.Box(
+                androidx.compose.ui.Modifier.fillMaxSize().background(androidx.compose.material3.MaterialTheme.colorScheme.surface),
+                contentAlignment = androidx.compose.ui.Alignment.BottomCenter
+            ) {
+                com.decisionexecution.app.presentation.navigation.VeltoNavBar(
+                    tabs.map { (label, filled, outlined) ->
+                        com.decisionexecution.app.presentation.navigation.NavBarItem(label, outlined, filled, selected == label) { selected = label }
+                    }
+                )
+            }
+        }
+        composeRule.onNodeWithText("Home").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("Habits").performClick()
+        composeRule.mainClock.advanceTimeBy(1_000)
+        composeRule.onNodeWithText("Habits").assertIsDisplayed()
+        save("navbar_habits")
     }
 
     private fun sampleHabits(): InMemoryHabitRepository {

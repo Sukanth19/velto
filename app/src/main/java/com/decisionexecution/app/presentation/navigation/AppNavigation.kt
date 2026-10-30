@@ -16,8 +16,17 @@ import androidx.compose.material.icons.rounded.Insights
 import androidx.compose.material.icons.rounded.TaskAlt
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material3.Icon
-import androidx.compose.material3.ShortNavigationBar
-import androidx.compose.material3.ShortNavigationBarItem
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.navigation.NavBackStackEntry
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -142,6 +151,27 @@ fun NavHostController.openDeepLink(uri: Uri): Boolean {
     return true
 }
 
+private val tabRoutes = TopLevelTab.entries.map { it.route }.toSet()
+
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.isTabSwitch(): Boolean =
+    initialState.destination.route in tabRoutes && targetState.destination.route in tabRoutes
+
+// Tabs fade through: the old one gets out of the way fast, the new one grows in slightly.
+// The navigation default is a 700ms crossfade, which is what made switching feel sluggish.
+private val tabEnter: EnterTransition =
+    fadeIn(tween(200, delayMillis = 50)) + scaleIn(tween(250, delayMillis = 50, easing = FastOutSlowInEasing), initialScale = 0.96f)
+private val tabExit: ExitTransition = fadeOut(tween(70))
+
+// Screens opened on top slide in from the right, and back reverses it
+private val pushEnter: EnterTransition =
+    slideInHorizontally(tween(280, easing = FastOutSlowInEasing)) { it / 5 } + fadeIn(tween(200))
+private val pushExit: ExitTransition =
+    slideOutHorizontally(tween(280, easing = FastOutSlowInEasing)) { -it / 10 } + fadeOut(tween(120))
+private val popEnter: EnterTransition =
+    slideInHorizontally(tween(280, easing = FastOutSlowInEasing)) { -it / 10 } + fadeIn(tween(200))
+private val popExit: ExitTransition =
+    slideOutHorizontally(tween(250, easing = FastOutSlowInEasing)) { it / 5 } + fadeOut(tween(150))
+
 /**
  * Bottom navigation with Home, Tasks, Habits, Focus and Progress, plus the secondary screens.
  * Level-ups and achievements are celebrated over whatever screen is showing.
@@ -159,25 +189,28 @@ fun AppNavHost(navController: NavHostController = rememberNavController()) {
         contentWindowInsets = WindowInsets(0),
         bottomBar = {
             if (showBottomBar) {
-                // Expressive short bar: pill indicator, tighter height
-                ShortNavigationBar {
-                    TopLevelTab.entries.forEach { tab ->
-                        val selected = currentDestination?.hierarchy?.any { it.route == tab.route } == true
-                        ShortNavigationBarItem(
-                            selected = selected,
-                            onClick = { navController.navigateToTab(tab.route) },
-                            icon = { Icon(if (selected) tab.selectedIcon else tab.icon, contentDescription = null) },
-                            label = { Text(tab.label) }
+                VeltoNavBar(
+                    TopLevelTab.entries.map { tab ->
+                        NavBarItem(
+                            label = tab.label,
+                            icon = tab.icon,
+                            selectedIcon = tab.selectedIcon,
+                            selected = currentDestination?.hierarchy?.any { it.route == tab.route } == true,
+                            onClick = { navController.navigateToTab(tab.route) }
                         )
                     }
-                }
+                )
             }
         }
     ) { padding ->
         NavHost(
             navController = navController,
             startDestination = Routes.HOME,
-            modifier = Modifier.padding(padding).consumeWindowInsets(padding)
+            modifier = Modifier.padding(padding).consumeWindowInsets(padding),
+            enterTransition = { if (isTabSwitch()) tabEnter else pushEnter },
+            exitTransition = { if (isTabSwitch()) tabExit else pushExit },
+            popEnterTransition = { if (isTabSwitch()) tabEnter else popEnter },
+            popExitTransition = { if (isTabSwitch()) tabExit else popExit }
         ) {
             composable(Routes.HOME) {
                 HomeScreen(

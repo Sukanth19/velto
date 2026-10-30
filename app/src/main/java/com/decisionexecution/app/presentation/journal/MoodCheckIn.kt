@@ -46,8 +46,9 @@ fun MoodCheckInCard(
                         onCheckedChange = { mood = value },
                         shapes = IconButtonDefaults.toggleableShapes(),
                         colors = IconButtonDefaults.filledIconToggleButtonColors(
-                            containerColor = scheme.surfaceContainerLowest,
-                            contentColor = scheme.onSurfaceVariant
+                            // A light wash of the card colour; surfaceContainerLowest went pitch black in dark mode
+                            containerColor = scheme.onSecondaryContainer.copy(alpha = 0.08f),
+                            contentColor = scheme.onSecondaryContainer
                         ),
                         modifier = Modifier
                             .size(IconButtonDefaults.mediumContainerSize())

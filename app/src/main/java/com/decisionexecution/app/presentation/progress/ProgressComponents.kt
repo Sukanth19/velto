@@ -30,6 +30,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.graphics.shapes.RoundedPolygon
 import com.decisionexecution.app.domain.service.Achievement
 import com.decisionexecution.app.domain.service.LevelProgress
@@ -93,14 +96,25 @@ fun LevelCard(level: LevelProgress, modifier: Modifier = Modifier) {
 
 @Composable
 fun LevelBadge(level: Int, modifier: Modifier = Modifier) {
-    Box(
+    BoxWithConstraints(
         modifier
             .clip(MaterialShapes.Cookie12Sided.toShape())
             .background(MaterialTheme.colorScheme.primary)
             .semantics { contentDescription = "Level $level" },
         contentAlignment = Alignment.Center
     ) {
-        Text(level.toString(), style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onPrimary)
+        // Sized from the badge, so the number sits centred in a 26dp chip and an 80dp dialog alike
+        val fontSize = with(LocalDensity.current) { (maxHeight * if (level >= 10) 0.38f else 0.48f).toSp() }
+        Text(
+            level.toString(),
+            color = MaterialTheme.colorScheme.onPrimary,
+            style = MaterialTheme.typography.headlineMedium.copy(
+                fontSize = fontSize,
+                lineHeight = fontSize,
+                lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.Both),
+                platformStyle = PlatformTextStyle(includeFontPadding = false)
+            )
+        )
     }
 }
 

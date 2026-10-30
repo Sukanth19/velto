@@ -104,11 +104,16 @@ fun HomeScreen(
         }
     }
 
+    val scrollState = rememberScrollState()
+    // Shrinks to a round + once you scroll, so it stops covering the cards underneath
+    val fabExpanded by remember { derivedStateOf { scrollState.value < FAB_COLLAPSE_SCROLL } }
+
     Scaffold(
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = onAddTask,
-                icon = { Icon(Icons.Rounded.Add, contentDescription = null) },
+                expanded = fabExpanded,
+                icon = { Icon(Icons.Rounded.Add, contentDescription = "New task") },
                 text = { Text("New task") }
             )
         },
@@ -118,7 +123,7 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
                 .padding(horizontal = Spacing.md),
             verticalArrangement = Arrangement.spacedBy(Spacing.lg)
         ) {
@@ -524,3 +529,5 @@ fun JustStartRoute(
     }
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { LoadingIndicator(Modifier.size(64.dp)) }
 }
+
+private const val FAB_COLLAPSE_SCROLL = 48
