@@ -3,6 +3,8 @@ package com.decisionexecution.app.presentation.insights
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.decisionexecution.app.domain.usecase.GetInsightsUseCase
+import com.decisionexecution.app.domain.usecase.GetProgressUseCase
+import com.decisionexecution.app.domain.usecase.Progress
 import com.decisionexecution.app.domain.usecase.Insights
 import com.decisionexecution.app.presentation.common.toUserMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,16 +18,18 @@ import javax.inject.Inject
 
 data class InsightsUiState(
     val insights: Insights? = null,
+    val progress: Progress? = null,
     val error: String? = null
 )
 
 /**
- * Weekly focus time, completions and streak.
+ * Level, achievements, weekly focus time, completions and streak.
  * Requirements: 7.2, 7.3, 7.4
  */
 @HiltViewModel
 class InsightsViewModel @Inject constructor(
-    getInsightsUseCase: GetInsightsUseCase
+    getInsightsUseCase: GetInsightsUseCase,
+    getProgressUseCase: GetProgressUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(InsightsUiState())
@@ -36,6 +40,12 @@ class InsightsViewModel @Inject constructor(
             getInsightsUseCase()
                 .catch { e -> _uiState.update { it.copy(error = e.toUserMessage("load your insights")) } }
                 .collect { insights -> _uiState.update { it.copy(insights = insights, error = null) } }
+        }
+        viewModelScope.launch {
+            // Progress is a bonus; if it fails the week still shows
+            getProgressUseCase()
+                .catch { }
+                .collect { progress -> _uiState.update { it.copy(progress = progress) } }
         }
     }
 }

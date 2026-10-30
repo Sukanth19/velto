@@ -3,6 +3,19 @@ package com.decisionexecution.app.presentation
 import com.decisionexecution.app.domain.service.EisenhowerClassifier
 import com.decisionexecution.app.testutil.InMemoryPreferencesRepository
 import com.decisionexecution.app.testutil.emptyInsights
+import com.decisionexecution.app.testutil.InMemoryHabitRepository
+import com.decisionexecution.app.testutil.InMemoryInboxRepository
+import com.decisionexecution.app.testutil.InMemoryMoodRepository
+import com.decisionexecution.app.testutil.progressUseCase
+import com.decisionexecution.app.domain.service.LifetimeStats
+import com.decisionexecution.app.presentation.habits.HabitsScreen
+import com.decisionexecution.app.presentation.habits.HabitsViewModel
+import com.decisionexecution.app.presentation.home.HomeExtrasViewModel
+import com.decisionexecution.app.presentation.inbox.InboxScreen
+import com.decisionexecution.app.presentation.inbox.InboxViewModel
+import com.decisionexecution.app.presentation.journal.JournalScreen
+import com.decisionexecution.app.presentation.journal.JournalViewModel
+import java.time.LocalDate
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.AdaptiveIconDrawable
@@ -20,6 +33,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.lifecycle.SavedStateHandle
 import com.decisionexecution.app.domain.model.*
 import com.decisionexecution.app.domain.repository.PreferencesRepository
@@ -83,11 +97,15 @@ class ScreensRenderTest {
         every { metrics(any(), any(), any()) } returns flowOf(ProductivityMetrics(3, 85, 71.4))
         val viewModel = HomeViewModel(getBest, mockk(relaxed = true), metrics, emptyInsights(), InMemoryPreferencesRepository())
 
-        render("home") { HomeScreen({}, {}, {}, {}, viewModel) }
+        val extras = HomeExtrasViewModel(progressUseCase(SAMPLE_STATS), sampleHabits(), InMemoryInboxRepository(*sampleInbox()), InMemoryMoodRepository())
+
+        render("home") { HomeScreen({}, {}, {}, {}, viewModel, extrasViewModel = extras) }
 
         composeRule.onNodeWithText("Just Start").assertIsDisplayed()
         composeRule.onNodeWithText("Finish quarterly report").assertIsDisplayed()
-        composeRule.onNodeWithText("1h 25m").assertIsDisplayed()
+        composeRule.onNodeWithText("1h 25m").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("How are you feeling?").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("Mover").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -98,7 +116,9 @@ class ScreensRenderTest {
         every { metrics(any(), any(), any()) } returns flowOf(ProductivityMetrics(0, 0, 0.0))
         val viewModel = HomeViewModel(getBest, mockk(relaxed = true), metrics, emptyInsights(), InMemoryPreferencesRepository())
 
-        render("home_empty_dark", ThemeMode.DARK) { HomeScreen({}, {}, {}, {}, viewModel) }
+        val extras = HomeExtrasViewModel(progressUseCase(), InMemoryHabitRepository(), InMemoryInboxRepository(), InMemoryMoodRepository())
+
+        render("home_empty_dark", ThemeMode.DARK) { HomeScreen({}, {}, {}, {}, viewModel, extrasViewModel = extras) }
 
         composeRule.onNodeWithText("Nothing to do yet").assertIsDisplayed()
     }
@@ -178,7 +198,7 @@ class ScreensRenderTest {
     @Test
     fun addTaskScreenShowsTitleError() {
         val getTask = mockk<GetTaskByIdUseCase>()
-        val viewModel = AddEditTaskViewModel(SavedStateHandle(), getTask, mockk(relaxed = true), mockk(relaxed = true))
+        val viewModel = AddEditTaskViewModel(SavedStateHandle(), getTask, mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true))
 
         render("add_task") { AddEditTaskScreen({}, viewModel) }
         composeRule.onNodeWithText("Save").performClick()
@@ -242,9 +262,9 @@ class ScreensRenderTest {
         val useCase = mockk<GetInsightsUseCase>()
         every { useCase(any(), any()) } returns flowOf(Insights(week, streakDays = 3))
 
-        render("insights") { InsightsScreen(InsightsViewModel(useCase)) }
-        composeRule.onNodeWithText("3 days").assertIsDisplayed()
-        composeRule.onNodeWithText("4h 35m").assertIsDisplayed()
+        render("insights") { InsightsScreen(InsightsViewModel(useCase, progressUseCase(SAMPLE_STATS))) }
+        composeRule.onNodeWithText("3 days").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("4h 35m").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -294,6 +314,80 @@ class ScreensRenderTest {
         nodes.fetchSemanticsNodes().indices.forEach { nodes[it].assertIsNotDisplayed() }
     }
 
+    @Test
+    fun habitsScreen() {
+        val viewModel = HabitsViewModel(sampleHabits())
+
+        render("habits") { HabitsScreen(viewModel) }
+        composeRule.onNodeWithText("Drink water").assertIsDisplayed()
+        composeRule.onNodeWithText("1 of 3 done today").assertIsDisplayed()
+
+        composeRule.onNodeWithContentDescription("Mark Read 20 pages done").performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithText("2 of 3 done today").assertIsDisplayed()
+    }
+
+    @Test
+    fun habitsScreenEmptyDark() {
+        render("habits_empty_dark", ThemeMode.DARK) { HabitsScreen(HabitsViewModel(InMemoryHabitRepository())) }
+        composeRule.onNodeWithText("Build a streak").assertIsDisplayed()
+    }
+
+    @Test
+    fun inboxScreen() {
+        val inbox = InMemoryInboxRepository(*sampleInbox())
+        val viewModel = InboxViewModel(inbox, InMemoryHabitRepository())
+
+        render("inbox") { InboxScreen({}, {}, viewModel = viewModel) }
+        composeRule.onNodeWithText("Look into a standing desk").assertIsDisplayed()
+
+        composeRule.onAllNodesWithContentDescription("Bin it").onFirst().performClick()
+        composeRule.waitForIdle()
+        inbox.items.value.size shouldBe 1
+    }
+
+    @Test
+    fun journalScreen() {
+        val today = LocalDate.now()
+        val moods = InMemoryMoodRepository(
+            *(1..12).map { back ->
+                MoodEntry(today.minusDays(back.toLong()), mood = 1 + back % 5, energy = 1 + (back * 2) % 5, note = if (back == 1) "Slept badly" else null)
+            }.toTypedArray()
+        )
+        val performance = mockk<com.decisionexecution.app.domain.repository.PerformanceRepository>()
+        every { performance.getFocusSessionsInPeriod(any(), any()) } returns flowOf(
+            (1..12).map { back ->
+                com.decisionexecution.app.domain.repository.FocusSessionRecord(
+                    "t", today.minusDays(back.toLong()).atTime(12, 0).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli(),
+                    durationMinutes = 15 * (1 + (back * 2) % 5)
+                )
+            }
+        )
+        val viewModel = JournalViewModel(moods, GetMoodInsightsUseCase(moods, performance))
+
+        render("journal") { JournalScreen({}, viewModel) }
+        composeRule.onNodeWithText("How are you feeling?").performScrollTo().assertIsDisplayed()
+    }
+
+    private fun sampleHabits(): InMemoryHabitRepository {
+        val today = LocalDate.now()
+        fun habit(id: String, name: String, icon: HabitIcon, days: List<Long>) =
+            HabitWithHistory(Habit(id, name, icon, id.toLong()), days.map { today.minusDays(it) }.toSet())
+        return InMemoryHabitRepository(
+            habit("1", "Drink water", HabitIcon.WATER, (0L..20L).toList()),
+            habit("2", "Read 20 pages", HabitIcon.READ, listOf(1L, 2L, 3L, 5L, 8L, 9L, 30L)),
+            habit("3", "Stretch", HabitIcon.MOVE, (1L..60L step 2).toList())
+        )
+    }
+
+    private fun sampleInbox(): Array<InboxItem> {
+        val now = System.currentTimeMillis()
+        return arrayOf(
+            InboxItem("i-1", "Look into a standing desk", now - 26 * 60 * 60 * 1000L),
+            InboxItem("i-2", "Call grandma this weekend", now - 12 * 60 * 1000L)
+        )
+    }
+
     private fun render(name: String, themeMode: ThemeMode = ThemeMode.LIGHT, content: @Composable () -> Unit) {
         composeRule.setContent { VeltoTheme(themeMode = themeMode, dynamicColor = false) { content() } }
         composeRule.waitForIdle()
@@ -307,6 +401,10 @@ class ScreensRenderTest {
         val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
         view.draw(Canvas(bitmap))
         File(dir, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+    }
+
+    private companion object {
+        val SAMPLE_STATS = LifetimeStats(tasksCompleted = 18, focusMinutes = 640, focusSessions = 20, habitCheckIns = 40, habitsCreated = 3, moodEntries = 8, bestHabitStreak = 9)
     }
 
     private fun task(

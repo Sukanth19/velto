@@ -28,6 +28,11 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.decisionexecution.app.domain.usecase.DayStats
 import com.decisionexecution.app.domain.usecase.Insights
+import com.decisionexecution.app.domain.usecase.Progress
+import com.decisionexecution.app.presentation.progress.AchievementGrid
+import com.decisionexecution.app.presentation.progress.LevelCard
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import com.decisionexecution.app.presentation.home.formatMinutes
 import com.decisionexecution.app.presentation.theme.Spacing
 import java.time.LocalDate
@@ -35,18 +40,18 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 /**
- * The last 7 days at a glance: streak, totals, a focus-time chart and completed tasks per day.
+ * Level and achievements, a way into the journal, then the last 7 days: streak, totals,
+ * a focus-time chart and completed tasks per day.
  * Requirements: 7.2, 7.3, 7.4, 7.5
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun InsightsScreen(viewModel: InsightsViewModel = hiltViewModel()) {
+fun InsightsScreen(viewModel: InsightsViewModel = hiltViewModel(), onOpenJournal: () -> Unit = {}) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Scaffold(topBar = { LargeTopAppBar(title = { Text("Your week") }) }) { padding ->
+    Scaffold(topBar = { LargeTopAppBar(title = { Text("Progress") }) }) { padding ->
         val insights = uiState.insights
         when {
-            insights != null -> InsightsContent(insights, Modifier.padding(padding))
+            insights != null -> InsightsContent(insights, uiState.progress, onOpenJournal, Modifier.padding(padding))
             uiState.error != null -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 Text(uiState.error!!, textAlign = TextAlign.Center, modifier = Modifier.padding(Spacing.xl))
             }
@@ -58,7 +63,7 @@ fun InsightsScreen(viewModel: InsightsViewModel = hiltViewModel()) {
 }
 
 @Composable
-private fun InsightsContent(insights: Insights, modifier: Modifier = Modifier) {
+private fun InsightsContent(insights: Insights, progress: Progress?, onOpenJournal: () -> Unit, modifier: Modifier = Modifier) {
     Column(
         modifier
             .fillMaxSize()
@@ -66,6 +71,10 @@ private fun InsightsContent(insights: Insights, modifier: Modifier = Modifier) {
             .padding(horizontal = Spacing.md),
         verticalArrangement = Arrangement.spacedBy(Spacing.md)
     ) {
+        progress?.let { LevelCard(it.level) }
+        JournalLink(onOpenJournal)
+        progress?.let { AchievementGrid(it.unlocked) }
+        Text("Your week", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = Spacing.sm))
         StreakCard(insights.streakDays)
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
             TotalTile(Icons.Rounded.Timer, formatMinutes(insights.weekFocusMinutes), "Focused this week", Modifier.weight(1f))
@@ -89,6 +98,26 @@ private fun InsightsContent(insights: Insights, modifier: Modifier = Modifier) {
             }
         }
         Spacer(Modifier.height(Spacing.xl))
+    }
+}
+
+@Composable
+private fun JournalLink(onOpenJournal: () -> Unit) {
+    Surface(
+        onClick = onOpenJournal,
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+    ) {
+        Row(Modifier.fillMaxWidth().padding(Spacing.md), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.AutoMirrored.Rounded.MenuBook, contentDescription = null)
+            Spacer(Modifier.width(Spacing.md))
+            Column(Modifier.weight(1f)) {
+                Text("Mood & energy journal", style = MaterialTheme.typography.titleSmall)
+                Text("See what fuels your best days", style = MaterialTheme.typography.bodySmall)
+            }
+            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null)
+        }
     }
 }
 
@@ -127,7 +156,7 @@ private fun TotalTile(icon: ImageVector, value: String, label: String, modifier:
     Surface(
         modifier = modifier.semantics(mergeDescendants = true) {},
         shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+        color = MaterialTheme.colorScheme.surfaceContainerLow
     ) {
         Column(Modifier.padding(Spacing.md), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
             Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
@@ -141,7 +170,7 @@ private fun TotalTile(icon: ImageVector, value: String, label: String, modifier:
 private fun ChartCard(week: List<DayStats>) {
     val maxMinutes = (week.maxOfOrNull { it.focusMinutes } ?: 0).coerceAtLeast(30)
     val today = LocalDate.now()
-    Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)) {
+    Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainerLow) {
         Column(Modifier.fillMaxWidth().padding(Spacing.md), verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
             Text("Focus time", style = MaterialTheme.typography.titleMedium)
             Row(

@@ -6,7 +6,12 @@ import com.decisionexecution.app.data.local.database.AppDatabase
 import com.decisionexecution.app.data.local.dao.TaskDao
 import com.decisionexecution.app.data.local.dao.FocusSessionDao
 import com.decisionexecution.app.data.local.dao.TaskCompletionDao
+import com.decisionexecution.app.data.local.dao.HabitDao
+import com.decisionexecution.app.data.local.dao.InboxDao
+import com.decisionexecution.app.data.local.dao.MoodDao
+import com.decisionexecution.app.data.local.dao.StatsDao
 import com.decisionexecution.app.data.local.database.MIGRATION_1_2
+import com.decisionexecution.app.data.local.database.MIGRATION_2_3
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -25,7 +30,7 @@ object DatabaseModule {
             context,
             AppDatabase::class.java,
             "decision_execution_db"
-        ).addMigrations(MIGRATION_1_2).build()
+        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3).build()
     }
     
     @Provides
@@ -37,4 +42,16 @@ object DatabaseModule {
     
     @Provides
     fun provideFocusSessionDao(database: AppDatabase): FocusSessionDao = database.focusSessionDao()
+
+    @Provides
+    fun provideHabitDao(database: AppDatabase): HabitDao = database.habitDao()
+
+    @Provides
+    fun provideInboxDao(database: AppDatabase): InboxDao = database.inboxDao()
+
+    @Provides
+    fun provideMoodDao(database: AppDatabase): MoodDao = database.moodDao()
+
+    @Provides
+    fun provideStatsDao(database: AppDatabase): StatsDao = database.statsDao()
 }

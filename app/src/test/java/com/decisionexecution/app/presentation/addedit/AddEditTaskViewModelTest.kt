@@ -122,5 +122,5 @@ private fun createViewModel(
     val getTask = mockk<GetTaskByIdUseCase>()
     every { getTask(any()) } returns flowOf(existing)
     val handle = SavedStateHandle(mapOf(AddEditTaskViewModel.TASK_ID_ARG to taskId))
-    return AddEditTaskViewModel(handle, getTask, create, update)
+    return AddEditTaskViewModel(handle, getTask, create, update, mockk(relaxed = true))
 }

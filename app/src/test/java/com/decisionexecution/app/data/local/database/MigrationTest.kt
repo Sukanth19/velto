@@ -42,6 +42,28 @@ class MigrationTest {
         db.query("SELECT durationMinutes FROM focus_sessions").use { it.moveToFirst(); it.getInt(0) shouldBe 25 }
     }
 
+    @Test
+    fun `migrating 2 to 3 keeps existing data and adds habits, inbox and mood journal`() {
+        helper.createDatabase(DB_NAME, 2).use { db ->
+            db.execSQL(
+                "INSERT INTO tasks (id, title, description, category, urgency, importance, effort, energyTag, createdAt, isCompleted, completedAt) " +
+                    "VALUES ('t-1', 'Keep me', NULL, 'WORK', 3, 4, 'LOW', NULL, 1, 0, NULL)"
+            )
+            db.execSQL("INSERT INTO focus_sessions (id, taskId, completedAt, durationMinutes) VALUES ('f-1', 't-1', 3, 25)")
+        }
+
+        // Validates the migrated schema against 3.json
+        val db = helper.runMigrationsAndValidate(DB_NAME, 3, true, MIGRATION_2_3)
+
+        db.query("SELECT title FROM tasks").use { it.moveToFirst(); it.getString(0) shouldBe "Keep me" }
+        db.query("SELECT durationMinutes FROM focus_sessions").use { it.moveToFirst(); it.getInt(0) shouldBe 25 }
+        db.execSQL("INSERT INTO habits (id, name, icon, createdAt) VALUES ('h-1', 'Read', 'READ', 1)")
+        db.execSQL("INSERT INTO habit_check_ins (habitId, day) VALUES ('h-1', 20000)")
+        db.execSQL("INSERT INTO inbox_items (id, text, createdAt, isArchived) VALUES ('i-1', 'Idea', 1, 0)")
+        db.execSQL("INSERT INTO mood_entries (day, mood, energy, note, loggedAt) VALUES (20000, 4, 3, NULL, 1)")
+        db.query("SELECT COUNT(*) FROM habit_check_ins").use { it.moveToFirst(); it.getInt(0) shouldBe 1 }
+    }
+
     private companion object {
         const val DB_NAME = "migration-test"
     }

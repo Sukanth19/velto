@@ -2,11 +2,13 @@ package com.decisionexecution.app.presentation.widget
 
 import android.content.Context
 import com.decisionexecution.app.domain.model.FocusSessionState
+import com.decisionexecution.app.domain.model.HabitWithHistory
 import com.decisionexecution.app.domain.model.Task
 import com.decisionexecution.app.presentation.components.label
 import com.decisionexecution.app.presentation.components.quadrant
 import com.decisionexecution.app.presentation.home.formatMinutes
 import kotlinx.coroutines.withTimeoutOrNull
+import java.time.LocalDate
 
 /**
  * What the best-task widget shows. Kept free of Glance so it can be tested without a launcher.
@@ -163,3 +165,18 @@ fun topTaskRows(tasks: List<Task>): List<TopTaskRow> =
     tasks.take(TOP_TASKS_LIMIT).map { TopTaskRow(it.id, it.title, it.quadrant.label) }
 
 const val TOP_TASKS_LIMIT = 3
+
+/**
+ * One habit on the habits widget, with whether it's been done today.
+ */
+data class HabitWidgetRow(
+    val habitId: String,
+    val name: String,
+    val done: Boolean
+)
+
+/** Undone habits first, so what's left to do is what fits on a small widget */
+fun habitWidgetRows(habits: List<HabitWithHistory>, today: LocalDate): List<HabitWidgetRow> =
+    habits
+        .map { HabitWidgetRow(it.habit.id, it.habit.name, it.isDoneOn(today)) }
+        .sortedBy { it.done }

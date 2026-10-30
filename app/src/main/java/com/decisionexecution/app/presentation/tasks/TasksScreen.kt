@@ -41,6 +41,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.decisionexecution.app.domain.model.EisenhowerQuadrant
 import com.decisionexecution.app.domain.model.Task
 import com.decisionexecution.app.domain.model.TaskCategory
+import com.decisionexecution.app.presentation.components.ConfettiBurst
 import com.decisionexecution.app.presentation.components.QuadrantBadge
 import com.decisionexecution.app.presentation.components.SectionHeader
 import com.decisionexecution.app.presentation.components.TaskAttributeRow
@@ -67,6 +68,7 @@ fun TasksScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     var actionsFor by remember { mutableStateOf<Task?>(null) }
+    var confettiKey by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(uiState.error) {
         uiState.error?.let { message ->
@@ -92,50 +94,57 @@ fun TasksScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            LargeTopAppBar(
-                title = {
-                    Column {
-                        Text("Tasks")
-                        Text(
-                            if (uiState.activeTaskCount == 1) "1 active" else "${uiState.activeTaskCount} active",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+    Box {
+        Scaffold(
+            topBar = {
+                LargeTopAppBar(
+                    title = {
+                        Column {
+                            Text("Tasks")
+                            Text(
+                                if (uiState.activeTaskCount == 1) "1 active" else "${uiState.activeTaskCount} active",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    },
+                    actions = { ViewModeToggle(uiState.viewMode, viewModel::onViewModeChange) }
+                )
+            },
+            floatingActionButton = {
+                FloatingActionButton(onClick = onAddTask) {
+                    Icon(Icons.Rounded.Add, contentDescription = "Add task")
+                }
+            },
+            snackbarHost = { SnackbarHost(snackbarHostState) }
+        ) { padding ->
+            Column(Modifier.fillMaxSize().padding(padding)) {
+                CategoryFilter(selected = uiState.selectedCategory, onSelect = viewModel::onCategoryFilter)
+
+                val sections = uiState.tasksByCategory.filterValues { it.isNotEmpty() }
+                AnimatedContent(
+                    targetState = uiState.viewMode,
+                    transitionSpec = { fadeIn() togetherWith fadeOut() },
+                    label = "viewMode"
+                ) { mode ->
+                    when {
+                        !uiState.isLoading && sections.isEmpty() -> EmptyTasks(uiState.selectedCategory, onAddTask)
+                        mode == TasksViewMode.MATRIX -> MatrixView(uiState.matrix, onOpenTask)
+                        else -> TaskList(
+                            sections = sections,
+                            onComplete = {
+                                viewModel.onTaskComplete(it)
+                                confettiKey++
+                            },
+                            onShowActions = { actionsFor = it },
+                            onOpenTask = onOpenTask
                         )
                     }
-                },
-                actions = { ViewModeToggle(uiState.viewMode, viewModel::onViewModeChange) }
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = onAddTask) {
-                Icon(Icons.Rounded.Add, contentDescription = "Add task")
-            }
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
-            CategoryFilter(selected = uiState.selectedCategory, onSelect = viewModel::onCategoryFilter)
-
-            val sections = uiState.tasksByCategory.filterValues { it.isNotEmpty() }
-            AnimatedContent(
-                targetState = uiState.viewMode,
-                transitionSpec = { fadeIn() togetherWith fadeOut() },
-                label = "viewMode"
-            ) { mode ->
-                when {
-                    !uiState.isLoading && sections.isEmpty() -> EmptyTasks(uiState.selectedCategory, onAddTask)
-                    mode == TasksViewMode.MATRIX -> MatrixView(uiState.matrix, onOpenTask)
-                    else -> TaskList(
-                        sections = sections,
-                        onComplete = viewModel::onTaskComplete,
-                        onShowActions = { actionsFor = it },
-                        onOpenTask = onOpenTask
-                    )
                 }
             }
         }
+
+        ConfettiBurst(confettiKey, origin = androidx.compose.ui.geometry.Offset(0.5f, 0.5f))
     }
 
     actionsFor?.let { task ->

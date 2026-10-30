@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.LocalFireDepartment
+import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.outlined.Insights
 import androidx.compose.material.icons.outlined.TaskAlt
 import androidx.compose.material.icons.outlined.Timer
@@ -20,6 +22,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.decisionexecution.app.presentation.habits.HabitsScreen
+import com.decisionexecution.app.presentation.inbox.InboxScreen
+import com.decisionexecution.app.presentation.journal.JournalScreen
+import com.decisionexecution.app.presentation.progress.CelebrationHost
+import com.decisionexecution.app.presentation.progress.CelebrationViewModel
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import android.net.Uri
@@ -53,6 +61,10 @@ object DeepLinks {
     const val FOCUS = "${BASE}focus"
     const val JUST_START = "${BASE}just_start"
     const val ADD_TASK = "${BASE}add_task"
+    const val CAPTURE = "${BASE}capture"
+    const val HABITS = "${BASE}habits"
+    const val JOURNAL = "${BASE}journal"
+    const val PROGRESS = "${BASE}progress"
 
     fun openTask(taskId: String) = "${BASE}open_task/$taskId"
 }
@@ -63,20 +75,30 @@ object Routes {
     const val FOCUS = "focus"
     const val SETTINGS = "settings"
     const val INSIGHTS = "insights"
+    const val HABITS = "habits"
+    const val JOURNAL = "journal"
+    const val CAPTURE_ARG = "capture"
+    const val INBOX = "inbox?$CAPTURE_ARG={$CAPTURE_ARG}"
     const val JUST_START = "just_start"
     const val TASK_DETAIL = "task/{${TaskDetailViewModel.TASK_ID_ARG}}"
-    const val ADD_EDIT_TASK = "task_edit?${AddEditTaskViewModel.TASK_ID_ARG}={${AddEditTaskViewModel.TASK_ID_ARG}}"
+    const val ADD_EDIT_TASK = "task_edit?${AddEditTaskViewModel.TASK_ID_ARG}={${AddEditTaskViewModel.TASK_ID_ARG}}" +
+        "&${AddEditTaskViewModel.TITLE_ARG}={${AddEditTaskViewModel.TITLE_ARG}}" +
+        "&${AddEditTaskViewModel.INBOX_ID_ARG}={${AddEditTaskViewModel.INBOX_ID_ARG}}"
 
     fun taskDetail(taskId: String) = "task/$taskId"
     fun addTask() = "task_edit"
     fun editTask(taskId: String) = "task_edit?${AddEditTaskViewModel.TASK_ID_ARG}=$taskId"
+    fun taskFromInbox(title: String, inboxId: String) =
+        "task_edit?${AddEditTaskViewModel.TITLE_ARG}=${Uri.encode(title)}&${AddEditTaskViewModel.INBOX_ID_ARG}=$inboxId"
+    fun inbox(capture: Boolean = false) = "inbox?$CAPTURE_ARG=$capture"
 }
 
 private enum class TopLevelTab(val route: String, val label: String, val icon: ImageVector, val selectedIcon: ImageVector) {
     HOME(Routes.HOME, "Home", Icons.Outlined.Home, Icons.Rounded.Home),
     TASKS(Routes.TASKS, "Tasks", Icons.Outlined.TaskAlt, Icons.Rounded.TaskAlt),
+    HABITS(Routes.HABITS, "Habits", Icons.Outlined.LocalFireDepartment, Icons.Rounded.LocalFireDepartment),
     FOCUS(Routes.FOCUS, "Focus", Icons.Outlined.Timer, Icons.Rounded.Timer),
-    INSIGHTS(Routes.INSIGHTS, "Insights", Icons.Outlined.Insights, Icons.Rounded.Insights)
+    INSIGHTS(Routes.INSIGHTS, "Progress", Icons.Outlined.Insights, Icons.Rounded.Insights)
 }
 
 /**
@@ -104,6 +126,10 @@ fun NavHostController.openDeepLink(uri: Uri): Boolean {
         "focus" -> navigateToTab(Routes.FOCUS)
         "just_start" -> navigate(Routes.JUST_START)
         "add_task" -> navigate(Routes.addTask())
+        "capture" -> navigate(Routes.inbox(capture = true))
+        "habits" -> navigateToTab(Routes.HABITS)
+        "journal" -> navigate(Routes.JOURNAL)
+        "progress" -> navigateToTab(Routes.INSIGHTS)
         "open_task" -> navigate(Routes.taskDetail(uri.pathSegments.firstOrNull() ?: return false))
         else -> return false
     }
@@ -111,7 +137,8 @@ fun NavHostController.openDeepLink(uri: Uri): Boolean {
 }
 
 /**
- * Bottom navigation with Home, Tasks and Focus, plus the secondary screens.
+ * Bottom navigation with Home, Tasks, Habits, Focus and Progress, plus the secondary screens.
+ * Level-ups and achievements are celebrated over whatever screen is showing.
  * Requirements: 12.3
  */
 @OptIn(ExperimentalLayoutApi::class)
@@ -120,6 +147,7 @@ fun AppNavHost(navController: NavHostController = rememberNavController()) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
     val showBottomBar = TopLevelTab.entries.any { it.route == currentDestination?.route }
+    val celebrations: CelebrationViewModel = hiltViewModel()
 
     Scaffold(
         // Edge to edge: each screen handles the status bar itself; the bar below handles the nav bar
@@ -152,7 +180,10 @@ fun AppNavHost(navController: NavHostController = rememberNavController()) {
                     onOpenTask = { navController.navigate(Routes.taskDetail(it)) },
                     onAddTask = { navController.navigate(Routes.addTask()) },
                     onOpenSettings = { navController.navigate(Routes.SETTINGS) },
-                    onOpenInsights = { navController.navigateToTab(Routes.INSIGHTS) }
+                    onOpenInsights = { navController.navigateToTab(Routes.INSIGHTS) },
+                    onOpenHabits = { navController.navigateToTab(Routes.HABITS) },
+                    onOpenInbox = { navController.navigate(Routes.inbox()) },
+                    onOpenJournal = { navController.navigate(Routes.JOURNAL) }
                 )
             }
             composable(Routes.TASKS) {
@@ -163,7 +194,26 @@ fun AppNavHost(navController: NavHostController = rememberNavController()) {
                 )
             }
             composable(Routes.INSIGHTS) {
-                InsightsScreen()
+                InsightsScreen(onOpenJournal = { navController.navigate(Routes.JOURNAL) })
+            }
+            composable(Routes.HABITS) {
+                HabitsScreen()
+            }
+            composable(Routes.JOURNAL) {
+                JournalScreen(onBack = { navController.popBackStack() })
+            }
+            composable(
+                Routes.INBOX,
+                arguments = listOf(navArgument(Routes.CAPTURE_ARG) {
+                    type = NavType.BoolType
+                    defaultValue = false
+                })
+            ) { entry ->
+                InboxScreen(
+                    onBack = { navController.popBackStack() },
+                    onMakeTask = { navController.navigate(Routes.taskFromInbox(it.text, it.id)) },
+                    focusCapture = entry.arguments?.getBoolean(Routes.CAPTURE_ARG) == true
+                )
             }
             composable(Routes.FOCUS) {
                 FocusScreen(onGoHome = { navController.navigateToTab(Routes.HOME) })
@@ -194,14 +244,17 @@ fun AppNavHost(navController: NavHostController = rememberNavController()) {
             }
             composable(
                 Routes.ADD_EDIT_TASK,
-                arguments = listOf(navArgument(AddEditTaskViewModel.TASK_ID_ARG) {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
-                })
+                arguments = listOf(AddEditTaskViewModel.TASK_ID_ARG, AddEditTaskViewModel.TITLE_ARG, AddEditTaskViewModel.INBOX_ID_ARG).map { name ->
+                    navArgument(name) {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    }
+                }
             ) {
                 AddEditTaskScreen(onDone = { navController.popBackStack() })
             }
         }
+        CelebrationHost(celebrations)
     }
 }

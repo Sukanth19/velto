@@ -9,4 +9,12 @@
     <string name="widget_today_description">Focus time against your daily goal, tasks done and your streak</string>
     <string name="widget_top_tasks_name">Top tasks</string>
     <string name="widget_top_tasks_description">Your three best tasks; tick one off without opening the app</string>
+    <string name="widget_habits_name">Habits</string>
+    <string name="widget_habits_description">Tick off today\'s habits from the home screen</string>
+    <string name="widget_mood_name">Mood</string>
+    <string name="widget_mood_description">Log how you feel with one tap</string>
+    <string name="widget_capture_name">Quick capture</string>
+    <string name="widget_capture_description">Jot a thought into your inbox in a tap</string>
+    <string name="widget_level_name">Level</string>
+    <string name="widget_level_description">Your level and XP to the next one</string>
 </resources>

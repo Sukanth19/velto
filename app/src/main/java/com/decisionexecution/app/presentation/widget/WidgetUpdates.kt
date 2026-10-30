@@ -8,7 +8,11 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import com.decisionexecution.app.domain.service.FocusSessionManager
+import com.decisionexecution.app.domain.repository.HabitRepository
+import com.decisionexecution.app.domain.repository.InboxRepository
+import com.decisionexecution.app.domain.repository.MoodRepository
 import com.decisionexecution.app.domain.repository.PreferencesRepository
+import com.decisionexecution.app.domain.usecase.GetProgressUseCase
 import com.decisionexecution.app.domain.usecase.GetBestTaskUseCase
 import com.decisionexecution.app.domain.usecase.GetInsightsUseCase
 import com.decisionexecution.app.domain.usecase.GetProductivityMetricsUseCase
@@ -38,7 +42,11 @@ class WidgetUpdater @Inject constructor(
     private val getTopThreeTasksUseCase: GetTopThreeTasksUseCase,
     private val getProductivityMetricsUseCase: GetProductivityMetricsUseCase,
     private val getInsightsUseCase: GetInsightsUseCase,
-    private val preferencesRepository: PreferencesRepository
+    private val preferencesRepository: PreferencesRepository,
+    private val habitRepository: HabitRepository,
+    private val moodRepository: MoodRepository,
+    private val inboxRepository: InboxRepository,
+    private val getProgressUseCase: GetProgressUseCase
 ) {
     fun start(scope: CoroutineScope) {
         scope.launch {
@@ -77,6 +85,30 @@ class WidgetUpdater @Inject constructor(
                 .distinctUntilChanged()
                 .collect { safely { TodayWidget().updateAll(context) } }
         }
+        val today = LocalDate.now()
+        scope.launch {
+            habitRepository.getHabits(today)
+                .map { habitWidgetRows(it, today) }
+                .distinctUntilChanged()
+                .collect { safely { HabitsWidget().updateAll(context) } }
+        }
+        scope.launch {
+            moodRepository.getEntry(today)
+                .distinctUntilChanged()
+                .collect { safely { MoodWidget().updateAll(context) } }
+        }
+        scope.launch {
+            inboxRepository.getItems()
+                .map { it.size }
+                .distinctUntilChanged()
+                .collect { safely { CaptureWidget().updateAll(context) } }
+        }
+        scope.launch {
+            getProgressUseCase()
+                .map { it.level }
+                .distinctUntilChanged()
+                .collect { safely { LevelWidget().updateAll(context) } }
+        }
     }
 
     // A widget refresh failing must never take the app down (Requirement 8.4)
@@ -86,7 +118,7 @@ class WidgetUpdater @Inject constructor(
 }
 
 /**
- * Fallback refresh for the best-task, today and top-tasks widgets when the app isn't running:
+ * Fallback refresh for every widget except the timer when the app isn't running:
  * the best task can change without user action as tasks age, today's stats reset at midnight,
  * and the spec allows up to 15 minutes. Keeps its old name so already-scheduled work still resolves.
  * Requirements: 8.4
@@ -97,9 +129,7 @@ class BestTaskWidgetUpdateWorker(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result = try {
-        BestTaskWidget().updateAll(applicationContext)
-        TodayWidget().updateAll(applicationContext)
-        TopTasksWidget().updateAll(applicationContext)
+        refreshedWidgets().forEach { it.updateAll(applicationContext) }
         Result.success()
     } catch (e: Exception) {
         Result.retry()

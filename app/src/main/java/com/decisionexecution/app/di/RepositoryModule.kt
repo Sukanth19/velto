@@ -7,10 +7,22 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.decisionexecution.app.data.local.dao.FocusSessionDao
 import com.decisionexecution.app.data.local.dao.TaskDao
 import com.decisionexecution.app.data.local.dao.TaskCompletionDao
+import com.decisionexecution.app.data.local.dao.HabitDao
+import com.decisionexecution.app.data.local.dao.InboxDao
+import com.decisionexecution.app.data.local.dao.MoodDao
+import com.decisionexecution.app.data.local.dao.StatsDao
+import com.decisionexecution.app.data.repository.HabitRepositoryImpl
+import com.decisionexecution.app.data.repository.InboxRepositoryImpl
+import com.decisionexecution.app.data.repository.MoodRepositoryImpl
 import com.decisionexecution.app.data.repository.PerformanceRepositoryImpl
+import com.decisionexecution.app.data.repository.ProgressRepositoryImpl
 import com.decisionexecution.app.data.repository.TaskRepositoryImpl
 import com.decisionexecution.app.data.repository.PreferencesRepositoryImpl
+import com.decisionexecution.app.domain.repository.HabitRepository
+import com.decisionexecution.app.domain.repository.InboxRepository
+import com.decisionexecution.app.domain.repository.MoodRepository
 import com.decisionexecution.app.domain.repository.PerformanceRepository
+import com.decisionexecution.app.domain.repository.ProgressRepository
 import com.decisionexecution.app.domain.repository.TaskRepository
 import com.decisionexecution.app.domain.repository.PreferencesRepository
 import dagger.Module
@@ -51,4 +63,24 @@ object RepositoryModule {
         taskCompletionDao: TaskCompletionDao,
         focusSessionDao: FocusSessionDao
     ): PerformanceRepository = PerformanceRepositoryImpl(taskCompletionDao, focusSessionDao)
+
+    @Provides
+    @Singleton
+    fun provideHabitRepository(habitDao: HabitDao): HabitRepository = HabitRepositoryImpl(habitDao)
+
+    @Provides
+    @Singleton
+    fun provideInboxRepository(inboxDao: InboxDao): InboxRepository = InboxRepositoryImpl(inboxDao)
+
+    @Provides
+    @Singleton
+    fun provideMoodRepository(moodDao: MoodDao): MoodRepository = MoodRepositoryImpl(moodDao)
+
+    @Provides
+    @Singleton
+    fun provideProgressRepository(
+        statsDao: StatsDao,
+        habitDao: HabitDao,
+        dataStore: DataStore<Preferences>
+    ): ProgressRepository = ProgressRepositoryImpl(statsDao, habitDao, dataStore)
 }

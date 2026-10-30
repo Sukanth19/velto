@@ -7,6 +7,7 @@ import com.decisionexecution.app.domain.model.EnergyTag
 import com.decisionexecution.app.domain.model.Task
 import com.decisionexecution.app.domain.model.TaskCategory
 import com.decisionexecution.app.domain.model.TaskEffort
+import com.decisionexecution.app.domain.repository.InboxRepository
 import com.decisionexecution.app.domain.usecase.CreateTaskUseCase
 import com.decisionexecution.app.domain.usecase.GetTaskByIdUseCase
 import com.decisionexecution.app.domain.usecase.UpdateTaskUseCase
@@ -37,6 +38,7 @@ data class AddEditTaskUiState(
 
 /**
  * ViewModel for creating or editing a task. Editing keeps the original id and creation time.
+ * A task made from an inbox item starts with its text and clears the item once saved.
  *
  * Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7
  */
@@ -45,13 +47,17 @@ class AddEditTaskViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val getTaskByIdUseCase: GetTaskByIdUseCase,
     private val createTaskUseCase: CreateTaskUseCase,
-    private val updateTaskUseCase: UpdateTaskUseCase
+    private val updateTaskUseCase: UpdateTaskUseCase,
+    private val inboxRepository: InboxRepository
 ) : ViewModel() {
 
     private val taskId: String? = savedStateHandle[TASK_ID_ARG]
+    private val inboxItemId: String? = savedStateHandle[INBOX_ID_ARG]
     private var original: Task? = null
 
-    private val _uiState = MutableStateFlow(AddEditTaskUiState(isEditing = taskId != null))
+    private val _uiState = MutableStateFlow(
+        AddEditTaskUiState(isEditing = taskId != null, title = savedStateHandle.get<String>(TITLE_ARG).orEmpty())
+    )
     val uiState: StateFlow<AddEditTaskUiState> = _uiState.asStateFlow()
 
     init {
@@ -107,6 +113,7 @@ class AddEditTaskViewModel @Inject constructor(
                     createdAt = existing?.createdAt ?: System.currentTimeMillis()
                 )
                 if (existing != null) updateTaskUseCase(task) else createTaskUseCase(task)
+                inboxItemId?.let { inboxRepository.delete(it) }
                 _uiState.update { it.copy(isSaved = true) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.toUserMessage("save the task")) }
@@ -118,5 +125,7 @@ class AddEditTaskViewModel @Inject constructor(
 
     companion object {
         const val TASK_ID_ARG = "taskId"
+        const val TITLE_ARG = "title"
+        const val INBOX_ID_ARG = "inboxId"
     }
 }

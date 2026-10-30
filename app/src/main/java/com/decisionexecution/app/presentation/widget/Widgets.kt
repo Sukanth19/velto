@@ -44,7 +44,11 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.decisionexecution.app.MainActivity
 import com.decisionexecution.app.R
+import com.decisionexecution.app.domain.repository.HabitRepository
+import com.decisionexecution.app.domain.repository.InboxRepository
+import com.decisionexecution.app.domain.repository.MoodRepository
 import com.decisionexecution.app.domain.repository.PreferencesRepository
+import com.decisionexecution.app.domain.usecase.GetProgressUseCase
 import com.decisionexecution.app.domain.service.FocusSessionManager
 import com.decisionexecution.app.domain.usecase.CompleteTaskUseCase
 import com.decisionexecution.app.domain.usecase.ExtendFocusSessionUseCase
@@ -75,12 +79,16 @@ interface WidgetEntryPoint {
     fun getProductivityMetricsUseCase(): GetProductivityMetricsUseCase
     fun getInsightsUseCase(): GetInsightsUseCase
     fun preferencesRepository(): PreferencesRepository
+    fun habitRepository(): HabitRepository
+    fun moodRepository(): MoodRepository
+    fun inboxRepository(): InboxRepository
+    fun getProgressUseCase(): GetProgressUseCase
 }
 
 internal fun Context.widgetEntryPoint(): WidgetEntryPoint =
     EntryPointAccessors.fromApplication(applicationContext, WidgetEntryPoint::class.java)
 
-private fun deepLinkAction(context: Context, uri: String): Action =
+internal fun deepLinkAction(context: Context, uri: String): Action =
     actionStartActivity(
         Intent(Intent.ACTION_VIEW, Uri.parse(uri), context, MainActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
@@ -400,8 +408,7 @@ abstract class RefreshedWidgetReceiver : GlanceAppWidgetReceiver() {
         CoroutineScope(Dispatchers.Default).launch {
             try {
                 val manager = GlanceAppWidgetManager(context)
-                val remaining = listOf(BestTaskWidget::class.java, TodayWidget::class.java, TopTasksWidget::class.java)
-                    .sumOf { manager.getGlanceIds(it).size }
+                val remaining = refreshedWidgets().sumOf { manager.getGlanceIds(it::class.java).size }
                 if (remaining == 0) BestTaskWidgetUpdateWorker.cancel(context)
             } finally {
                 pending.finish()
@@ -409,6 +416,11 @@ abstract class RefreshedWidgetReceiver : GlanceAppWidgetReceiver() {
         }
     }
 }
+
+/** Every widget the periodic refresh redraws */
+fun refreshedWidgets(): List<GlanceAppWidget> = listOf(
+    BestTaskWidget(), TodayWidget(), TopTasksWidget(), HabitsWidget(), MoodWidget(), CaptureWidget(), LevelWidget()
+)
 
 class BestTaskWidgetReceiver : RefreshedWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = BestTaskWidget()

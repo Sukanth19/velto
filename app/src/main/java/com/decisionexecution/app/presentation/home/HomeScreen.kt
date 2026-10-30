@@ -15,6 +15,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.EmojiEvents
+import androidx.compose.material.icons.rounded.Inbox
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Settings
@@ -39,6 +41,11 @@ import com.decisionexecution.app.domain.model.Task
 import com.decisionexecution.app.presentation.components.QuadrantBadge
 import com.decisionexecution.app.presentation.components.label
 import com.decisionexecution.app.presentation.components.quadrant
+import com.decisionexecution.app.presentation.components.energyLabel
+import com.decisionexecution.app.presentation.components.moodIcon
+import com.decisionexecution.app.presentation.components.moodLabel
+import com.decisionexecution.app.presentation.journal.MoodCheckInCard
+import com.decisionexecution.app.presentation.progress.LevelBadge
 import com.decisionexecution.app.presentation.theme.Spacing
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -55,7 +62,8 @@ fun formatMinutes(minutes: Int): String =
     if (minutes < 60) "${minutes}m" else "${minutes / 60}h ${(minutes % 60).toString().padStart(2, '0')}m"
 
 /**
- * Home: greeting, the next best task with one big Just Start, streak, daily goal and today's stats.
+ * Home: greeting with level and inbox, the next best task with one big Just Start, the mood
+ * check-in, today's habits, daily goal and stats.
  * Requirements: 12.4, 7.7
  */
 @Composable
@@ -65,9 +73,14 @@ fun HomeScreen(
     onAddTask: () -> Unit,
     onOpenSettings: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel(),
-    onOpenInsights: () -> Unit = {}
+    onOpenInsights: () -> Unit = {},
+    onOpenHabits: () -> Unit = {},
+    onOpenInbox: () -> Unit = {},
+    onOpenJournal: () -> Unit = {},
+    extrasViewModel: HomeExtrasViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val extras by extrasViewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val haptics = LocalHapticFeedback.current
 
@@ -108,7 +121,13 @@ fun HomeScreen(
                 .padding(horizontal = Spacing.md),
             verticalArrangement = Arrangement.spacedBy(Spacing.lg)
         ) {
-            Header(streakDays = uiState.streakDays, onOpenSettings = onOpenSettings)
+            Header(
+                streakDays = uiState.streakDays,
+                extras = extras,
+                onOpenSettings = onOpenSettings,
+                onOpenInbox = onOpenInbox,
+                onOpenProgress = onOpenInsights
+            )
 
             AnimatedContent(
                 targetState = uiState.isLoading to uiState.bestTask,
@@ -131,6 +150,16 @@ fun HomeScreen(
                 }
             }
 
+            if (extras.moodLoaded) {
+                val mood = extras.todayMood
+                if (mood == null) {
+                    MoodCheckInCard(existing = null, onSave = extrasViewModel::onSaveMood)
+                } else {
+                    MoodSummary(mood, onOpenJournal)
+                }
+            }
+            HabitsSummary(extras.habitsDone, extras.habitsTotal, onOpenHabits)
+
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text("Today", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
                 TextButton(onClick = onOpenInsights) { Text("See your week") }
@@ -148,7 +177,13 @@ fun HomeScreen(
 }
 
 @Composable
-private fun Header(streakDays: Int, onOpenSettings: () -> Unit) {
+private fun Header(
+    streakDays: Int,
+    extras: HomeExtrasUiState,
+    onOpenSettings: () -> Unit,
+    onOpenInbox: () -> Unit,
+    onOpenProgress: () -> Unit
+) {
     val now = remember { LocalDateTime.now() }
     Row(
         Modifier
@@ -163,13 +198,91 @@ private fun Header(streakDays: Int, onOpenSettings: () -> Unit) {
                 color = MaterialTheme.colorScheme.primary
             )
             Text(greetingFor(now.hour), style = MaterialTheme.typography.displaySmall)
-            if (streakDays > 0) {
-                Spacer(Modifier.height(Spacing.sm))
-                StreakChip(streakDays)
+            Spacer(Modifier.height(Spacing.sm))
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                extras.level?.let { LevelChip(it.level, it.title, onOpenProgress) }
+                if (streakDays > 0) StreakChip(streakDays)
             }
         }
-        IconButton(onClick = onOpenSettings) {
+        BadgedBox(
+            badge = { if (extras.inboxCount > 0) Badge { Text(extras.inboxCount.toString()) } }
+        ) {
+            IconButton(onClick = onOpenInbox, shapes = IconButtonDefaults.shapes()) {
+                Icon(Icons.Rounded.Inbox, contentDescription = "Inbox, ${extras.inboxCount} items")
+            }
+        }
+        IconButton(onClick = onOpenSettings, shapes = IconButtonDefaults.shapes()) {
             Icon(Icons.Rounded.Settings, contentDescription = "Settings")
+        }
+    }
+}
+
+@Composable
+private fun LevelChip(level: Int, title: String, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+    ) {
+        Row(
+            Modifier.padding(start = Spacing.xs, end = Spacing.md, top = Spacing.xs, bottom = Spacing.xs),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.xs)
+        ) {
+            LevelBadge(level, Modifier.size(26.dp))
+            Text(title, style = MaterialTheme.typography.labelLarge)
+        }
+    }
+}
+
+@Composable
+private fun MoodSummary(mood: com.decisionexecution.app.domain.model.MoodEntry, onOpenJournal: () -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    Surface(onClick = onOpenJournal, shape = RoundedCornerShape(24.dp), color = scheme.secondaryContainer, contentColor = scheme.onSecondaryContainer) {
+        Row(Modifier.fillMaxWidth().padding(Spacing.md), verticalAlignment = Alignment.CenterVertically) {
+            Icon(moodIcon(mood.mood), contentDescription = null, modifier = Modifier.size(32.dp))
+            Spacer(Modifier.width(Spacing.md))
+            Column(Modifier.weight(1f)) {
+                Text("Feeling ${moodLabel(mood.mood).lowercase()} · ${energyLabel(mood.energy).lowercase()}", style = MaterialTheme.typography.titleSmall)
+                Text("Open your journal", style = MaterialTheme.typography.bodySmall)
+            }
+            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null)
+        }
+    }
+}
+
+/** Today's habits as a small wavy ring; tapping goes to the Habits tab. */
+@Composable
+private fun HabitsSummary(done: Int, total: Int, onOpen: () -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    val fraction = if (total > 0) done.toFloat() / total else 0f
+    val progress by animateFloatAsState(fraction, WavyProgressIndicatorDefaults.ProgressAnimationSpec, label = "habits")
+    Surface(onClick = onOpen, shape = RoundedCornerShape(24.dp), color = scheme.surfaceContainerLow) {
+        Row(Modifier.fillMaxWidth().padding(Spacing.md), verticalAlignment = Alignment.CenterVertically) {
+            Box(contentAlignment = Alignment.Center) {
+                CircularWavyProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier.size(52.dp),
+                    color = scheme.tertiary,
+                    trackColor = scheme.surfaceContainerHighest
+                )
+                Text(if (total == 0) "–" else "$done", style = MaterialTheme.typography.titleMedium)
+            }
+            Spacer(Modifier.width(Spacing.md))
+            Column(Modifier.weight(1f)) {
+                Text("Habits", style = MaterialTheme.typography.titleSmall)
+                Text(
+                    when {
+                        total == 0 -> "Start one small daily habit"
+                        done == total -> "All $total done today. Nice!"
+                        else -> "$done of $total done today"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = scheme.onSurfaceVariant
+                )
+            }
+            Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null, tint = scheme.onSurfaceVariant)
         }
     }
 }
