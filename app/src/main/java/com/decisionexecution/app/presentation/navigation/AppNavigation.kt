@@ -17,6 +17,9 @@ import androidx.compose.material.icons.rounded.TaskAlt
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material3.Icon
 import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -180,7 +183,7 @@ private val popExit: ExitTransition =
  * Bottom navigation with Home, Tasks, Habits, Focus and Progress, plus the secondary screens.
  * Level-ups and achievements are celebrated over whatever screen is showing.
  */
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalSharedTransitionApi::class)
 @Composable
 fun AppNavHost(navController: NavHostController = rememberNavController()) {
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -207,116 +210,120 @@ fun AppNavHost(navController: NavHostController = rememberNavController()) {
             }
         }
     ) { padding ->
-        NavHost(
-            navController = navController,
-            startDestination = Routes.HOME,
-            modifier = Modifier.padding(padding).consumeWindowInsets(padding),
-            enterTransition = { if (isTabSwitch()) tabEnter else pushEnter },
-            exitTransition = { if (isTabSwitch()) tabExit else pushExit },
-            popEnterTransition = { if (isTabSwitch()) tabEnter else popEnter },
-            popExitTransition = { if (isTabSwitch()) tabExit else popExit }
-        ) {
-            composable(Routes.HOME) {
-                HomeScreen(
-                    onNavigateToFocus = { navController.navigateToTab(Routes.FOCUS) },
-                    onOpenTask = { navController.navigate(Routes.taskDetail(it)) },
-                    onAddTask = { navController.navigate(Routes.addTask()) },
-                    onOpenSettings = { navController.navigate(Routes.SETTINGS) },
-                    onOpenInsights = { navController.navigateToTab(Routes.INSIGHTS) },
-                    onOpenHabits = { navController.navigateToTab(Routes.HABITS) },
-                    onOpenInbox = { navController.navigate(Routes.inbox()) },
-                    onOpenJournal = { navController.navigate(Routes.JOURNAL) },
-                    onDecide = { navController.navigate(Routes.decide(it)) }
-                )
-            }
-            composable(Routes.TASKS) {
-                TasksScreen(
-                    onOpenTask = { navController.navigate(Routes.taskDetail(it)) },
-                    onEditTask = { navController.navigate(Routes.editTask(it)) },
-                    onAddTask = { navController.navigate(Routes.addTask()) }
-                )
-            }
-            composable(Routes.INSIGHTS) {
-                InsightsScreen(
-                    onOpenJournal = { navController.navigate(Routes.JOURNAL) },
-                    onOpenReview = { navController.navigate(Routes.REVIEW) }
-                )
-            }
-            composable(Routes.HABITS) {
-                HabitsScreen()
-            }
-            composable(
-                Routes.DECIDE,
-                arguments = listOf(navArgument(DecideViewModel.MINUTES_ARG) {
-                    type = NavType.IntType
-                    defaultValue = DecideViewModel.DEFAULT_MINUTES
-                })
-            ) {
-                DecideScreen(
-                    onBack = { navController.popBackStack() },
-                    onStarted = {
-                        navController.popBackStack()
-                        navController.navigateToTab(Routes.FOCUS)
+        SharedTransitionLayout {
+            CompositionLocalProvider(LocalSharedTransitionScope provides this) {
+                NavHost(
+                    navController = navController,
+                    startDestination = Routes.HOME,
+                    modifier = Modifier.padding(padding).consumeWindowInsets(padding),
+                    enterTransition = { if (isTabSwitch()) tabEnter else pushEnter },
+                    exitTransition = { if (isTabSwitch()) tabExit else pushExit },
+                    popEnterTransition = { if (isTabSwitch()) tabEnter else popEnter },
+                    popExitTransition = { if (isTabSwitch()) tabExit else popExit }
+                ) {
+                    screen(Routes.HOME) {
+                        HomeScreen(
+                            onNavigateToFocus = { navController.navigateToTab(Routes.FOCUS) },
+                            onOpenTask = { navController.navigate(Routes.taskDetail(it)) },
+                            onAddTask = { navController.navigate(Routes.addTask()) },
+                            onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+                            onOpenInsights = { navController.navigateToTab(Routes.INSIGHTS) },
+                            onOpenHabits = { navController.navigateToTab(Routes.HABITS) },
+                            onOpenInbox = { navController.navigate(Routes.inbox()) },
+                            onOpenJournal = { navController.navigate(Routes.JOURNAL) },
+                            onDecide = { navController.navigate(Routes.decide(it)) }
+                        )
                     }
-                )
-            }
-            composable(Routes.REVIEW) {
-                ReviewScreen(onBack = { navController.popBackStack() })
-            }
-            composable(Routes.JOURNAL) {
-                JournalScreen(onBack = { navController.popBackStack() })
-            }
-            composable(
-                Routes.INBOX,
-                arguments = listOf(navArgument(Routes.CAPTURE_ARG) {
-                    type = NavType.BoolType
-                    defaultValue = false
-                })
-            ) { entry ->
-                InboxScreen(
-                    onBack = { navController.popBackStack() },
-                    onMakeTask = { navController.navigate(Routes.taskFromInbox(it.text, it.id)) },
-                    focusCapture = entry.arguments?.getBoolean(Routes.CAPTURE_ARG) == true
-                )
-            }
-            composable(Routes.FOCUS) {
-                FocusScreen(onGoHome = { navController.navigateToTab(Routes.HOME) })
-            }
-            composable(Routes.JUST_START) {
-                JustStartRoute(
-                    onStarted = {
-                        navController.popBackStack()
-                        navController.navigateToTab(Routes.FOCUS)
-                    },
-                    onFailed = {
-                        navController.popBackStack()
-                        navController.navigateToTab(Routes.HOME)
+                    screen(Routes.TASKS) {
+                        TasksScreen(
+                            onOpenTask = { navController.navigate(Routes.taskDetail(it)) },
+                            onEditTask = { navController.navigate(Routes.editTask(it)) },
+                            onAddTask = { navController.navigate(Routes.addTask()) }
+                        )
                     }
-                )
-            }
-            composable(Routes.SETTINGS) {
-                SettingsScreen(onBack = { navController.popBackStack() })
-            }
-            composable(
-                Routes.TASK_DETAIL,
-                arguments = listOf(navArgument(TaskDetailViewModel.TASK_ID_ARG) { type = NavType.StringType })
-            ) {
-                TaskDetailScreen(
-                    onBack = { navController.popBackStack() },
-                    onEdit = { navController.navigate(Routes.editTask(it)) }
-                )
-            }
-            composable(
-                Routes.ADD_EDIT_TASK,
-                arguments = listOf(AddEditTaskViewModel.TASK_ID_ARG, AddEditTaskViewModel.TITLE_ARG, AddEditTaskViewModel.INBOX_ID_ARG).map { name ->
-                    navArgument(name) {
-                        type = NavType.StringType
-                        nullable = true
-                        defaultValue = null
+                    screen(Routes.INSIGHTS) {
+                        InsightsScreen(
+                            onOpenJournal = { navController.navigate(Routes.JOURNAL) },
+                            onOpenReview = { navController.navigate(Routes.REVIEW) }
+                        )
+                    }
+                    screen(Routes.HABITS) {
+                        HabitsScreen()
+                    }
+                    screen(
+                        Routes.DECIDE,
+                        arguments = listOf(navArgument(DecideViewModel.MINUTES_ARG) {
+                            type = NavType.IntType
+                            defaultValue = DecideViewModel.DEFAULT_MINUTES
+                        })
+                    ) {
+                        DecideScreen(
+                            onBack = { navController.popBackStack() },
+                            onStarted = {
+                                navController.popBackStack()
+                                navController.navigateToTab(Routes.FOCUS)
+                            }
+                        )
+                    }
+                    screen(Routes.REVIEW) {
+                        ReviewScreen(onBack = { navController.popBackStack() })
+                    }
+                    screen(Routes.JOURNAL) {
+                        JournalScreen(onBack = { navController.popBackStack() })
+                    }
+                    screen(
+                        Routes.INBOX,
+                        arguments = listOf(navArgument(Routes.CAPTURE_ARG) {
+                            type = NavType.BoolType
+                            defaultValue = false
+                        })
+                    ) { entry ->
+                        InboxScreen(
+                            onBack = { navController.popBackStack() },
+                            onMakeTask = { navController.navigate(Routes.taskFromInbox(it.text, it.id)) },
+                            focusCapture = entry.arguments?.getBoolean(Routes.CAPTURE_ARG) == true
+                        )
+                    }
+                    screen(Routes.FOCUS) {
+                        FocusScreen(onGoHome = { navController.navigateToTab(Routes.HOME) })
+                    }
+                    screen(Routes.JUST_START) {
+                        JustStartRoute(
+                            onStarted = {
+                                navController.popBackStack()
+                                navController.navigateToTab(Routes.FOCUS)
+                            },
+                            onFailed = {
+                                navController.popBackStack()
+                                navController.navigateToTab(Routes.HOME)
+                            }
+                        )
+                    }
+                    screen(Routes.SETTINGS) {
+                        SettingsScreen(onBack = { navController.popBackStack() })
+                    }
+                    screen(
+                        Routes.TASK_DETAIL,
+                        arguments = listOf(navArgument(TaskDetailViewModel.TASK_ID_ARG) { type = NavType.StringType })
+                    ) {
+                        TaskDetailScreen(
+                            onBack = { navController.popBackStack() },
+                            onEdit = { navController.navigate(Routes.editTask(it)) }
+                        )
+                    }
+                    screen(
+                        Routes.ADD_EDIT_TASK,
+                        arguments = listOf(AddEditTaskViewModel.TASK_ID_ARG, AddEditTaskViewModel.TITLE_ARG, AddEditTaskViewModel.INBOX_ID_ARG).map { name ->
+                            navArgument(name) {
+                                type = NavType.StringType
+                                nullable = true
+                                defaultValue = null
+                            }
+                        }
+                    ) {
+                        AddEditTaskScreen(onDone = { navController.popBackStack() })
                     }
                 }
-            ) {
-                AddEditTaskScreen(onDone = { navController.popBackStack() })
             }
         }
         CelebrationHost(celebrations)

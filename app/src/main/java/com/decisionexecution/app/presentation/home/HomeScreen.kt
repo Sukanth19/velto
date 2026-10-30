@@ -24,6 +24,11 @@ import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.automirrored.rounded.TrendingUp
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -47,6 +52,7 @@ import com.decisionexecution.app.presentation.components.moodIcon
 import com.decisionexecution.app.presentation.components.moodLabel
 import com.decisionexecution.app.presentation.journal.MoodCheckInCard
 import com.decisionexecution.app.presentation.progress.LevelBadge
+import com.decisionexecution.app.presentation.navigation.sharedTaskTitle
 import com.decisionexecution.app.presentation.theme.Spacing
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -158,16 +164,12 @@ fun HomeScreen(
 
             if (uiState.bestTask != null) PickForMeCard(onDecide)
 
-            if (extras.moodLoaded) {
-                val mood = extras.todayMood
-                if (mood == null) {
-                    MoodCheckInCard(existing = null, onSave = extrasViewModel::onSaveMood)
-                } else {
-                    MoodSummary(mood, onOpenJournal)
-                }
-            }
-            HabitsSummary(extras.habitsDone, extras.habitsTotal, onOpenHabits)
-            extras.plant?.let { PlantCard(it) }
+            DailyCards(
+                extras = extras,
+                onSaveMood = extrasViewModel::onSaveMood,
+                onOpenJournal = onOpenJournal,
+                onOpenHabits = onOpenHabits
+            )
 
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text("Today", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
@@ -185,6 +187,7 @@ fun HomeScreen(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun Header(
     streakDays: Int,
@@ -194,35 +197,36 @@ private fun Header(
     onOpenProgress: () -> Unit
 ) {
     val now = remember { LocalDateTime.now() }
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(top = Spacing.md),
-        verticalAlignment = Alignment.Top
-    ) {
-        Column(Modifier.weight(1f)) {
+    // Only the date shares a row with the icons, so the greeting and chips get the full width
+    Column(Modifier.fillMaxWidth().padding(top = Spacing.md)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 now.format(DateTimeFormatter.ofPattern("EEEE, MMM d")).uppercase(),
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.primary
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.weight(1f)
             )
-            Text(greetingFor(now.hour), style = MaterialTheme.typography.displaySmall)
-            Spacer(Modifier.height(Spacing.sm))
-            // Centred, because the tappable level chip reserves a 48dp touch target and the streak chip doesn't
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
-                extras.level?.let { LevelChip(it.level, it.title, onOpenProgress) }
-                if (streakDays > 0) StreakChip(streakDays)
+            BadgedBox(
+                badge = { if (extras.inboxCount > 0) Badge { Text(extras.inboxCount.toString()) } }
+            ) {
+                IconButton(onClick = onOpenInbox, shapes = IconButtonDefaults.shapes()) {
+                    Icon(Icons.Rounded.Inbox, contentDescription = "Inbox, ${extras.inboxCount} items")
+                }
+            }
+            IconButton(onClick = onOpenSettings, shapes = IconButtonDefaults.shapes()) {
+                Icon(Icons.Rounded.Settings, contentDescription = "Settings")
             }
         }
-        BadgedBox(
-            badge = { if (extras.inboxCount > 0) Badge { Text(extras.inboxCount.toString()) } }
+        Text(greetingFor(now.hour), style = MaterialTheme.typography.displaySmall)
+        Spacer(Modifier.height(Spacing.sm))
+        // Chips wrap as whole chips rather than squeezing their text onto two lines.
+        // Centred, because the tappable level chip reserves a 48dp touch target and the streak chip doesn't
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+            itemVerticalAlignment = Alignment.CenterVertically
         ) {
-            IconButton(onClick = onOpenInbox, shapes = IconButtonDefaults.shapes()) {
-                Icon(Icons.Rounded.Inbox, contentDescription = "Inbox, ${extras.inboxCount} items")
-            }
-        }
-        IconButton(onClick = onOpenSettings, shapes = IconButtonDefaults.shapes()) {
-            Icon(Icons.Rounded.Settings, contentDescription = "Settings")
+            extras.level?.let { LevelChip(it.level, it.title, onOpenProgress) }
+            if (streakDays > 0) StreakChip(streakDays)
         }
     }
 }
@@ -241,7 +245,7 @@ private fun LevelChip(level: Int, title: String, onClick: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(Spacing.xs)
         ) {
             LevelBadge(level, Modifier.size(26.dp))
-            Text(title, style = MaterialTheme.typography.labelLarge)
+            Text(title, style = MaterialTheme.typography.labelLarge, maxLines = 1)
         }
     }
 }
@@ -290,12 +294,64 @@ private fun PickForMeCard(onDecide: (Int) -> Unit) {
     }
 }
 
+/**
+ * Today's check-ins as a swipeable row (mood, habits, plant) instead of three stacked cards,
+ * with the next card peeking in so it's clear there's more.
+ */
+@Composable
+private fun DailyCards(
+    extras: HomeExtrasUiState,
+    onSaveMood: (Int, Int, String?) -> Unit,
+    onOpenJournal: () -> Unit,
+    onOpenHabits: () -> Unit
+) {
+    val pages = buildList<@Composable () -> Unit> {
+        if (extras.moodLoaded) {
+            val mood = extras.todayMood
+            add { if (mood == null) MoodCheckInCard(existing = null, onSave = onSaveMood) else MoodSummary(mood, onOpenJournal) }
+        }
+        add { HabitsSummary(extras.habitsDone, extras.habitsTotal, onOpenHabits) }
+        extras.plant?.let { plant -> add { PlantCard(plant) } }
+    }
+    val pagerState = rememberPagerState { pages.size }
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+        HorizontalPager(
+            state = pagerState,
+            contentPadding = PaddingValues(end = 40.dp),
+            pageSpacing = Spacing.sm,
+            verticalAlignment = Alignment.Top,
+            modifier = Modifier.fillMaxWidth()
+        ) { page -> pages[page]() }
+        PageDots(count = pages.size, current = pagerState.currentPage)
+    }
+}
+
+/** The current page's dot stretches into a pill */
+@Composable
+private fun PageDots(count: Int, current: Int) {
+    if (count < 2) return
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+        repeat(count) { index ->
+            val selected = index == current
+            val width by animateDpAsState(if (selected) 20.dp else 6.dp, spring(Spring.DampingRatioMediumBouncy), label = "dot")
+            Box(
+                Modifier
+                    .padding(horizontal = 3.dp)
+                    .size(width = width, height = 6.dp)
+                    .clip(CircleShape)
+                    .background(if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant)
+            )
+        }
+    }
+}
+
 @Composable
 private fun PlantCard(plant: com.decisionexecution.app.domain.service.PlantState) {
     val scheme = MaterialTheme.colorScheme
     Surface(shape = RoundedCornerShape(24.dp), color = scheme.surfaceContainerLow) {
         Row(Modifier.fillMaxWidth().padding(Spacing.md), verticalAlignment = Alignment.Bottom) {
-            com.decisionexecution.app.presentation.components.PlantCompanion(plant, plantSize = 104.dp, talkative = false)
+            // Tap it: it bounces and says how it's doing
+            com.decisionexecution.app.presentation.components.PlantCompanion(plant, plantSize = 132.dp)
             Spacer(Modifier.width(Spacing.md))
             Column(Modifier.weight(1f).padding(bottom = Spacing.sm), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
                 Text(plant.stage.label.uppercase(), style = MaterialTheme.typography.labelSmall, color = scheme.primary)
@@ -367,7 +423,7 @@ private fun StreakChip(days: Int) {
                     modifier = Modifier.size(16.dp)
                 )
             }
-            Text(if (days == 1) "1-day streak" else "$days-day streak", style = MaterialTheme.typography.labelLarge)
+            Text(if (days == 1) "1-day streak" else "$days-day streak", style = MaterialTheme.typography.labelLarge, maxLines = 1)
         }
     }
 }
@@ -394,7 +450,8 @@ private fun HeroCard(task: Task, onOpenTask: () -> Unit, onJustStart: () -> Unit
                 style = MaterialTheme.typography.headlineMedium,
                 color = scheme.onPrimaryContainer,
                 maxLines = 3,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.sharedTaskTitle(task.id)
             )
             Text(
                 "${task.category.label} · ${task.effort.label}" + (task.energyTag?.let { " · ${it.label}" } ?: ""),

@@ -50,6 +50,7 @@ import com.decisionexecution.app.presentation.components.colors
 import com.decisionexecution.app.presentation.components.hint
 import com.decisionexecution.app.presentation.components.label
 import com.decisionexecution.app.presentation.components.quadrant
+import com.decisionexecution.app.presentation.navigation.sharedTaskTitle
 import com.decisionexecution.app.presentation.theme.Spacing
 
 /**
@@ -335,7 +336,13 @@ private fun SwipeableTaskCard(
                         onComplete()
                     }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                        Text(task.title, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        Text(
+                            task.title,
+                            style = MaterialTheme.typography.titleMedium,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.sharedTaskTitle(task.id)
+                        )
                         TaskAttributeRow(task)
                     }
                     QuadrantBadge(task.quadrant)

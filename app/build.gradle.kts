@@ -21,8 +21,8 @@ android {
         applicationId = "com.decisionexecution.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -187,4 +187,6 @@ tasks.withType<Test> {
     maxParallelForks = 1
     // -PpropIterations=500 runs every property test with more iterations
     systemProperty("propIterations", project.findProperty("propIterations") ?: "100")
+    // -PstoreAssets=true renders the Play Store images into fastlane/metadata
+    systemProperty("storeAssets", project.findProperty("storeAssets") ?: "false")
 }

@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 import com.decisionexecution.app.presentation.components.label
+import com.decisionexecution.app.presentation.navigation.sharedTaskTitle
 import com.decisionexecution.app.presentation.theme.Spacing
 import java.text.DateFormat
 import java.util.Date
@@ -108,7 +109,7 @@ private fun TaskDetailContent(
             .padding(Spacing.md),
         verticalArrangement = Arrangement.spacedBy(Spacing.md)
     ) {
-        Text(task.title, style = MaterialTheme.typography.headlineMedium)
+        Text(task.title, style = MaterialTheme.typography.headlineMedium, modifier = Modifier.sharedTaskTitle(task.id))
         task.dueDate?.let { DueChip(it, recurrence = task.recurrence) }
         task.description?.let {
             Text(it, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)

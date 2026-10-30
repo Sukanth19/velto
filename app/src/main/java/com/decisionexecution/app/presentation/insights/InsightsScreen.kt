@@ -147,7 +147,7 @@ private fun StreakCard(days: Int) {
     Surface(shape = RoundedCornerShape(28.dp), color = scheme.tertiaryContainer, contentColor = scheme.onTertiaryContainer) {
         Row(Modifier.fillMaxWidth().padding(Spacing.lg), verticalAlignment = Alignment.CenterVertically) {
             Box(
-                Modifier.size(56.dp).clip(CircleShape).background(scheme.tertiary),
+                Modifier.size(56.dp).clip(MaterialShapes.SoftBurst.toShape()).background(scheme.tertiary),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(Icons.Rounded.LocalFireDepartment, contentDescription = null, tint = scheme.onTertiary, modifier = Modifier.size(32.dp))

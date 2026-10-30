@@ -11,7 +11,15 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.decisionexecution.app.presentation.common.CrashReporter
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -62,6 +70,7 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     AppNavHost(navController)
+                    CrashReportPrompt()
                 }
             }
         }
@@ -70,6 +79,47 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         intent.data?.let(deepLinks::trySend)
+    }
+
+    /**
+     * After a crash, offers to send the saved report. Asked once; either answer clears it.
+     */
+    @Composable
+    private fun CrashReportPrompt() {
+        val reporter = remember { CrashReporter(applicationContext) }
+        var report by remember { mutableStateOf(reporter.pendingReport()) }
+        val current = report ?: return
+        fun done() {
+            reporter.clear()
+            report = null
+        }
+        AlertDialog(
+            onDismissRequest = ::done,
+            title = { Text("Velto crashed last time") },
+            text = {
+                Text("Sorry about that. Sending the report helps get it fixed. It only has the error and your phone model, nothing you've written.")
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val issue = Uri.parse(ISSUES_URL).buildUpon()
+                        .appendQueryParameter("title", "Crash report")
+                        .appendQueryParameter("body", "```\n$current\n```")
+                        .build()
+                    runCatching { startActivity(Intent(Intent.ACTION_VIEW, issue)) }
+                    done()
+                }) { Text("Report on GitHub") }
+            },
+            dismissButton = {
+                Row {
+                    TextButton(onClick = ::done) { Text("Not now") }
+                    TextButton(onClick = {
+                        val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, current)
+                        runCatching { startActivity(Intent.createChooser(send, "Send crash report")) }
+                        done()
+                    }) { Text("Share") }
+                }
+            }
+        )
     }
 
     /**
@@ -86,3 +136,5 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
+private const val ISSUES_URL = "https://github.com/Sukanth19/velto/issues/new"

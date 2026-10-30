@@ -1,73 +1,67 @@
-# Decision-Driven Execution App
+# Velto
 
-A native Android productivity application that eliminates decision paralysis by automatically selecting the best task for users to execute right now.
+[![CI](https://github.com/Sukanth19/velto/actions/workflows/ci.yml/badge.svg)](https://github.com/Sukanth19/velto/actions/workflows/ci.yml)
 
-## Overview
+**Stop deciding, start doing.** Velto is an Android productivity app that picks your next task and starts a focus timer, so you spend your energy on the work instead of the to-do list.
 
-Unlike traditional to-do apps that present overwhelming lists, this app acts as a decision engine that analyzes task attributes (urgency, importance, effort, energy) and recommends a single optimal task. The core innovation is "Just Start" mode—a one-tap flow that selects the best task, launches a Pomodoro timer, and enters distraction-free focus mode without requiring any user decisions.
+<p>
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1_home.png" width="200" alt="Home" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2_focus.png" width="200" alt="Focus timer" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4_habits.png" width="200" alt="Habits" />
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5_review.png" width="200" alt="Week in review" />
+</p>
 
-## Technology Stack
+## Features
 
-- **Language**: Kotlin
-- **UI Framework**: Jetpack Compose with Material 3
-- **Architecture**: MVVM with Clean Architecture principles
-- **Database**: Room (SQLite wrapper)
-- **Preferences**: DataStore (Preferences DataStore)
-- **Background Work**: WorkManager
-- **Dependency Injection**: Hilt
-- **Coroutines**: Kotlin Coroutines with Flow
-- **Widgets**: Glance (Jetpack Compose for widgets)
-- **Testing**: Kotest, MockK
+- **Just Start**: one tap ranks your tasks by urgency, importance, effort and energy, and starts a focus session on the best one
+- **Pick for me**: say how long you've got and how much energy you have, and Velto spins up the best fit
+- **Planning**: due dates that raise urgency as they get close, steps you tick off while focusing, repeating tasks, and a priority matrix
+- **Focus**: a Material 3 Expressive wavy timer, +5 minutes, Do Not Disturb while focusing, and a Quick Settings tile
+- **Habits**: daily check-ins, streaks and a 12-week grid
+- **Inbox**: capture a thought in a tap, sort it into a task or habit later
+- **Journal**: mood and energy check-ins, a year in pixels, and how energy relates to your focus
+- **Week in review**: wins, trends against last week, your best focus hours and one suggestion, shareable as an image
+- **Progress**: XP, levels, achievements and a plant that grows as you level up
+- **Widgets**: next task, focus timer, today, top tasks, habits, mood, quick capture and level
+- **Private**: no account, no tracking. Data stays on the phone, with export/import and Android backup. See the [privacy policy](docs/PRIVACY.md)
 
-## Project Structure
+## Tech
+
+Kotlin, Jetpack Compose with Material 3 Expressive, MVVM with a domain layer of use cases, Room, DataStore, WorkManager, Hilt and Glance widgets.
 
 ```
-app/
-├── data/
-│   ├── local/
-│   │   ├── dao/          # Room DAOs
-│   │   ├── entity/       # Room entities
-│   │   └── database/     # Database definition
-│   ├── preferences/      # DataStore implementation
-│   └── repository/       # Repository implementations
-├── domain/
-│   ├── model/            # Domain models (Task, FocusSession, etc.)
-│   ├── repository/       # Repository interfaces
-│   └── service/          # Business logic services
-├── presentation/
-│   ├── home/             # Home screen UI + ViewModel
-│   ├── tasks/            # Tasks screen UI + ViewModel
-│   ├── focus/            # Focus screen UI + ViewModel
-│   └── widget/           # Widget providers
-└── di/                   # Hilt modules
+app/src/main/java/com/decisionexecution/app/
+├── data/          Room entities and DAOs, repositories, backup, WorkManager workers
+├── domain/        Models, repository interfaces, scoring and other pure logic, use cases
+├── presentation/  One package per screen, plus widgets, navigation, theme and shared components
+└── di/            Hilt modules
 ```
 
-## Requirements
+## Building
 
-- Android SDK 26+ (Android 8.0 Oreo)
-- Target SDK 34 (Android 14)
-- Kotlin 1.9.20
-- Gradle 8.2.0
+Needs JDK 17 and the Android SDK with platform 37. Open the project in Android Studio, or:
 
-## Building the Project
-
-1. Clone the repository
-2. Open the project in Android Studio
-3. Sync Gradle files
-4. Run the app on an emulator or physical device
-
-## Testing
-
-The project uses a dual testing approach:
-
-- **Unit Tests**: Verify specific examples, edge cases, and error conditions using Kotest
-- **Property-Based Tests**: Verify universal properties across all inputs using Kotest Property Testing
-
-Run tests with:
 ```bash
-./gradlew test
+./gradlew assembleDebug        # debug APK in app/build/outputs/apk/debug
+./gradlew assembleRelease      # signed if keystore.properties points at a keystore
 ```
 
-## License
+Minimum Android version is 8.0 (API 26).
 
-[Add your license here]
+## Tests
+
+```bash
+./gradlew testDebugUnitTest
+```
+
+Unit and property tests (Kotest), Room migration tests against the exported schemas in `app/schemas`, and Robolectric tests that render every screen and save PNGs to `app/build/screenshots`. CI runs them on every push and pull request.
+
+`-PpropIterations=500` runs the property tests with more iterations.
+
+## Play Store assets
+
+The listing text and images live in `fastlane/metadata/android/en-US`. The images are rendered from the app itself:
+
+```bash
+./gradlew testDebugUnitTest --tests '*StoreAssetsTest*' -PstoreAssets=true
+```

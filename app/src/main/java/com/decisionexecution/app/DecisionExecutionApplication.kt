@@ -10,6 +10,7 @@ import com.decisionexecution.app.domain.repository.PreferencesRepository
 import com.decisionexecution.app.domain.service.FocusSessionManager
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import com.decisionexecution.app.presentation.common.CrashReporter
 import com.decisionexecution.app.presentation.focusmode.FocusAutomation
 import com.decisionexecution.app.presentation.widget.WidgetUpdater
 import dagger.hilt.android.HiltAndroidApp
@@ -47,6 +48,7 @@ class DecisionExecutionApplication : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
+        CrashReporter(this).install()
         // Restore a session that was running when the process died
         appScope.launch { runCatching { focusSessionManager.sync() } }
         widgetUpdater.start(appScope)
