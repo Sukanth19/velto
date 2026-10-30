@@ -17,4 +17,13 @@
     <string name="widget_capture_description">Jot a thought into your inbox in a tap</string>
     <string name="widget_level_name">Level</string>
     <string name="widget_level_description">Your level and XP to the next one</string>
+    <string name="tile_focus_label">Velto focus</string>
+    <string name="shortcut_capture_short">Capture</string>
+    <string name="shortcut_capture_long">Capture a thought</string>
+    <string name="shortcut_just_start_short">Just Start</string>
+    <string name="shortcut_just_start_long">Start focusing on your best task</string>
+    <string name="shortcut_decide_short">Pick for me</string>
+    <string name="shortcut_decide_long">Can\'t decide? Let Velto pick</string>
+    <string name="shortcut_mood_short">Log mood</string>
+    <string name="shortcut_mood_long">Log how you\'re feeling</string>
 </resources>

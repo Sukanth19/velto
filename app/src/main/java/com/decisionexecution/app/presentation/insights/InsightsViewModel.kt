@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.decisionexecution.app.domain.usecase.GetInsightsUseCase
 import com.decisionexecution.app.domain.usecase.GetProgressUseCase
+import com.decisionexecution.app.domain.usecase.GetPlantUseCase
+import com.decisionexecution.app.domain.service.PlantState
 import com.decisionexecution.app.domain.usecase.Progress
 import com.decisionexecution.app.domain.usecase.Insights
 import com.decisionexecution.app.presentation.common.toUserMessage
@@ -19,6 +21,7 @@ import javax.inject.Inject
 data class InsightsUiState(
     val insights: Insights? = null,
     val progress: Progress? = null,
+    val plant: PlantState? = null,
     val error: String? = null
 )
 
@@ -28,7 +31,8 @@ data class InsightsUiState(
 @HiltViewModel
 class InsightsViewModel @Inject constructor(
     getInsightsUseCase: GetInsightsUseCase,
-    getProgressUseCase: GetProgressUseCase
+    getProgressUseCase: GetProgressUseCase,
+    getPlantUseCase: GetPlantUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(InsightsUiState())
@@ -45,6 +49,9 @@ class InsightsViewModel @Inject constructor(
             getProgressUseCase()
                 .catch { }
                 .collect { progress -> _uiState.update { it.copy(progress = progress) } }
+        }
+        viewModelScope.launch {
+            getPlantUseCase().catch { }.collect { plant -> _uiState.update { it.copy(plant = plant) } }
         }
     }
 }

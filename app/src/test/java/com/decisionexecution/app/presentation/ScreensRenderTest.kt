@@ -7,6 +7,9 @@ import com.decisionexecution.app.testutil.InMemoryHabitRepository
 import com.decisionexecution.app.testutil.InMemoryInboxRepository
 import com.decisionexecution.app.testutil.InMemoryMoodRepository
 import com.decisionexecution.app.testutil.progressUseCase
+import com.decisionexecution.app.testutil.plantUseCase
+import com.decisionexecution.app.presentation.decide.DecideScreen
+import com.decisionexecution.app.presentation.decide.DecideViewModel
 import com.decisionexecution.app.domain.service.LifetimeStats
 import com.decisionexecution.app.presentation.habits.HabitsScreen
 import com.decisionexecution.app.presentation.habits.HabitsViewModel
@@ -97,7 +100,8 @@ class ScreensRenderTest {
         every { metrics(any(), any(), any()) } returns flowOf(ProductivityMetrics(3, 85, 71.4))
         val viewModel = HomeViewModel(getBest, mockk(relaxed = true), metrics, emptyInsights(), InMemoryPreferencesRepository())
 
-        val extras = HomeExtrasViewModel(progressUseCase(SAMPLE_STATS), sampleHabits(), InMemoryInboxRepository(*sampleInbox()), InMemoryMoodRepository())
+        val habits = sampleHabits()
+        val extras = HomeExtrasViewModel(progressUseCase(SAMPLE_STATS), habits, InMemoryInboxRepository(*sampleInbox()), InMemoryMoodRepository(), plantUseCase(SAMPLE_STATS, habits))
 
         render("home") { HomeScreen({}, {}, {}, {}, viewModel, extrasViewModel = extras) }
 
@@ -116,7 +120,7 @@ class ScreensRenderTest {
         every { metrics(any(), any(), any()) } returns flowOf(ProductivityMetrics(0, 0, 0.0))
         val viewModel = HomeViewModel(getBest, mockk(relaxed = true), metrics, emptyInsights(), InMemoryPreferencesRepository())
 
-        val extras = HomeExtrasViewModel(progressUseCase(), InMemoryHabitRepository(), InMemoryInboxRepository(), InMemoryMoodRepository())
+        val extras = HomeExtrasViewModel(progressUseCase(), InMemoryHabitRepository(), InMemoryInboxRepository(), InMemoryMoodRepository(), plantUseCase())
 
         render("home_empty_dark", ThemeMode.DARK) { HomeScreen({}, {}, {}, {}, viewModel, extrasViewModel = extras) }
 
@@ -261,7 +265,7 @@ class ScreensRenderTest {
         val useCase = mockk<GetInsightsUseCase>()
         every { useCase(any(), any()) } returns flowOf(Insights(week, streakDays = 3))
 
-        render("insights") { InsightsScreen(InsightsViewModel(useCase, progressUseCase(SAMPLE_STATS))) }
+        render("insights") { InsightsScreen(InsightsViewModel(useCase, progressUseCase(SAMPLE_STATS), plantUseCase(SAMPLE_STATS, sampleHabits()))) }
         composeRule.onNodeWithText("3 days").performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText("4h 35m").performScrollTo().assertIsDisplayed()
     }
@@ -366,6 +370,24 @@ class ScreensRenderTest {
 
         render("journal") { JournalScreen({}, viewModel) }
         composeRule.onNodeWithText("How are you feeling?").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun decideScreen() {
+        val taskRepository = mockk<com.decisionexecution.app.domain.repository.TaskRepository>()
+        every { taskRepository.getAllTasks() } returns flowOf(tasks)
+        val moods = InMemoryMoodRepository(MoodEntry(LocalDate.now(), mood = 4, energy = 2, note = null))
+        val viewModel = DecideViewModel(
+            SavedStateHandle(mapOf(DecideViewModel.MINUTES_ARG to 15)),
+            PickTaskUseCase(taskRepository, moods),
+            mockk(relaxed = true)
+        )
+
+        render("decide") { DecideScreen({}, {}, viewModel) }
+        // Short on time and energy: the quick, low-energy email beats the big report
+        composeRule.mainClock.advanceTimeBy(5_000)
+        composeRule.onNodeWithText("Reply to client email").assertIsDisplayed()
+        save("decide")
     }
 
     private fun sampleHabits(): InMemoryHabitRepository {

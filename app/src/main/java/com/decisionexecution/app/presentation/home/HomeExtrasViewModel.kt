@@ -7,6 +7,8 @@ import com.decisionexecution.app.domain.repository.HabitRepository
 import com.decisionexecution.app.domain.repository.InboxRepository
 import com.decisionexecution.app.domain.repository.MoodRepository
 import com.decisionexecution.app.domain.service.LevelProgress
+import com.decisionexecution.app.domain.service.PlantState
+import com.decisionexecution.app.domain.usecase.GetPlantUseCase
 import com.decisionexecution.app.domain.usecase.GetProgressUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,11 +26,12 @@ data class HomeExtrasUiState(
     val habitsTotal: Int = 0,
     val todayMood: MoodEntry? = null,
     val moodLoaded: Boolean = false,
-    val inboxCount: Int = 0
+    val inboxCount: Int = 0,
+    val plant: PlantState? = null
 )
 
 /**
- * Everything on Home beyond tasks: level, today's habits, the mood check-in and the inbox count.
+ * Everything on Home beyond tasks: level, the plant, today's habits, the mood check-in and the inbox count.
  * Each source loads on its own so one failing doesn't blank the rest.
  */
 @HiltViewModel
@@ -36,7 +39,8 @@ class HomeExtrasViewModel @Inject constructor(
     getProgressUseCase: GetProgressUseCase,
     habitRepository: HabitRepository,
     inboxRepository: InboxRepository,
-    private val moodRepository: MoodRepository
+    private val moodRepository: MoodRepository,
+    getPlantUseCase: GetPlantUseCase
 ) : ViewModel() {
 
     private val today = LocalDate.now()
@@ -46,6 +50,9 @@ class HomeExtrasViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             getProgressUseCase().catch { }.collect { p -> _uiState.update { it.copy(level = p.level) } }
+        }
+        viewModelScope.launch {
+            getPlantUseCase(today).catch { }.collect { plant -> _uiState.update { it.copy(plant = plant) } }
         }
         viewModelScope.launch {
             habitRepository.getHabits(today).catch { }.collect { habits ->

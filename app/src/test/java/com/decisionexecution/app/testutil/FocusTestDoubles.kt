@@ -77,6 +77,10 @@ class InMemoryPreferencesRepository : PreferencesRepository {
         preferences = preferences.copy(dailyFocusGoalMinutes = minutes)
     }
 
+    override suspend fun updateDndDuringFocus(enabled: Boolean) {
+        preferences = preferences.copy(dndDuringFocus = enabled)
+    }
+
     override suspend fun saveFocusSession(sessionData: FocusSessionData) {
         focusSessionData = sessionData
     }

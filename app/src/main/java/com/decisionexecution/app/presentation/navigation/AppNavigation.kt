@@ -23,6 +23,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.decisionexecution.app.presentation.decide.DecideScreen
+import com.decisionexecution.app.presentation.decide.DecideViewModel
 import com.decisionexecution.app.presentation.habits.HabitsScreen
 import com.decisionexecution.app.presentation.inbox.InboxScreen
 import com.decisionexecution.app.presentation.journal.JournalScreen
@@ -65,6 +67,7 @@ object DeepLinks {
     const val HABITS = "${BASE}habits"
     const val JOURNAL = "${BASE}journal"
     const val PROGRESS = "${BASE}progress"
+    const val DECIDE = "${BASE}decide"
 
     fun openTask(taskId: String) = "${BASE}open_task/$taskId"
 }
@@ -78,6 +81,7 @@ object Routes {
     const val HABITS = "habits"
     const val JOURNAL = "journal"
     const val CAPTURE_ARG = "capture"
+    const val DECIDE = "decide?${DecideViewModel.MINUTES_ARG}={${DecideViewModel.MINUTES_ARG}}"
     const val INBOX = "inbox?$CAPTURE_ARG={$CAPTURE_ARG}"
     const val JUST_START = "just_start"
     const val TASK_DETAIL = "task/{${TaskDetailViewModel.TASK_ID_ARG}}"
@@ -91,6 +95,7 @@ object Routes {
     fun taskFromInbox(title: String, inboxId: String) =
         "task_edit?${AddEditTaskViewModel.TITLE_ARG}=${Uri.encode(title)}&${AddEditTaskViewModel.INBOX_ID_ARG}=$inboxId"
     fun inbox(capture: Boolean = false) = "inbox?$CAPTURE_ARG=$capture"
+    fun decide(minutes: Int = DecideViewModel.DEFAULT_MINUTES) = "decide?${DecideViewModel.MINUTES_ARG}=$minutes"
 }
 
 private enum class TopLevelTab(val route: String, val label: String, val icon: ImageVector, val selectedIcon: ImageVector) {
@@ -130,6 +135,7 @@ fun NavHostController.openDeepLink(uri: Uri): Boolean {
         "habits" -> navigateToTab(Routes.HABITS)
         "journal" -> navigate(Routes.JOURNAL)
         "progress" -> navigateToTab(Routes.INSIGHTS)
+        "decide" -> navigate(Routes.decide())
         "open_task" -> navigate(Routes.taskDetail(uri.pathSegments.firstOrNull() ?: return false))
         else -> return false
     }
@@ -182,7 +188,8 @@ fun AppNavHost(navController: NavHostController = rememberNavController()) {
                     onOpenInsights = { navController.navigateToTab(Routes.INSIGHTS) },
                     onOpenHabits = { navController.navigateToTab(Routes.HABITS) },
                     onOpenInbox = { navController.navigate(Routes.inbox()) },
-                    onOpenJournal = { navController.navigate(Routes.JOURNAL) }
+                    onOpenJournal = { navController.navigate(Routes.JOURNAL) },
+                    onDecide = { navController.navigate(Routes.decide(it)) }
                 )
             }
             composable(Routes.TASKS) {
@@ -197,6 +204,21 @@ fun AppNavHost(navController: NavHostController = rememberNavController()) {
             }
             composable(Routes.HABITS) {
                 HabitsScreen()
+            }
+            composable(
+                Routes.DECIDE,
+                arguments = listOf(navArgument(DecideViewModel.MINUTES_ARG) {
+                    type = NavType.IntType
+                    defaultValue = DecideViewModel.DEFAULT_MINUTES
+                })
+            ) {
+                DecideScreen(
+                    onBack = { navController.popBackStack() },
+                    onStarted = {
+                        navController.popBackStack()
+                        navController.navigateToTab(Routes.FOCUS)
+                    }
+                )
             }
             composable(Routes.JOURNAL) {
                 JournalScreen(onBack = { navController.popBackStack() })

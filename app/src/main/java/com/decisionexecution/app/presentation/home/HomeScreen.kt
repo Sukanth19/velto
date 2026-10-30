@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.EmojiEvents
+import androidx.compose.material.icons.rounded.Casino
 import androidx.compose.material.icons.rounded.Inbox
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.LocalFireDepartment
@@ -76,6 +77,7 @@ fun HomeScreen(
     onOpenHabits: () -> Unit = {},
     onOpenInbox: () -> Unit = {},
     onOpenJournal: () -> Unit = {},
+    onDecide: (minutes: Int) -> Unit = {},
     extrasViewModel: HomeExtrasViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -149,6 +151,8 @@ fun HomeScreen(
                 }
             }
 
+            if (uiState.bestTask != null) PickForMeCard(onDecide)
+
             if (extras.moodLoaded) {
                 val mood = extras.todayMood
                 if (mood == null) {
@@ -158,6 +162,7 @@ fun HomeScreen(
                 }
             }
             HabitsSummary(extras.habitsDone, extras.habitsTotal, onOpenHabits)
+            extras.plant?.let { PlantCard(it) }
 
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text("Today", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
@@ -247,6 +252,50 @@ private fun MoodSummary(mood: com.decisionexecution.app.domain.model.MoodEntry, 
                 Text("Open your journal", style = MaterialTheme.typography.bodySmall)
             }
             Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null)
+        }
+    }
+}
+
+/** Can't decide: pick a time box and let Velto choose. */
+@Composable
+private fun PickForMeCard(onDecide: (Int) -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    Surface(shape = RoundedCornerShape(24.dp), color = scheme.surfaceContainerLow) {
+        Column(Modifier.fillMaxWidth().padding(Spacing.md), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Rounded.Casino, contentDescription = null, tint = scheme.primary)
+                Spacer(Modifier.width(Spacing.sm))
+                Column {
+                    Text("Can't decide?", style = MaterialTheme.typography.titleSmall)
+                    Text("Say how long you've got and Velto picks", style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
+                }
+            }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                listOf(15, 25, 45, 60).forEach { minutes ->
+                    FilledTonalButton(
+                        onClick = { onDecide(minutes) },
+                        shapes = ButtonDefaults.shapes(),
+                        contentPadding = PaddingValues(0.dp),
+                        modifier = Modifier.weight(1f)
+                    ) { Text(if (minutes >= 60) "1h" else "${minutes}m") }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlantCard(plant: com.decisionexecution.app.domain.service.PlantState) {
+    val scheme = MaterialTheme.colorScheme
+    Surface(shape = RoundedCornerShape(24.dp), color = scheme.surfaceContainerLow) {
+        Row(Modifier.fillMaxWidth().padding(Spacing.md), verticalAlignment = Alignment.Bottom) {
+            com.decisionexecution.app.presentation.components.PlantCompanion(plant, plantSize = 104.dp, talkative = false)
+            Spacer(Modifier.width(Spacing.md))
+            Column(Modifier.weight(1f).padding(bottom = Spacing.sm), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                Text(plant.stage.label.uppercase(), style = MaterialTheme.typography.labelSmall, color = scheme.primary)
+                Text(plant.message, style = MaterialTheme.typography.titleSmall)
+                Text("Grows as you level up", style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
+            }
         }
     }
 }

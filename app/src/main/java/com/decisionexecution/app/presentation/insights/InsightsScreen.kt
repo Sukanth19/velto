@@ -50,7 +50,7 @@ fun InsightsScreen(viewModel: InsightsViewModel = hiltViewModel(), onOpenJournal
     Scaffold(topBar = { LargeTopAppBar(title = { Text("Progress") }) }) { padding ->
         val insights = uiState.insights
         when {
-            insights != null -> InsightsContent(insights, uiState.progress, onOpenJournal, Modifier.padding(padding))
+            insights != null -> InsightsContent(insights, uiState.progress, uiState.plant, onOpenJournal, Modifier.padding(padding))
             uiState.error != null -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 Text(uiState.error!!, textAlign = TextAlign.Center, modifier = Modifier.padding(Spacing.xl))
             }
@@ -62,7 +62,13 @@ fun InsightsScreen(viewModel: InsightsViewModel = hiltViewModel(), onOpenJournal
 }
 
 @Composable
-private fun InsightsContent(insights: Insights, progress: Progress?, onOpenJournal: () -> Unit, modifier: Modifier = Modifier) {
+private fun InsightsContent(
+    insights: Insights,
+    progress: Progress?,
+    plant: com.decisionexecution.app.domain.service.PlantState?,
+    onOpenJournal: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Column(
         modifier
             .fillMaxSize()
@@ -70,6 +76,14 @@ private fun InsightsContent(insights: Insights, progress: Progress?, onOpenJourn
             .padding(horizontal = Spacing.md),
         verticalArrangement = Arrangement.spacedBy(Spacing.md)
     ) {
+        // Tap it: it bounces and tells you how it's doing
+        plant?.let {
+            com.decisionexecution.app.presentation.components.PlantCompanion(
+                it,
+                plantSize = 180.dp,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
         progress?.let { LevelCard(it.level) }
         JournalLink(onOpenJournal)
         progress?.let { AchievementGrid(it.unlocked) }

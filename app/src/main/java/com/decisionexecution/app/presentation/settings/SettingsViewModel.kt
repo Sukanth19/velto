@@ -18,6 +18,7 @@ data class SettingsUiState(
     val breakDuration: Int = 5,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val dailyFocusGoal: Int = 120,
+    val dndDuringFocus: Boolean = false,
     val error: String? = null
 )
 
@@ -48,7 +49,8 @@ class SettingsViewModel @Inject constructor(
                         focusDuration = prefs.focusDurationMinutes,
                         breakDuration = prefs.breakDurationMinutes,
                         themeMode = prefs.themeMode,
-                        dailyFocusGoal = prefs.dailyFocusGoalMinutes
+                        dailyFocusGoal = prefs.dailyFocusGoalMinutes,
+                        dndDuringFocus = prefs.dndDuringFocus
                     )
                 }
             }
@@ -81,6 +83,10 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { preferencesRepository.updateDailyFocusGoal(minutes.coerceIn(DAILY_FOCUS_GOAL_RANGE)) }
     }
 
+    fun onDndDuringFocusChanged(enabled: Boolean) {
+        viewModelScope.launch { preferencesRepository.updateDndDuringFocus(enabled) }
+    }
+
     fun onThemeModeChanged(mode: ThemeMode) {
         viewModelScope.launch {
             val current = _uiState.value
@@ -89,7 +95,8 @@ class SettingsViewModel @Inject constructor(
                     focusDurationMinutes = current.focusDuration,
                     breakDurationMinutes = current.breakDuration,
                     themeMode = mode,
-                    dailyFocusGoalMinutes = current.dailyFocusGoal
+                    dailyFocusGoalMinutes = current.dailyFocusGoal,
+                    dndDuringFocus = current.dndDuringFocus
                 )
             )
         }

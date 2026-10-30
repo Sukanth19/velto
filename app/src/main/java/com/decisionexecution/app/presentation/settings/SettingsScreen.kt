@@ -8,7 +8,13 @@ import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import android.app.NotificationManager
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -69,11 +75,50 @@ fun SettingsScreen(
             )
             uiState.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
 
+            DndSetting(enabled = uiState.dndDuringFocus, onChange = viewModel::onDndDuringFocusChanged)
+
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 Text("Theme", style = MaterialTheme.typography.labelLarge)
                 ThemePicker(uiState.themeMode, viewModel::onThemeModeChanged)
             }
         }
+    }
+}
+
+/**
+ * Do Not Disturb while focusing. Android needs the user to grant DND access in system settings,
+ * so turning it on without access sends them there first.
+ */
+@Composable
+private fun DndSetting(enabled: Boolean, onChange: (Boolean) -> Unit) {
+    val context = LocalContext.current
+    val notificationManager = remember { context.getSystemService(NotificationManager::class.java) }
+    var hasAccess by remember { mutableStateOf(notificationManager.isNotificationPolicyAccessGranted) }
+    // Re-check when coming back from the system settings screen
+    LifecycleResumeEffect(Unit) {
+        hasAccess = notificationManager.isNotificationPolicyAccessGranted
+        onPauseOrDispose { }
+    }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text("Silence notifications while focusing", style = MaterialTheme.typography.labelLarge)
+            Text(
+                if (enabled && !hasAccess) "Needs Do Not Disturb access. Tap the switch to grant it."
+                else "Turns on Do Not Disturb during focus and back off for breaks",
+                style = MaterialTheme.typography.bodySmall,
+                color = if (enabled && !hasAccess) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Spacer(Modifier.width(Spacing.md))
+        Switch(
+            checked = enabled && hasAccess,
+            onCheckedChange = { on ->
+                if (on && !hasAccess) {
+                    context.startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
+                }
+                onChange(on)
+            }
+        )
     }
 }
 

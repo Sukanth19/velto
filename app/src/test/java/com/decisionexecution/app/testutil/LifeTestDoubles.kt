@@ -9,6 +9,7 @@ import com.decisionexecution.app.domain.repository.InboxRepository
 import com.decisionexecution.app.domain.repository.MoodRepository
 import com.decisionexecution.app.domain.repository.ProgressRepository
 import com.decisionexecution.app.domain.service.LifetimeStats
+import com.decisionexecution.app.domain.usecase.GetPlantUseCase
 import com.decisionexecution.app.domain.usecase.GetProgressUseCase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -72,3 +73,9 @@ class InMemoryProgressRepository(stats: LifetimeStats = LifetimeStats()) : Progr
 
 fun progressUseCase(stats: LifetimeStats = LifetimeStats()) =
     GetProgressUseCase(InMemoryProgressRepository(stats), emptyInsights())
+
+fun plantUseCase(
+    stats: LifetimeStats = LifetimeStats(),
+    habits: HabitRepository = InMemoryHabitRepository(),
+    moods: MoodRepository = InMemoryMoodRepository()
+) = GetPlantUseCase(progressUseCase(stats), emptyInsights(), habits, moods)

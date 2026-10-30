@@ -26,6 +26,7 @@ class PreferencesRepositoryImpl @Inject constructor(
         val BREAK_DURATION = intPreferencesKey("break_duration_minutes")
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val DAILY_FOCUS_GOAL = intPreferencesKey("daily_focus_goal_minutes")
+        val DND_DURING_FOCUS = booleanPreferencesKey("dnd_during_focus")
         
         // Focus session keys
         val SESSION_TASK_ID = stringPreferencesKey("session_task_id")
@@ -46,7 +47,8 @@ class PreferencesRepositoryImpl @Inject constructor(
                 themeMode = preferences[PreferencesKeys.THEME_MODE]?.let { 
                     ThemeMode.valueOf(it) 
                 } ?: ThemeMode.SYSTEM,
-                dailyFocusGoalMinutes = preferences[PreferencesKeys.DAILY_FOCUS_GOAL] ?: 120
+                dailyFocusGoalMinutes = preferences[PreferencesKeys.DAILY_FOCUS_GOAL] ?: 120,
+                dndDuringFocus = preferences[PreferencesKeys.DND_DURING_FOCUS] ?: false
             )
         }
     }
@@ -57,6 +59,7 @@ class PreferencesRepositoryImpl @Inject constructor(
             prefs[PreferencesKeys.BREAK_DURATION] = preferences.breakDurationMinutes
             prefs[PreferencesKeys.THEME_MODE] = preferences.themeMode.name
             prefs[PreferencesKeys.DAILY_FOCUS_GOAL] = preferences.dailyFocusGoalMinutes
+            prefs[PreferencesKeys.DND_DURING_FOCUS] = preferences.dndDuringFocus
         }
     }
     
@@ -75,6 +78,12 @@ class PreferencesRepositoryImpl @Inject constructor(
     override suspend fun updateDailyFocusGoal(minutes: Int) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.DAILY_FOCUS_GOAL] = minutes
+        }
+    }
+    
+    override suspend fun updateDndDuringFocus(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.DND_DURING_FOCUS] = enabled
         }
     }
     

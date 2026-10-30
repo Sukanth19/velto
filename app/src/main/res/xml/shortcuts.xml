@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Long-press the launcher icon; each one opens an in-app deep link -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_capture"
+        android:shortcutId="capture"
+        android:shortcutLongLabel="@string/shortcut_capture_long"
+        android:shortcutShortLabel="@string/shortcut_capture_short">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="decisionexecution://capture"
+            android:targetClass="com.decisionexecution.app.MainActivity"
+            android:targetPackage="com.decisionexecution.app" />
+    </shortcut>
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_play"
+        android:shortcutId="just_start"
+        android:shortcutLongLabel="@string/shortcut_just_start_long"
+        android:shortcutShortLabel="@string/shortcut_just_start_short">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="decisionexecution://just_start"
+            android:targetClass="com.decisionexecution.app.MainActivity"
+            android:targetPackage="com.decisionexecution.app" />
+    </shortcut>
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_decide"
+        android:shortcutId="decide"
+        android:shortcutLongLabel="@string/shortcut_decide_long"
+        android:shortcutShortLabel="@string/shortcut_decide_short">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="decisionexecution://decide"
+            android:targetClass="com.decisionexecution.app.MainActivity"
+            android:targetPackage="com.decisionexecution.app" />
+    </shortcut>
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_mood"
+        android:shortcutId="mood"
+        android:shortcutLongLabel="@string/shortcut_mood_long"
+        android:shortcutShortLabel="@string/shortcut_mood_short">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:data="decisionexecution://journal"
+            android:targetClass="com.decisionexecution.app.MainActivity"
+            android:targetPackage="com.decisionexecution.app" />
+    </shortcut>
+</shortcuts>
