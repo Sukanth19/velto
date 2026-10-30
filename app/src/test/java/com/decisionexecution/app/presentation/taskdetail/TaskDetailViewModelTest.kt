@@ -17,7 +17,6 @@ import kotlinx.coroutines.test.setMain
 
 /**
  * Unit tests for TaskDetailViewModel.
- * Feature: decision-driven-execution-app
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class TaskDetailViewModelTest : StringSpec({
@@ -34,7 +33,6 @@ class TaskDetailViewModelTest : StringSpec({
     }
 
     "delete removes the task and finishes" {
-        // Requirements: 1.8
         val delete = mockk<DeleteTaskUseCase>(relaxed = true)
         val viewModel = createViewModel(task, delete = delete)
 
@@ -45,7 +43,6 @@ class TaskDetailViewModelTest : StringSpec({
     }
 
     "complete records completion and finishes" {
-        // Requirements: 1.9
         val complete = mockk<CompleteTaskUseCase>(relaxed = true)
         val viewModel = createViewModel(task, complete = complete)
 

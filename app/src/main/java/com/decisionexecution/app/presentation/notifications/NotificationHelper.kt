@@ -23,8 +23,6 @@ import javax.inject.Singleton
 /**
  * Focus and break completion notifications. Silently skips posting when the user denied the
  * permission; the timer keeps running either way.
- *
- * Requirements: 13.2, 13.3, 13.4, 13.5
  */
 @Singleton
 class NotificationHelper @Inject constructor(

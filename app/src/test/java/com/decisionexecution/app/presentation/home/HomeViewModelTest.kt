@@ -20,7 +20,6 @@ import kotlinx.coroutines.test.setMain
 
 /**
  * Unit tests for HomeViewModel.
- * Feature: decision-driven-execution-app
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class HomeViewModelTest : StringSpec({
@@ -29,7 +28,6 @@ class HomeViewModelTest : StringSpec({
     afterTest { Dispatchers.resetMain() }
 
     "should load best task and today's metrics on init" {
-        // Requirements: 2.2, 7.2, 7.3, 7.4
         val task = createTestTask()
         val viewModel = createViewModel(
             bestTask = task,
@@ -46,7 +44,6 @@ class HomeViewModelTest : StringSpec({
     }
 
     "Just Start with no tasks should show error" {
-        // Requirements: 3.4, 12.4
         val justStart = mockk<JustStartUseCase>()
         coEvery { justStart() } returns JustStartResult.NoTasksAvailable
         val viewModel = createViewModel(bestTask = null, justStartUseCase = justStart)
@@ -58,7 +55,6 @@ class HomeViewModelTest : StringSpec({
     }
 
     "Just Start with tasks should trigger session without error" {
-        // Requirements: 3.1
         val task = createTestTask()
         val justStart = mockk<JustStartUseCase>()
         coEvery { justStart() } returns JustStartResult.Success(task)
@@ -75,7 +71,6 @@ class HomeViewModelTest : StringSpec({
     }
 
     "Just Start failure should surface error instead of crashing" {
-        // Requirements: 12.4
         val justStart = mockk<JustStartUseCase>()
         coEvery { justStart() } throws IllegalStateException("database unavailable")
         val viewModel = createViewModel(bestTask = createTestTask(), justStartUseCase = justStart)
@@ -86,7 +81,6 @@ class HomeViewModelTest : StringSpec({
     }
 
     "a failed load offers retry, and retrying loads the data" {
-        // Requirements: 10.6, 12.4
         val task = createTestTask()
         var attempts = 0
         val getBest = mockk<GetBestTaskUseCase>()

@@ -15,14 +15,12 @@ import io.mockk.mockk
 /**
  * Clock-driven timer behaviour of FocusSessionManager: phase ends, background checks,
  * notifications, and surviving process death.
- * Feature: decision-driven-execution-app
  */
 class FocusTimerTest : StringSpec({
 
     val task = Task("t-1", "Write essay", null, TaskCategory.SCHOOL, 4, 5, TaskEffort.HIGH, EnergyTag.DEEP_WORK, 1L)
 
     "elapsed time follows the clock" {
-        // Requirements: 4.3
         val clock = FakeTimeSource()
         val manager = focusSessionManager(clock = clock)
         manager.startSession(task, focusDuration = 25, breakDuration = 5)
@@ -36,7 +34,6 @@ class FocusTimerTest : StringSpec({
     }
 
     "starting schedules a background check for the end of focus" {
-        // Requirements: 13.1
         val scheduler = RecordingScheduler()
         val manager = focusSessionManager(scheduler = scheduler)
 
@@ -46,7 +43,6 @@ class FocusTimerTest : StringSpec({
     }
 
     "focus ending starts the break, notifies, and schedules the break end" {
-        // Requirements: 4.4, 13.2
         val clock = FakeTimeSource()
         val scheduler = RecordingScheduler()
         val notifier = RecordingNotifier()
@@ -64,7 +60,6 @@ class FocusTimerTest : StringSpec({
     }
 
     "break ending returns to idle, notifies, clears storage and cancels checks" {
-        // Requirements: 4.5, 13.3
         val clock = FakeTimeSource()
         val prefs = InMemoryPreferencesRepository()
         val scheduler = RecordingScheduler()
@@ -96,7 +91,6 @@ class FocusTimerTest : StringSpec({
     }
 
     "pausing freezes time and cancels the check; resuming reschedules the remainder" {
-        // Requirements: 4.6, 4.7
         checkAll(PROPERTY_ITERATIONS, Arb.int(5..90), Arb.int(0..300), Arb.int(0..3600)) { focus, beforePause, whilePaused ->
             val clock = FakeTimeSource()
             val scheduler = RecordingScheduler()
@@ -119,7 +113,6 @@ class FocusTimerTest : StringSpec({
     }
 
     "a session survives process death" {
-        // Requirements: 13.6
         val clock = FakeTimeSource()
         val prefs = InMemoryPreferencesRepository()
         val tasks = taskRepositoryOf(task)
@@ -138,7 +131,6 @@ class FocusTimerTest : StringSpec({
     }
 
     "a paused session survives process death without drifting" {
-        // Requirements: 4.7, 13.6
         val clock = FakeTimeSource()
         val prefs = InMemoryPreferencesRepository()
         val tasks = taskRepositoryOf(task)
@@ -155,7 +147,6 @@ class FocusTimerTest : StringSpec({
     }
 
     "phases that ended while the app was dead are caught up in order" {
-        // Requirements: 4.4, 4.5, 13.6
         val clock = FakeTimeSource()
         val prefs = InMemoryPreferencesRepository()
         val tasks = taskRepositoryOf(task)
@@ -190,7 +181,6 @@ class FocusTimerTest : StringSpec({
     }
 
     "a finished focus phase records its minutes once; ending early records nothing" {
-        // Requirements: 4.9, 7.3
         val clock = FakeTimeSource()
         val performance = mockk<PerformanceRepository>(relaxed = true)
         val manager = focusSessionManager(clock = clock, performance = performance)
@@ -209,7 +199,6 @@ class FocusTimerTest : StringSpec({
     }
 
     "ending early clears storage so nothing is restored later" {
-        // Requirements: 4.8
         val clock = FakeTimeSource()
         val prefs = InMemoryPreferencesRepository()
         val tasks = taskRepositoryOf(task)

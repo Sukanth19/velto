@@ -24,7 +24,6 @@ data class InsightsUiState(
 
 /**
  * Level, achievements, weekly focus time, completions and streak.
- * Requirements: 7.2, 7.3, 7.4
  */
 @HiltViewModel
 class InsightsViewModel @Inject constructor(

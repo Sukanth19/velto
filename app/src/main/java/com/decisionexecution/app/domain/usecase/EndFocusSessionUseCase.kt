@@ -8,8 +8,6 @@ import javax.inject.Inject
  * 
  * Terminates the current focus session before completion,
  * transitioning back to idle state.
- * 
- * Requirements: 4.8
  */
 class EndFocusSessionUseCase @Inject constructor(
     private val focusSessionManager: FocusSessionManager

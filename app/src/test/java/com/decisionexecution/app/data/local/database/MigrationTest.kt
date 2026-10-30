@@ -11,7 +11,6 @@ import org.robolectric.annotation.Config
 
 /**
  * Migrates real databases built from the exported schemas in app/schemas.
- * Requirements: 7.6, 10.1
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])

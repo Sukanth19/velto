@@ -64,7 +64,6 @@ fun formatMinutes(minutes: Int): String =
 /**
  * Home: greeting with level and inbox, the next best task with one big Just Start, the mood
  * check-in, today's habits, daily goal and stats.
- * Requirements: 12.4, 7.7
  */
 @Composable
 fun HomeScreen(
@@ -455,7 +454,6 @@ private fun StatTile(icon: ImageVector, value: String, label: String, modifier: 
 
 /**
  * Headless destination for the just_start deep link: starts the best task and moves on.
- * Requirements: 3.1, 8.6
  */
 @Composable
 fun JustStartRoute(

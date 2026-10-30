@@ -22,7 +22,6 @@ import kotlinx.coroutines.test.setMain
 
 /**
  * Property-based tests for preferences validation in SettingsViewModel.
- * Feature: decision-driven-execution-app
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class SettingsViewModelPropertyTest : StringSpec({
@@ -30,11 +29,10 @@ class SettingsViewModelPropertyTest : StringSpec({
     beforeTest { Dispatchers.setMain(UnconfinedTestDispatcher()) }
     afterTest { Dispatchers.resetMain() }
 
-    "Property 31: Focus Duration Validation" {
-        // Feature: decision-driven-execution-app, Property 31: For any focus duration value,
+    "Focus Duration Validation" {
+        // For any focus duration value,
         // values between 5 and 90 minutes inclusive should be accepted, and values outside
         // this range should be rejected.
-        // Validates: Requirements 11.1
 
         checkAll(Exhaustive.ints(-10..120)) { minutes ->
             val repository = createRepository()
@@ -52,11 +50,10 @@ class SettingsViewModelPropertyTest : StringSpec({
         }
     }
 
-    "Property 32: Break Duration Validation" {
-        // Feature: decision-driven-execution-app, Property 32: For any break duration value,
+    "Break Duration Validation" {
+        // For any break duration value,
         // values between 1 and 30 minutes inclusive should be accepted, and values outside
         // this range should be rejected.
-        // Validates: Requirements 11.2
 
         checkAll(Exhaustive.ints(-10..60)) { minutes ->
             val repository = createRepository()
@@ -74,8 +71,7 @@ class SettingsViewModelPropertyTest : StringSpec({
         }
     }
 
-    "Property 31/32: range boundaries are inclusive" {
-        // Validates: Requirements 11.1, 11.2
+    "range boundaries are inclusive" {
         isValidFocusDuration(4) shouldBe false
         isValidFocusDuration(5) shouldBe true
         isValidFocusDuration(90) shouldBe true
@@ -87,7 +83,6 @@ class SettingsViewModelPropertyTest : StringSpec({
     }
 
     "loads stored preferences and saves theme changes" {
-        // Requirements: 11.3, 11.4
         checkAll(PROPERTY_ITERATIONS, Arb.int(5..90), Arb.int(1..30), Arb.enum<ThemeMode>()) { focus, brk, theme ->
             val repository = createRepository(UserPreferences(focus, brk, ThemeMode.SYSTEM))
             val viewModel = SettingsViewModel(repository)

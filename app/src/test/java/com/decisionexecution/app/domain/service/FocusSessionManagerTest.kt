@@ -13,7 +13,6 @@ import java.util.UUID
 
 /**
  * Unit tests for FocusSessionManager edge cases.
- * Feature: decision-driven-execution-app
  */
 class FocusSessionManagerTest : StringSpec({
 
@@ -55,7 +54,6 @@ class FocusSessionManagerTest : StringSpec({
     }
     
     "should use default durations of 25 minutes focus and 5 minutes break" {
-        // Requirements: 4.1, 11.5
         val preferencesRepo = InMemoryPreferencesRepository()
         val clock = FakeTimeSource()
         val manager = focusSessionManager(preferencesRepo, clock = clock)
@@ -82,7 +80,6 @@ class FocusSessionManagerTest : StringSpec({
     }
     
     "should preserve exact remaining time when paused" {
-        // Requirements: 4.6, 4.7
         val preferencesRepo = InMemoryPreferencesRepository()
         val clock = FakeTimeSource()
         val manager = focusSessionManager(preferencesRepo, clock = clock)
@@ -120,7 +117,6 @@ class FocusSessionManagerTest : StringSpec({
     }
     
     "should transition through full cycle: Idle -> Focusing -> Breaking -> Idle" {
-        // Requirements: 4.1, 4.6, 4.7, 11.5
         val preferencesRepo = InMemoryPreferencesRepository()
         val clock = FakeTimeSource()
         val manager = focusSessionManager(preferencesRepo, clock = clock)
@@ -144,7 +140,6 @@ class FocusSessionManagerTest : StringSpec({
     }
     
     "should handle pause and resume cycle correctly" {
-        // Requirements: 4.6, 4.7
         val preferencesRepo = InMemoryPreferencesRepository()
         val clock = FakeTimeSource()
         val manager = focusSessionManager(preferencesRepo, clock = clock)
@@ -173,7 +168,6 @@ class FocusSessionManagerTest : StringSpec({
     }
     
     "should not pause when not in Focusing state" {
-        // Requirements: 4.6
         val preferencesRepo = InMemoryPreferencesRepository()
         val clock = FakeTimeSource()
         val manager = focusSessionManager(preferencesRepo, clock = clock)
@@ -192,7 +186,6 @@ class FocusSessionManagerTest : StringSpec({
     }
     
     "should not resume when not in Paused state" {
-        // Requirements: 4.7
         val preferencesRepo = InMemoryPreferencesRepository()
         val clock = FakeTimeSource()
         val manager = focusSessionManager(preferencesRepo, clock = clock)
@@ -210,7 +203,6 @@ class FocusSessionManagerTest : StringSpec({
     }
     
     "should end session from any state" {
-        // Requirements: 4.8
         val preferencesRepo = InMemoryPreferencesRepository()
         val clock = FakeTimeSource()
         val manager = focusSessionManager(preferencesRepo, clock = clock)
@@ -239,7 +231,6 @@ class FocusSessionManagerTest : StringSpec({
     }
     
     "should clear session data from DataStore when ending session" {
-        // Requirements: 4.8
         val preferencesRepo = InMemoryPreferencesRepository()
         val clock = FakeTimeSource()
         val manager = focusSessionManager(preferencesRepo, clock = clock)
@@ -268,7 +259,6 @@ class FocusSessionManagerTest : StringSpec({
     }
     
     "should save session data to DataStore when starting session" {
-        // Requirements: 4.1
         val preferencesRepo = InMemoryPreferencesRepository()
         val clock = FakeTimeSource()
         val manager = focusSessionManager(preferencesRepo, clock = clock)
@@ -285,7 +275,6 @@ class FocusSessionManagerTest : StringSpec({
     }
     
     "should update DataStore when pausing session" {
-        // Requirements: 4.6
         val preferencesRepo = InMemoryPreferencesRepository()
         val clock = FakeTimeSource()
         val manager = focusSessionManager(preferencesRepo, clock = clock)

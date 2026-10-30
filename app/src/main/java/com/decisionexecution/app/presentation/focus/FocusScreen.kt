@@ -56,7 +56,6 @@ fun formatSeconds(seconds: Int): String {
 /**
  * Full-screen focus timer with minimal UI. Break mode uses its own colour, label and a slow
  * breathing animation so it never reads as focus time.
- * Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 12.6
  */
 @Composable
 fun FocusScreen(

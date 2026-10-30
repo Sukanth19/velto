@@ -12,7 +12,6 @@ import java.time.LocalDate
 
 /**
  * What the best-task widget shows. Kept free of Glance so it can be tested without a launcher.
- * Requirements: 8.1, 8.3
  */
 data class BestTaskWidgetState(
     val taskId: String?,
@@ -33,7 +32,6 @@ fun bestTaskWidgetState(task: Task?): BestTaskWidgetState =
 
 /**
  * Last best-task state the widget showed, so a slow or failing load doesn't blank it.
- * Requirements: 8.4
  */
 class BestTaskWidgetCache(context: Context) {
     private val prefs = context.getSharedPreferences("best_task_widget_cache", Context.MODE_PRIVATE)
@@ -77,7 +75,6 @@ suspend fun loadBestTaskWidgetState(
 /**
  * What the focus timer widget shows. The countdown itself is drawn by a system Chronometer,
  * so the widget only needs refreshing when the phase changes, not every minute.
- * Requirements: 8.2, 8.5
  */
 sealed class TimerWidgetState {
     object Idle : TimerWidgetState()

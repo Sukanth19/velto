@@ -18,8 +18,6 @@ import javax.inject.Singleton
 /**
  * Runs when a focus or break phase should have ended. The session manager works out what
  * happened from the clock, moves to the next phase, notifies, and schedules the next check.
- *
- * Requirements: 4.4, 4.5, 13.1, 13.2, 13.3, 13.6
  */
 @HiltWorker
 class FocusTimerWorker @AssistedInject constructor(

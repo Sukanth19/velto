@@ -42,7 +42,6 @@ import java.util.Locale
 /**
  * Level and achievements, a way into the journal, then the last 7 days: streak, totals,
  * a focus-time chart and completed tasks per day.
- * Requirements: 7.2, 7.3, 7.4, 7.5
  */
 @Composable
 fun InsightsScreen(viewModel: InsightsViewModel = hiltViewModel(), onOpenJournal: () -> Unit = {}) {

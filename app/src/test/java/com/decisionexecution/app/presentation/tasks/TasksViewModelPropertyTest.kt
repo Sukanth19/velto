@@ -26,7 +26,6 @@ import java.util.UUID
 
 /**
  * Property-based tests for task grouping, sorting, and filtering.
- * Feature: decision-driven-execution-app
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class TasksViewModelPropertyTest : StringSpec({
@@ -34,11 +33,10 @@ class TasksViewModelPropertyTest : StringSpec({
     beforeTest { Dispatchers.setMain(UnconfinedTestDispatcher()) }
     afterTest { Dispatchers.resetMain() }
 
-    "Property 25: Task Grouping by Category" {
-        // Feature: decision-driven-execution-app, Property 25: For any list of tasks, grouping by
+    "Task Grouping by Category" {
+        // For any list of tasks, grouping by
         // category should result in each task appearing in exactly one category group matching
         // its category attribute.
-        // Validates: Requirements 9.1
 
         checkAll(PROPERTY_ITERATIONS, Arb.list(taskArb(), 0..50)) { tasks ->
             val grouped = groupTasksByCategory(tasks, ScoringEngine())
@@ -50,10 +48,9 @@ class TasksViewModelPropertyTest : StringSpec({
         }
     }
 
-    "Property 26: Task Sorting by Score Within Category" {
-        // Feature: decision-driven-execution-app, Property 26: For any list of tasks within a
+    "Task Sorting by Score Within Category" {
+        // For any list of tasks within a
         // single category, the tasks should be ordered in descending order by their priority score.
-        // Validates: Requirements 9.2
 
         checkAll(PROPERTY_ITERATIONS, Arb.list(taskArb(), 0..50)) { tasks ->
             val scoringEngine = ScoringEngine()
@@ -67,10 +64,9 @@ class TasksViewModelPropertyTest : StringSpec({
         }
     }
 
-    "Property 27: Category Filtering" {
-        // Feature: decision-driven-execution-app, Property 27: For any list of tasks and any
+    "Category Filtering" {
+        // For any list of tasks and any
         // category, filtering by that category should return only tasks with that category attribute.
-        // Validates: Requirements 9.6
 
         checkAll(PROPERTY_ITERATIONS, Arb.list(taskArb(), 0..50), Arb.enum<TaskCategory>()) { tasks, category ->
             val filtered = filterByCategory(groupTasksByCategory(tasks, ScoringEngine()), category)
@@ -80,9 +76,7 @@ class TasksViewModelPropertyTest : StringSpec({
         }
     }
 
-    "Property 27: Category Filtering - ViewModel applies selected filter" {
-        // Feature: decision-driven-execution-app, Property 27
-        // Validates: Requirements 9.6
+    "Category Filtering - ViewModel applies selected filter" {
 
         checkAll(PROPERTY_ITERATIONS, Arb.list(taskArb(), 0..30), Arb.enum<TaskCategory>()) { tasks, category ->
             val viewModel = createViewModel(tasks)
@@ -96,10 +90,9 @@ class TasksViewModelPropertyTest : StringSpec({
         }
     }
 
-    "Property 28: Active Task Count" {
-        // Feature: decision-driven-execution-app, Property 28: For any list of active tasks,
+    "Active Task Count" {
+        // For any list of active tasks,
         // the displayed count should equal the number of tasks in the list.
-        // Validates: Requirements 9.7
 
         checkAll(PROPERTY_ITERATIONS, Arb.list(taskArb(), 0..50), Arb.enum<TaskCategory>().orNull()) { tasks, category ->
             val viewModel = createViewModel(tasks)

@@ -13,7 +13,6 @@ import java.time.ZoneId
 
 /**
  * Week and streak calculation for Insights.
- * Feature: decision-driven-execution-app
  */
 class InsightsTest : StringSpec({
 

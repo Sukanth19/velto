@@ -9,8 +9,6 @@ import javax.inject.Inject
  * 
  * Initiates a Pomodoro-based focus session for a specific task with
  * configurable focus and break durations.
- * 
- * Requirements: 4.6
  */
 class StartFocusSessionUseCase @Inject constructor(
     private val focusSessionManager: FocusSessionManager

@@ -72,8 +72,6 @@ fun filterByCategory(
 
 /**
  * ViewModel for the Tasks screen: categorized lists, filtering, complete and delete actions.
- *
- * Requirements: 9.1, 9.2, 9.3, 9.4, 9.6, 9.7
  */
 @HiltViewModel
 class TasksViewModel @Inject constructor(

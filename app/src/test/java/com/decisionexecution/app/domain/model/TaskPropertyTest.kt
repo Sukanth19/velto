@@ -11,15 +11,13 @@ import java.util.UUID
 
 /**
  * Property-based tests for Task domain model validation.
- * Feature: decision-driven-execution-app
  */
 class TaskPropertyTest : StringSpec({
     
-    "Property 1: Task Attribute Validation - urgency and importance must be 1-5 inclusive" {
-        // Feature: decision-driven-execution-app, Property 1: For any task creation attempt,
+    "Task Attribute Validation - urgency and importance must be 1-5 inclusive" {
+        // For any task creation attempt,
         // urgency and importance values must be between 1 and 5 inclusive, and values outside
         // this range must be rejected with an error.
-        // Validates: Requirements 1.2, 1.3
         
         checkAll<Int, Int>(PROPERTY_ITERATIONS) { urgency, importance ->
             val validUrgency = urgency in 1..5
@@ -60,9 +58,7 @@ class TaskPropertyTest : StringSpec({
         }
     }
     
-    "Property 1: Task Attribute Validation - valid urgency values (1-5) are accepted" {
-        // Feature: decision-driven-execution-app, Property 1
-        // Validates: Requirements 1.2
+    "Task Attribute Validation - valid urgency values (1-5) are accepted" {
         
         checkAll(PROPERTY_ITERATIONS, Arb.int(1..5), Arb.int(1..5)) { urgency, importance ->
             val task = Task(
@@ -82,9 +78,7 @@ class TaskPropertyTest : StringSpec({
         }
     }
     
-    "Property 1: Task Attribute Validation - invalid urgency values are rejected" {
-        // Feature: decision-driven-execution-app, Property 1
-        // Validates: Requirements 1.2
+    "Task Attribute Validation - invalid urgency values are rejected" {
         
         val invalidUrgencyValues = Arb.choice(
             Arb.int(Int.MIN_VALUE..0),
@@ -108,9 +102,7 @@ class TaskPropertyTest : StringSpec({
         }
     }
     
-    "Property 1: Task Attribute Validation - invalid importance values are rejected" {
-        // Feature: decision-driven-execution-app, Property 1
-        // Validates: Requirements 1.3
+    "Task Attribute Validation - invalid importance values are rejected" {
         
         val invalidImportanceValues = Arb.choice(
             Arb.int(Int.MIN_VALUE..0),

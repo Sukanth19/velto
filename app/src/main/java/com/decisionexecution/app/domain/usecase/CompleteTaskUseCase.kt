@@ -9,8 +9,6 @@ import javax.inject.Inject
  * 
  * Marks the task as complete in the repository and records the completion
  * in the performance tracker for analytics.
- * 
- * Requirements: 1.9, 7.1
  */
 class CompleteTaskUseCase @Inject constructor(
     private val taskRepository: TaskRepository,

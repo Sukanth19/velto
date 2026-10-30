@@ -18,15 +18,13 @@ import java.util.UUID
 
 /**
  * Property-based tests for FocusSessionManager.
- * Feature: decision-driven-execution-app
  */
 class FocusSessionManagerPropertyTest : StringSpec({
     
-    "Property 9: Custom Focus Duration Application" {
-        // Feature: decision-driven-execution-app, Property 9: For any valid focus duration (5-90 minutes)
+    "Custom Focus Duration Application" {
+        // For any valid focus duration (5-90 minutes)
         // and break duration (1-30 minutes), setting these preferences and starting a focus session
         // should result in the session using those durations.
-        // Validates: Requirements 4.2, 11.3
         
         checkAll(PROPERTY_ITERATIONS,  Arb.int(5..90),  // focusDuration in minutes
             Arb.int(1..30),  // breakDuration in minutes
@@ -48,11 +46,10 @@ class FocusSessionManagerPropertyTest : StringSpec({
         }
     }
     
-    "Property 10: Focus Session State Transition" {
-        // Feature: decision-driven-execution-app, Property 10: For any active focus session,
+    "Focus Session State Transition" {
+        // For any active focus session,
         // when the elapsed time reaches the focus duration, the session state should automatically
         // transition to the break state.
-        // Validates: Requirements 4.4
         
         checkAll(PROPERTY_ITERATIONS,  Arb.int(5..90),  // focusDuration in minutes
             Arb.int(1..30),  // breakDuration in minutes
@@ -76,11 +73,10 @@ class FocusSessionManagerPropertyTest : StringSpec({
         }
     }
     
-    "Property 11: Focus Session Pause Preservation" {
-        // Feature: decision-driven-execution-app, Property 11: For any active focus session paused
+    "Focus Session Pause Preservation" {
+        // For any active focus session paused
         // at any point in time, the remaining time should be preserved and resuming should continue
         // from the same point.
-        // Validates: Requirements 4.6, 4.7
         
         checkAll(PROPERTY_ITERATIONS,  Arb.int(5..90),  // focusDuration in minutes
             Arb.int(1..30),  // breakDuration in minutes
@@ -128,10 +124,9 @@ class FocusSessionManagerPropertyTest : StringSpec({
         }
     }
     
-    "Property 12: Focus Session Early Termination" {
-        // Feature: decision-driven-execution-app, Property 12: For any active focus session,
+    "Focus Session Early Termination" {
+        // For any active focus session,
         // ending it early should transition the session state back to idle.
-        // Validates: Requirements 4.8
         
         checkAll(PROPERTY_ITERATIONS,  Arb.int(5..90),  // focusDuration in minutes
             Arb.int(1..30),  // breakDuration in minutes
@@ -155,11 +150,10 @@ class FocusSessionManagerPropertyTest : StringSpec({
         }
     }
     
-    "Property 13: Focus Completion Recording" {
-        // Feature: decision-driven-execution-app, Property 13: For any focus session that completes
+    "Focus Completion Recording" {
+        // For any focus session that completes
         // successfully, the performance tracker should record a completion entry with the correct
         // focus duration.
-        // Validates: Requirements 4.9
         
         checkAll(PROPERTY_ITERATIONS,  Arb.int(5..90),  // focusDuration in minutes
             Arb.int(1..30),  // breakDuration in minutes

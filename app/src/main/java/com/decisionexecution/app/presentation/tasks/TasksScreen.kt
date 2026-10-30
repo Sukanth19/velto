@@ -55,7 +55,6 @@ import com.decisionexecution.app.presentation.theme.Spacing
 /**
  * Tasks as a list grouped by category, or as a priority matrix.
  * Swipe right or tap the circle to complete; swipe left for edit and delete; both can be undone.
- * Requirements: 6.1, 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 12.5
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -52,7 +52,7 @@ import com.decisionexecution.app.presentation.taskdetail.TaskDetailViewModel
 import com.decisionexecution.app.presentation.tasks.TasksScreen
 
 /**
- * In-app deep links for notifications and widgets. Requirements: 8.6, 8.7, 13.4, 13.5
+ * In-app deep links for notifications and widgets.
  */
 object DeepLinks {
     const val SCHEME = "decisionexecution"
@@ -139,7 +139,6 @@ fun NavHostController.openDeepLink(uri: Uri): Boolean {
 /**
  * Bottom navigation with Home, Tasks, Habits, Focus and Progress, plus the secondary screens.
  * Level-ups and achievements are celebrated over whatever screen is showing.
- * Requirements: 12.3
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable

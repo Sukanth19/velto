@@ -26,7 +26,6 @@ import com.decisionexecution.app.R
 import com.decisionexecution.app.domain.model.ThemeMode
 
 // Purple fallback for devices without Material You (before Android 12); matches the launcher icon.
-// Requirements: 12.2
 private val LightColors = lightColorScheme(
     primary = Color(0xFF6B4EE6),
     onPrimary = Color.White,
@@ -34,7 +33,7 @@ private val LightColors = lightColorScheme(
     onPrimaryContainer = Color(0xFF21005E),
     secondaryContainer = Color(0xFFE6DEFF),
     onSecondaryContainer = Color(0xFF21005E),
-    // Break mode gets its own calm tone so it never reads as focus time (Requirement 5.6)
+    // Break mode gets its own calm tone so it never reads as focus time
     tertiary = Color(0xFF2E7D6B),
     onTertiary = Color.White,
     tertiaryContainer = Color(0xFFC8F0E3),
@@ -106,7 +105,7 @@ private val AppShapes = Shapes(
 )
 
 /**
- * Spacing tokens so every screen uses the same rhythm. Requirements: 12.7
+ * Spacing tokens so every screen uses the same rhythm.
  */
 object Spacing {
     val xxs = 2.dp
@@ -122,7 +121,6 @@ object Spacing {
  * App theme. Uses Material You wallpaper colours on Android 12+ and the purple palette before that.
  * Follows the system light/dark setting unless the user picked one in settings. Uses the expressive
  * motion scheme, so components spring and overshoot slightly instead of easing.
- * Requirements: 12.1, 12.2, 12.8
  */
 @Composable
 fun VeltoTheme(

@@ -8,8 +8,6 @@ import javax.inject.Inject
  * 
  * Resumes a previously paused focus session, continuing from
  * the point where it was paused.
- * 
- * Requirements: 4.7
  */
 class ResumeFocusSessionUseCase @Inject constructor(
     private val focusSessionManager: FocusSessionManager

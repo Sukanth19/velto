@@ -96,12 +96,11 @@ internal fun deepLinkAction(context: Context, uri: String): Action =
 
 /**
  * Best task with a Just Start button. Tapping the task opens its details.
- * Requirements: 8.1, 8.3, 8.4, 8.6, 8.7
  */
 class BestTaskWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        // A failed or slow load shows the last known task rather than a broken widget (Requirement 8.4)
+        // A failed or slow load shows the last known task rather than a broken widget
         val state = loadBestTaskWidgetState(BestTaskWidgetCache(context), LOAD_TIMEOUT_MILLIS) {
             bestTaskWidgetState(context.widgetEntryPoint().getBestTaskUseCase()().first())
         }
@@ -148,7 +147,6 @@ class BestTaskWidget : GlanceAppWidget() {
 
 /**
  * Current focus session with a live countdown. Tapping opens the Focus screen.
- * Requirements: 8.2, 8.5, 8.6
  */
 class FocusTimerWidget : GlanceAppWidget() {
 

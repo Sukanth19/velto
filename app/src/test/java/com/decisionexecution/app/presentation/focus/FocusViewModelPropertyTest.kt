@@ -26,7 +26,6 @@ import java.util.UUID
 
 /**
  * Property-based tests for FocusViewModel.
- * Feature: decision-driven-execution-app
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class FocusViewModelPropertyTest : StringSpec({
@@ -34,10 +33,9 @@ class FocusViewModelPropertyTest : StringSpec({
     beforeTest { Dispatchers.setMain(UnconfinedTestDispatcher()) }
     afterTest { Dispatchers.resetMain() }
 
-    "Property 14: Focus UI Task Display" {
-        // Feature: decision-driven-execution-app, Property 14: For any active focus session,
+    "Focus UI Task Display" {
+        // For any active focus session,
         // the focus UI state should contain the task title of the task being worked on.
-        // Validates: Requirements 5.2
 
         checkAll(PROPERTY_ITERATIONS, taskArb(), Arb.int(5..90), Arb.int(1..30), Arb.boolean()) { task, focus, brk, paused ->
             val clock = FakeTimeSource()
@@ -54,10 +52,9 @@ class FocusViewModelPropertyTest : StringSpec({
         }
     }
 
-    "Property 15: Focus vs Break State Distinction" {
-        // Feature: decision-driven-execution-app, Property 15: For any focus session, the UI state
+    "Focus vs Break State Distinction" {
+        // For any focus session, the UI state
         // during focus time should be distinguishable from the UI state during break time.
-        // Validates: Requirements 5.6
 
         checkAll(PROPERTY_ITERATIONS, taskArb(), Arb.int(5..90), Arb.int(1..30)) { task, focus, brk ->
             val clock = FakeTimeSource()
@@ -79,7 +76,6 @@ class FocusViewModelPropertyTest : StringSpec({
     }
 
     "remaining time is total minus elapsed and never negative" {
-        // Requirements: 5.3
         checkAll(PROPERTY_ITERATIONS, taskArb(), Arb.int(5..90), Arb.int(0..10_000)) { task, focus, rawElapsed ->
             // Stay inside the focus phase; going past it correctly moves to the break
             val elapsed = rawElapsed % (focus * 60)
@@ -97,7 +93,6 @@ class FocusViewModelPropertyTest : StringSpec({
     }
 
     "ending a session returns UI to idle" {
-        // Requirements: 4.8
         checkAll(PROPERTY_ITERATIONS, taskArb()) { task ->
             val clock = FakeTimeSource()
             val manager = focusSessionManager(clock = clock)

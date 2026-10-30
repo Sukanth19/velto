@@ -59,8 +59,6 @@ fun FocusSessionState.toUiState(): FocusUiState = when (this) {
 
 /**
  * ViewModel for the Focus screen: mirrors the session manager and exposes pause, resume, extend, end.
- *
- * Requirements: 4.6, 4.7, 4.8, 5.1, 5.2, 5.3, 5.4, 5.6
  */
 @HiltViewModel
 class FocusViewModel @Inject constructor(
@@ -81,7 +79,7 @@ class FocusViewModel @Inject constructor(
 
     init {
         // Refresh from the clock once a second while the Focus screen exists; the background
-        // check handles phase ends when it doesn't (Requirement 4.3)
+        // check handles phase ends when it doesn't
         viewModelScope.launch {
             while (isActive) {
                 focusSessionManager.sync()

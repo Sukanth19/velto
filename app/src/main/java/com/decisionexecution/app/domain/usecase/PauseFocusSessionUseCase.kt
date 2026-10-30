@@ -8,8 +8,6 @@ import javax.inject.Inject
  * 
  * Pauses the current focus session, preserving the remaining time
  * so it can be resumed later from the same point.
- * 
- * Requirements: 4.7
  */
 class PauseFocusSessionUseCase @Inject constructor(
     private val focusSessionManager: FocusSessionManager

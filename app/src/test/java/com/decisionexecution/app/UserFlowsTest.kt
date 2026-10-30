@@ -38,7 +38,6 @@ import java.util.UUID
 /**
  * End-to-end flows through real use cases, repositories and an in-memory Room database.
  * Only the clock, scheduler and notifier are fakes.
- * Requirements: 3.1, 3.2, 3.3, 4.4, 4.9, 7.2, 7.3, 9.3, 11.3
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)

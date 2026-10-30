@@ -22,8 +22,6 @@ import javax.inject.Singleton
  * from the clock, so the timer stays accurate in the background and across process death.
  * [sync] brings the in-memory state up to date: the Focus screen calls it every second while
  * visible, and a scheduled background check calls it when a phase should end.
- *
- * Requirements: 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 13.1, 13.6
  */
 @Singleton
 class FocusSessionManager @Inject constructor(

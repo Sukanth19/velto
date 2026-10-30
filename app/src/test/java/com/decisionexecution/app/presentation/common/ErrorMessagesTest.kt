@@ -13,7 +13,6 @@ import org.robolectric.annotation.Config
 
 /**
  * Raw database errors never reach the user verbatim.
- * Requirements: 10.6, 12.4
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])

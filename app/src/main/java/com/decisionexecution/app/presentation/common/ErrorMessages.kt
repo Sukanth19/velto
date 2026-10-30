@@ -8,8 +8,6 @@ import android.database.sqlite.SQLiteFullException
 /**
  * Turns an exception into a message a user can act on, instead of raw SQLite or developer text.
  * [action] completes "Couldn't ...", e.g. "save the task".
- *
- * Requirements: 10.6, 12.4
  */
 fun Throwable.toUserMessage(action: String): String = when (this) {
     // Domain validation messages (Task's require() checks) are already written for users

@@ -9,8 +9,6 @@ import javax.inject.Inject
  * 
  * Validates task attributes (urgency, importance) through the Task domain model's
  * init block, then persists the updated task to the repository.
- * 
- * Requirements: 1.7
  */
 class UpdateTaskUseCase @Inject constructor(
     private val taskRepository: TaskRepository

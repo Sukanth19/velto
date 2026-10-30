@@ -12,8 +12,6 @@ import javax.inject.Inject
  * 
  * Retrieves all active tasks and uses the scoring engine to determine
  * the three highest-priority tasks in descending order by score.
- * 
- * Requirements: 2.1, 2.2, 2.3
  */
 class GetTopThreeTasksUseCase @Inject constructor(
     private val taskRepository: TaskRepository,

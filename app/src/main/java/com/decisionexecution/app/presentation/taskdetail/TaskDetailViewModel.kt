@@ -26,8 +26,6 @@ data class TaskDetailUiState(
 
 /**
  * ViewModel for the task detail screen. `isFinished` tells the UI to navigate back.
- *
- * Requirements: 1.7, 1.8
  */
 @HiltViewModel
 class TaskDetailViewModel @Inject constructor(

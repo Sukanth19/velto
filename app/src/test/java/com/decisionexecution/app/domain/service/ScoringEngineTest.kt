@@ -7,12 +7,10 @@ import java.util.UUID
 
 /**
  * Unit tests for ScoringEngine edge cases.
- * Feature: decision-driven-execution-app
  */
 class ScoringEngineTest : StringSpec({
     
     "should return null when task list is empty" {
-        // Requirements: 2.5
         val scoringEngine = ScoringEngine()
         val bestTask = scoringEngine.getBestTask(emptyList())
         
@@ -20,7 +18,6 @@ class ScoringEngineTest : StringSpec({
     }
     
     "should return empty list when getting top three from empty list" {
-        // Requirements: 2.5
         val scoringEngine = ScoringEngine()
         val topThree = scoringEngine.getTopThreeTasks(emptyList())
         
@@ -28,7 +25,6 @@ class ScoringEngineTest : StringSpec({
     }
     
     "should return single task when list contains only one task" {
-        // Requirements: 2.4
         val scoringEngine = ScoringEngine()
         val task = Task(
             id = UUID.randomUUID().toString(),
@@ -50,7 +46,6 @@ class ScoringEngineTest : StringSpec({
     }
     
     "should use timestamp tiebreaker when scores are identical" {
-        // Requirements: 2.4
         val scoringEngine = ScoringEngine()
         val baseTime = System.currentTimeMillis()
         
@@ -113,7 +108,6 @@ class ScoringEngineTest : StringSpec({
     }
     
     "should calculate correct score with all factors" {
-        // Requirements: 2.1
         val scoringEngine = ScoringEngine()
         
         // Test with all factors present
@@ -136,7 +130,6 @@ class ScoringEngineTest : StringSpec({
     }
     
     "should calculate correct score with minimal factors" {
-        // Requirements: 2.1
         val scoringEngine = ScoringEngine()
         
         // Test with minimal factors (no energy tag)
@@ -159,7 +152,6 @@ class ScoringEngineTest : StringSpec({
     }
     
     "should prioritize importance over urgency" {
-        // Requirements: 2.1
         val scoringEngine = ScoringEngine()
         
         val urgentTask = Task(
@@ -200,7 +192,6 @@ class ScoringEngineTest : StringSpec({
     }
     
     "should penalize high effort tasks" {
-        // Requirements: 2.1
         val scoringEngine = ScoringEngine()
         
         val lowEffortTask = Task(
@@ -241,7 +232,6 @@ class ScoringEngineTest : StringSpec({
     }
     
     "should apply energy bonus correctly" {
-        // Requirements: 2.1
         val scoringEngine = ScoringEngine()
         
         val noEnergyTask = Task(

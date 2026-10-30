@@ -7,8 +7,6 @@ import javax.inject.Inject
  * Use case for deleting a task.
  * 
  * Removes the task from the repository, making it no longer appear in any queries.
- * 
- * Requirements: 1.8
  */
 class DeleteTaskUseCase @Inject constructor(
     private val taskRepository: TaskRepository

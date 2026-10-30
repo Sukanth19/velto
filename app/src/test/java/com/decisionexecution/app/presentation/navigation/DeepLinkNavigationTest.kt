@@ -19,7 +19,6 @@ import org.robolectric.annotation.Config
  * Deep links from notifications and widgets must behave like tapping the matching tab.
  * Regression: arriving via the focus notification left Focus inside the Home tab's stack,
  * so tapping Home showed Focus again.
- * Requirements: 8.6, 8.7, 13.4, 13.5
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])

@@ -142,7 +142,6 @@ class ScreensRenderTest {
 
     @Test
     fun taskRowsAreUsableWithScreenReaders() {
-        // Requirements: 9.3, 12.1 (accessibility)
         val complete = mockk<CompleteTaskUseCase>(relaxed = true)
         val getAll = mockk<GetAllTasksUseCase>()
         every { getAll() } returns flowOf(tasks)

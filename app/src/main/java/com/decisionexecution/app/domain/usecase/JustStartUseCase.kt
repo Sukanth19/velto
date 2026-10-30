@@ -10,8 +10,6 @@ import javax.inject.Inject
  * 
  * Orchestrates the one-tap execution flow: gets the best task, loads user preferences,
  * and starts a focus session automatically without requiring additional user input.
- * 
- * Requirements: 3.1, 3.2, 3.3, 3.4, 3.5
  */
 class JustStartUseCase @Inject constructor(
     private val getBestTaskUseCase: GetBestTaskUseCase,

@@ -9,8 +9,6 @@ import javax.inject.Inject
  * Use case for retrieving a specific task by ID.
  * 
  * Returns a Flow that emits the task if found, or null if not found.
- * 
- * Requirements: 1.1
  */
 class GetTaskByIdUseCase @Inject constructor(
     private val taskRepository: TaskRepository

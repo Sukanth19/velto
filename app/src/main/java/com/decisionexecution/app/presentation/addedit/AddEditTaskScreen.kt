@@ -20,7 +20,6 @@ import kotlin.math.roundToInt
 /**
  * Form for creating or editing a task.
  * The spec calls for dropdowns; with only 2-3 options per field, chips need one tap instead of two.
- * Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

@@ -39,8 +39,6 @@ data class HomeUiState(
 
 /**
  * ViewModel for the Home screen: next best task, today's stats, and the Just Start action.
- *
- * Requirements: 2.2, 3.1, 3.4, 7.2, 7.3, 7.4, 12.4
  */
 @HiltViewModel
 class HomeViewModel @Inject constructor(

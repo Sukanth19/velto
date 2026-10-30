@@ -30,7 +30,6 @@ data class Insights(
 
 /**
  * Weekly activity and streak for the Insights screen and Home.
- * Requirements: 7.2, 7.3, 7.4
  */
 class GetInsightsUseCase @Inject constructor(
     private val performanceRepository: PerformanceRepository

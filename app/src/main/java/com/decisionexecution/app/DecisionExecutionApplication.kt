@@ -31,7 +31,7 @@ class DecisionExecutionApplication : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
-        // Restore a session that was running when the process died (Requirement 13.6)
+        // Restore a session that was running when the process died
         appScope.launch { runCatching { focusSessionManager.sync() } }
         widgetUpdater.start(appScope)
     }

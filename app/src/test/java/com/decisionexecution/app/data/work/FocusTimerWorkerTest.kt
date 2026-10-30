@@ -19,7 +19,6 @@ import org.robolectric.annotation.Config
 
 /**
  * Runs the real worker against a session manager with a fake clock.
- * Requirements: 13.1, 13.2, 13.3
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])

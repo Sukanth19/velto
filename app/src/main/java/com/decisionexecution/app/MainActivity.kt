@@ -74,7 +74,6 @@ class MainActivity : ComponentActivity() {
 
     /**
      * Asks once on Android 13+. If denied, the timer still works; notifications are just skipped.
-     * Requirements: 13.2
      */
     @Composable
     private fun RequestNotificationPermission() {

@@ -12,7 +12,6 @@ import org.robolectric.annotation.Config
 
 /**
  * The best-task widget keeps showing the last known task when loading fails or hangs.
- * Requirements: 8.4
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])

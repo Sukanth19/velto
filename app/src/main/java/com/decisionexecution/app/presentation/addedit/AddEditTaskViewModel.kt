@@ -39,8 +39,6 @@ data class AddEditTaskUiState(
 /**
  * ViewModel for creating or editing a task. Editing keeps the original id and creation time.
  * A task made from an inbox item starts with its text and clears the item once saved.
- *
- * Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7
  */
 @HiltViewModel
 class AddEditTaskViewModel @Inject constructor(

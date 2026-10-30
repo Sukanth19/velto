@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Property-based tests for PerformanceRepository.
- * Feature: decision-driven-execution-app
  */
 // Room needs a real SQLite, so these run under Robolectric rather than as Kotest specs
 @RunWith(RobolectricTestRunner::class)
@@ -32,11 +31,10 @@ import java.util.concurrent.TimeUnit
 class PerformanceRepositoryPropertyTest {
     
     @Test
-    fun `Property 21 Completion Timestamp Recording`() = runTest {
-        // Feature: decision-driven-execution-app, Property 21: For any completed task,
+    fun `Completion Timestamp Recording`() = runTest {
+        // For any completed task,
         // the performance tracker should store a completion record with a timestamp
         // matching the completion time.
-        // **Validates: Requirements 7.1**
         
         checkAll(PROPERTY_ITERATIONS,
             Arb.string(10..50),
@@ -67,11 +65,10 @@ class PerformanceRepositoryPropertyTest {
     }
     
     @Test
-    fun `Property 22 Completed Tasks Count`() = runTest {
-        // Feature: decision-driven-execution-app, Property 22: For any time period
+    fun `Completed Tasks Count`() = runTest {
+        // For any time period
         // and set of completions, the count of completed tasks in that period should
         // equal the number of completions with timestamps within the period bounds.
-        // **Validates: Requirements 7.2**
         
         checkAll(PROPERTY_ITERATIONS,
             Arb.list(completionDataArb(), 0..20),
@@ -104,11 +101,10 @@ class PerformanceRepositoryPropertyTest {
     }
     
     @Test
-    fun `Property 23 Total Focus Time Calculation`() = runTest {
-        // Feature: decision-driven-execution-app, Property 23: For any time period
+    fun `Total Focus Time Calculation`() = runTest {
+        // For any time period
         // and set of completions with focus durations, the total focus time should
         // equal the sum of all focus durations within the period.
-        // **Validates: Requirements 7.3**
         
         checkAll(PROPERTY_ITERATIONS,
             Arb.list(completionDataArb(), 0..20),
@@ -141,10 +137,9 @@ class PerformanceRepositoryPropertyTest {
     }
     
     @Test
-    fun `Property 23 Total Focus Time includes finished focus sessions`() = runTest {
-        // Feature: decision-driven-execution-app, Property 23: focus minutes from finished focus
+    fun `Total Focus Time includes finished focus sessions`() = runTest {
+        // focus minutes from finished focus
         // phases count toward total focus time, and never toward completed tasks.
-        // **Validates: Requirements 4.9, 7.2, 7.3**
 
         checkAll(PROPERTY_ITERATIONS,
             Arb.list(Arb.pair(Arb.long(1000000000000L..2000000000000L), Arb.int(5..90)), 0..20),
@@ -169,11 +164,10 @@ class PerformanceRepositoryPropertyTest {
     }
 
     @Test
-    fun `Property 24 Consistency Score Calculation`() = runTest {
-        // Feature: decision-driven-execution-app, Property 24: For any set of completions
+    fun `Consistency Score Calculation`() = runTest {
+        // For any set of completions
         // over a time period, the consistency score should equal
         // (days with completions / total days) * 100.
-        // **Validates: Requirements 7.4**
         
         checkAll(PROPERTY_ITERATIONS,
             Arb.int(1..30),

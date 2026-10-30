@@ -21,7 +21,6 @@ import java.util.Date
 
 /**
  * Shows every attribute of a task with edit, delete and complete actions.
- * Requirements: 1.7, 1.8
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

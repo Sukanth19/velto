@@ -13,8 +13,6 @@ import javax.inject.Inject
  * 
  * Retrieves all active tasks and groups them by their Eisenhower quadrant
  * based on urgency and importance ratings.
- * 
- * Requirements: 6.1, 6.6
  */
 class GetEisenhowerMatrixUseCase @Inject constructor(
     private val taskRepository: TaskRepository,

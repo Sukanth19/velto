@@ -13,15 +13,13 @@ import java.util.UUID
 
 /**
  * Property-based tests for ScoringEngine.
- * Feature: decision-driven-execution-app
  */
 class ScoringEnginePropertyTest : StringSpec({
     
-    "Property 6: Score Calculation and Best Task Selection" {
-        // Feature: decision-driven-execution-app, Property 6: For any non-empty list of tasks,
+    "Score Calculation and Best Task Selection" {
+        // For any non-empty list of tasks,
         // the best task returned by the scoring engine should have a score greater than or equal
         // to all other tasks in the list.
-        // Validates: Requirements 2.1, 2.2
         
         checkAll(PROPERTY_ITERATIONS, Arb.list(taskArb(), range = 1..100)) { tasks ->
             val scoringEngine = ScoringEngine()
@@ -37,10 +35,9 @@ class ScoringEnginePropertyTest : StringSpec({
         }
     }
     
-    "Property 7: Top Three Task Ordering" {
-        // Feature: decision-driven-execution-app, Property 7: For any list of tasks with at least
+    "Top Three Task Ordering" {
+        // For any list of tasks with at least
         // three tasks, the top three tasks returned should be in descending order by score.
-        // Validates: Requirements 2.3
         
         checkAll(PROPERTY_ITERATIONS, Arb.list(taskArb(), range = 3..100)) { tasks ->
             val scoringEngine = ScoringEngine()
@@ -62,10 +59,9 @@ class ScoringEnginePropertyTest : StringSpec({
         }
     }
     
-    "Property 8: Score Tiebreaker" {
-        // Feature: decision-driven-execution-app, Property 8: For any set of tasks with identical
+    "Score Tiebreaker" {
+        // For any set of tasks with identical
         // scores, the task with the earliest creation timestamp should be ranked higher.
-        // Validates: Requirements 2.4
         
         checkAll(PROPERTY_ITERATIONS, Arb.int(1..5), Arb.int(1..5)) { urgency, importance ->
             val scoringEngine = ScoringEngine()

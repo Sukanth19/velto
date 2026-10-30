@@ -11,14 +11,12 @@ import java.util.UUID
 
 /**
  * Property-based tests for EisenhowerClassifier.
- * Feature: decision-driven-execution-app
  */
 class EisenhowerClassifierPropertyTest : StringSpec({
     
-    "Property 16: Eisenhower Urgent and Important Classification" {
-        // Feature: decision-driven-execution-app, Property 16: For any task with urgency >= 4
+    "Eisenhower Urgent and Important Classification" {
+        // For any task with urgency >= 4
         // and importance >= 4, the Eisenhower classifier should classify it as Urgent and Important.
-        // Validates: Requirements 6.2
         
         checkAll(PROPERTY_ITERATIONS, Arb.int(4..5), Arb.int(4..5)) { urgency, importance ->
             val classifier = EisenhowerClassifier()
@@ -30,10 +28,9 @@ class EisenhowerClassifierPropertyTest : StringSpec({
         }
     }
     
-    "Property 17: Eisenhower Not Urgent but Important Classification" {
-        // Feature: decision-driven-execution-app, Property 17: For any task with urgency <= 3
+    "Eisenhower Not Urgent but Important Classification" {
+        // For any task with urgency <= 3
         // and importance >= 4, the Eisenhower classifier should classify it as Not Urgent but Important.
-        // Validates: Requirements 6.3
         
         checkAll(PROPERTY_ITERATIONS, Arb.int(1..3), Arb.int(4..5)) { urgency, importance ->
             val classifier = EisenhowerClassifier()
@@ -45,10 +42,9 @@ class EisenhowerClassifierPropertyTest : StringSpec({
         }
     }
     
-    "Property 18: Eisenhower Urgent but Not Important Classification" {
-        // Feature: decision-driven-execution-app, Property 18: For any task with urgency >= 4
+    "Eisenhower Urgent but Not Important Classification" {
+        // For any task with urgency >= 4
         // and importance <= 3, the Eisenhower classifier should classify it as Urgent but Not Important.
-        // Validates: Requirements 6.4
         
         checkAll(PROPERTY_ITERATIONS, Arb.int(4..5), Arb.int(1..3)) { urgency, importance ->
             val classifier = EisenhowerClassifier()
@@ -60,10 +56,9 @@ class EisenhowerClassifierPropertyTest : StringSpec({
         }
     }
     
-    "Property 19: Eisenhower Neither Classification" {
-        // Feature: decision-driven-execution-app, Property 19: For any task with urgency <= 3
+    "Eisenhower Neither Classification" {
+        // For any task with urgency <= 3
         // and importance <= 3, the Eisenhower classifier should classify it as Neither Urgent nor Important.
-        // Validates: Requirements 6.5
         
         checkAll(PROPERTY_ITERATIONS, Arb.int(1..3), Arb.int(1..3)) { urgency, importance ->
             val classifier = EisenhowerClassifier()
@@ -75,10 +70,9 @@ class EisenhowerClassifierPropertyTest : StringSpec({
         }
     }
     
-    "Property 20: Eisenhower Quadrant Counts" {
-        // Feature: decision-driven-execution-app, Property 20: For any list of tasks,
+    "Eisenhower Quadrant Counts" {
+        // For any list of tasks,
         // the sum of task counts across all four Eisenhower quadrants should equal the total number of tasks.
-        // Validates: Requirements 6.7
         
         checkAll(PROPERTY_ITERATIONS, Arb.list(taskArb(), range = 0..100)) { tasks ->
             val classifier = EisenhowerClassifier()

@@ -31,8 +31,6 @@ fun isValidBreakDuration(minutes: Int): Boolean = minutes in BREAK_DURATION_RANG
 
 /**
  * ViewModel for the Settings screen. Rejects out-of-range durations instead of saving them.
- *
- * Requirements: 11.1, 11.2, 11.3, 11.4
  */
 @HiltViewModel
 class SettingsViewModel @Inject constructor(

@@ -9,8 +9,6 @@ import javax.inject.Inject
  * Use case for retrieving all active tasks.
  * 
  * Returns a Flow of all tasks that have not been completed.
- * 
- * Requirements: 1.1
  */
 class GetAllTasksUseCase @Inject constructor(
     private val taskRepository: TaskRepository

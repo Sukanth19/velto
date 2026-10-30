@@ -14,12 +14,10 @@ import java.util.UUID
 
 /**
  * Unit tests for task management use cases.
- * Feature: decision-driven-execution-app
  */
 class TaskUseCasesTest : StringSpec({
     
     "CreateTaskUseCase should validate urgency is between 1 and 5" {
-        // Requirements: 1.2
         val taskRepository = mockk<TaskRepository>()
         val createTaskUseCase = CreateTaskUseCase(taskRepository)
         
@@ -77,7 +75,6 @@ class TaskUseCasesTest : StringSpec({
     }
     
     "CreateTaskUseCase should validate importance is between 1 and 5" {
-        // Requirements: 1.3
         val taskRepository = mockk<TaskRepository>()
         val createTaskUseCase = CreateTaskUseCase(taskRepository)
         
@@ -135,7 +132,6 @@ class TaskUseCasesTest : StringSpec({
     }
     
     "CompleteTaskUseCase should record completion timestamp" {
-        // Requirements: 1.9, 7.1
         val taskRepository = mockk<TaskRepository>()
         val performanceRepository = mockk<PerformanceRepository>()
         val completeTaskUseCase = CompleteTaskUseCase(taskRepository, performanceRepository)
@@ -164,7 +160,6 @@ class TaskUseCasesTest : StringSpec({
     }
     
     "CompleteTaskUseCase should record completion without focus duration" {
-        // Requirements: 1.9, 7.1
         val taskRepository = mockk<TaskRepository>()
         val performanceRepository = mockk<PerformanceRepository>()
         val completeTaskUseCase = CompleteTaskUseCase(taskRepository, performanceRepository)
@@ -181,7 +176,6 @@ class TaskUseCasesTest : StringSpec({
     }
     
     "DeleteTaskUseCase should remove task from queries" {
-        // Requirements: 1.8
         val taskRepository = mockk<TaskRepository>()
         val deleteTaskUseCase = DeleteTaskUseCase(taskRepository)
         
@@ -219,7 +213,6 @@ class TaskUseCasesTest : StringSpec({
     }
     
     "UpdateTaskUseCase should validate updated task attributes" {
-        // Requirements: 1.7, 1.2, 1.3
         val taskRepository = mockk<TaskRepository>()
         val updateTaskUseCase = UpdateTaskUseCase(taskRepository)
         
@@ -260,7 +253,6 @@ class TaskUseCasesTest : StringSpec({
     }
     
     "GetAllTasksUseCase should return all active tasks" {
-        // Requirements: 1.1
         val taskRepository = mockk<TaskRepository>()
         val getAllTasksUseCase = GetAllTasksUseCase(taskRepository)
         
@@ -298,7 +290,6 @@ class TaskUseCasesTest : StringSpec({
     }
     
     "GetTaskByIdUseCase should return specific task" {
-        // Requirements: 1.1
         val taskRepository = mockk<TaskRepository>()
         val getTaskByIdUseCase = GetTaskByIdUseCase(taskRepository)
         
@@ -323,7 +314,6 @@ class TaskUseCasesTest : StringSpec({
     }
     
     "GetTaskByIdUseCase should return null for non-existent task" {
-        // Requirements: 1.1
         val taskRepository = mockk<TaskRepository>()
         val getTaskByIdUseCase = GetTaskByIdUseCase(taskRepository)
         

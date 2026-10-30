@@ -10,8 +10,6 @@ import javax.inject.Inject
  * 
  * Retrieves completed tasks count, total focus time, and consistency score
  * for the specified time period.
- * 
- * Requirements: 7.2, 7.3, 7.4, 7.5
  */
 class GetProductivityMetricsUseCase @Inject constructor(
     private val performanceRepository: PerformanceRepository

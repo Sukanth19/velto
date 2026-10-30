@@ -21,7 +21,6 @@ import kotlin.math.roundToInt
 
 /**
  * Focus/break durations, daily focus goal and theme. Sliders only save when released, not on every drag step.
- * Requirements: 11.1, 11.2, 11.3
  */
 @Composable
 fun SettingsScreen(

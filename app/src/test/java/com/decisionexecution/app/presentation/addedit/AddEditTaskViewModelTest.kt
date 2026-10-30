@@ -22,7 +22,6 @@ import kotlinx.coroutines.test.setMain
 
 /**
  * Unit tests for AddEditTaskViewModel.
- * Feature: decision-driven-execution-app
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class AddEditTaskViewModelTest : StringSpec({
@@ -31,7 +30,6 @@ class AddEditTaskViewModelTest : StringSpec({
     afterTest { Dispatchers.resetMain() }
 
     "blank title is rejected and nothing is saved" {
-        // Requirements: 1.1
         val create = mockk<CreateTaskUseCase>(relaxed = true)
         val viewModel = createViewModel(create = create)
 
@@ -44,7 +42,6 @@ class AddEditTaskViewModelTest : StringSpec({
     }
 
     "new task is created with the form values" {
-        // Requirements: 1.1, 1.4, 1.5, 1.6
         val create = mockk<CreateTaskUseCase>(relaxed = true)
         val viewModel = createViewModel(create = create)
 
@@ -70,7 +67,6 @@ class AddEditTaskViewModelTest : StringSpec({
     }
 
     "editing loads the task and updates it keeping id and createdAt" {
-        // Requirements: 1.7
         val existing = Task("t-1", "Old", "desc", TaskCategory.WORK, 2, 3, TaskEffort.LOW, null, 1_600_000_000_000L)
         val update = mockk<UpdateTaskUseCase>(relaxed = true)
         val create = mockk<CreateTaskUseCase>(relaxed = true)
@@ -88,7 +84,6 @@ class AddEditTaskViewModelTest : StringSpec({
     }
 
     "urgency and importance are clamped to 1-5 for any slider input" {
-        // Requirements: 1.2, 1.3
         checkAll(PROPERTY_ITERATIONS, Arb.int(-50..50), Arb.int(-50..50)) { urgency, importance ->
             val viewModel = createViewModel()
             viewModel.onUrgencyChange(urgency)
@@ -100,7 +95,6 @@ class AddEditTaskViewModelTest : StringSpec({
     }
 
     "save failure surfaces an error" {
-        // Requirements: 12.4
         val create = mockk<CreateTaskUseCase>()
         coEvery { create(any()) } throws IllegalStateException("disk full")
         val viewModel = createViewModel(create = create)

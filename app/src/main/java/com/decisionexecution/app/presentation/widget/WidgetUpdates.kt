@@ -32,7 +32,6 @@ import javax.inject.Singleton
 
 /**
  * Refreshes widgets as soon as what they show changes, while the app process is alive.
- * Requirements: 8.4, 8.5
  */
 @Singleton
 class WidgetUpdater @Inject constructor(
@@ -111,7 +110,7 @@ class WidgetUpdater @Inject constructor(
         }
     }
 
-    // A widget refresh failing must never take the app down (Requirement 8.4)
+    // A widget refresh failing must never take the app down
     private suspend fun safely(block: suspend () -> Unit) {
         runCatching { block() }
     }
@@ -121,7 +120,6 @@ class WidgetUpdater @Inject constructor(
  * Fallback refresh for every widget except the timer when the app isn't running:
  * the best task can change without user action as tasks age, today's stats reset at midnight,
  * and the spec allows up to 15 minutes. Keeps its old name so already-scheduled work still resolves.
- * Requirements: 8.4
  */
 class BestTaskWidgetUpdateWorker(
     context: Context,

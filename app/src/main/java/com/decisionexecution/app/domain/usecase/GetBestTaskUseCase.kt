@@ -12,8 +12,6 @@ import javax.inject.Inject
  * 
  * Retrieves all active tasks and uses the scoring engine to determine
  * the highest-priority task based on urgency, importance, effort, and energy.
- * 
- * Requirements: 2.1, 2.2, 2.3
  */
 class GetBestTaskUseCase @Inject constructor(
     private val taskRepository: TaskRepository,

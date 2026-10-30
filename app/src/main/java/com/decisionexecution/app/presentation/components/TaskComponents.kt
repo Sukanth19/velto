@@ -64,7 +64,7 @@ fun AttributeTag(text: String, modifier: Modifier = Modifier, spokenText: String
 }
 
 /**
- * Urgency, importance, effort and energy tag for a task. Requirements: 9.5
+ * Urgency, importance, effort and energy tag for a task.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable

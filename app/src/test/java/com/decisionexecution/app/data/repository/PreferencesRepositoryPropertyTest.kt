@@ -18,15 +18,13 @@ import java.io.File
 
 /**
  * Property-based tests for PreferencesRepository persistence.
- * Feature: decision-driven-execution-app
  */
 class PreferencesRepositoryPropertyTest : StringSpec({
     
-    "Property 30: Preferences Persistence Round Trip" {
-        // Feature: decision-driven-execution-app, Property 30: For any valid user preferences,
+    "Preferences Persistence Round Trip" {
+        // For any valid user preferences,
         // persisting them to DataStore and then retrieving preferences should return equivalent
         // preference values.
-        // **Validates: Requirements 10.2, 10.4, 11.4**
         
         val focusDurationArb = Arb.int(5..90)
         val breakDurationArb = Arb.int(1..30)
@@ -71,10 +69,9 @@ class PreferencesRepositoryPropertyTest : StringSpec({
         }
     }
     
-    "Property 30: Focus Session Persistence Round Trip" {
-        // Feature: decision-driven-execution-app, Property 30: For any valid focus session data,
+    "Focus Session Persistence Round Trip" {
+        // For any valid focus session data,
         // persisting it to DataStore and then retrieving it should return equivalent values.
-        // **Validates: Requirements 10.2, 10.4, 11.4**
         
         val taskIdArb = Arb.string(10..50)
         val taskTitleArb = Arb.string(5..100)
@@ -130,10 +127,9 @@ class PreferencesRepositoryPropertyTest : StringSpec({
         }
     }
     
-    "Property 30: Null Focus Session Returns Null" {
-        // Feature: decision-driven-execution-app, Property 30: When no focus session exists,
+    "Null Focus Session Returns Null" {
+        // When no focus session exists,
         // getFocusSession should return null.
-        // **Validates: Requirements 10.2, 10.4**
         
         val testDispatcher = UnconfinedTestDispatcher()
         val testScope = TestScope(testDispatcher)
