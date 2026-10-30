@@ -11,7 +11,7 @@
             android:action="android.intent.action.VIEW"
             android:data="decisionexecution://capture"
             android:targetClass="com.decisionexecution.app.MainActivity"
-            android:targetPackage="com.decisionexecution.app" />
+            android:targetPackage="com.suks.velto" />
     </shortcut>
     <shortcut
         android:enabled="true"
@@ -23,7 +23,7 @@
             android:action="android.intent.action.VIEW"
             android:data="decisionexecution://just_start"
             android:targetClass="com.decisionexecution.app.MainActivity"
-            android:targetPackage="com.decisionexecution.app" />
+            android:targetPackage="com.suks.velto" />
     </shortcut>
     <shortcut
         android:enabled="true"
@@ -35,7 +35,7 @@
             android:action="android.intent.action.VIEW"
             android:data="decisionexecution://decide"
             android:targetClass="com.decisionexecution.app.MainActivity"
-            android:targetPackage="com.decisionexecution.app" />
+            android:targetPackage="com.suks.velto" />
     </shortcut>
     <shortcut
         android:enabled="true"
@@ -47,6 +47,6 @@
             android:action="android.intent.action.VIEW"
             android:data="decisionexecution://journal"
             android:targetClass="com.decisionexecution.app.MainActivity"
-            android:targetPackage="com.decisionexecution.app" />
+            android:targetPackage="com.suks.velto" />
     </shortcut>
 </shortcuts>

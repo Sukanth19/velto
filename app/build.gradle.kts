@@ -14,11 +14,13 @@ val keystoreProperties = Properties().apply {
 }
 
 android {
+    // The code package; the published app ID below can differ and is what Play knows the app by
     namespace = "com.decisionexecution.app"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.decisionexecution.app"
+        // Permanent once published to Play
+        applicationId = "com.suks.velto"
         minSdk = 26
         targetSdk = 36
         versionCode = 2
