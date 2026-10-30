@@ -2,6 +2,7 @@ package com.decisionexecution.app.data.local.database
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import com.decisionexecution.app.data.local.dao.BackupDao
 import com.decisionexecution.app.data.local.dao.HabitDao
 import com.decisionexecution.app.data.local.dao.InboxDao
 import com.decisionexecution.app.data.local.dao.MoodDao
@@ -38,4 +39,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun inboxDao(): InboxDao
     abstract fun moodDao(): MoodDao
     abstract fun statsDao(): StatsDao
+    abstract fun backupDao(): BackupDao
 }

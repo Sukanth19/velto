@@ -6,6 +6,18 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.BrightnessAuto
 import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.LightMode
+import androidx.compose.material.icons.rounded.Download
+import androidx.compose.material.icons.rounded.Upload
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import android.net.Uri
+import android.text.format.DateFormat
+import com.decisionexecution.app.domain.model.Reminder
+import com.decisionexecution.app.domain.service.formatMinuteOfDay
+import java.time.LocalDate
+import androidx.compose.ui.unit.dp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -34,8 +46,24 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    var pendingImport by remember { mutableStateOf<Uri?>(null) }
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
+        uri?.let { viewModel.onExport(it, context.contentResolver) }
+    }
+    val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        pendingImport = uri
+    }
+    LaunchedEffect(uiState.backupMessage) {
+        uiState.backupMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.onBackupMessageShown()
+        }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Settings") },
@@ -49,6 +77,7 @@ fun SettingsScreen(
             Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .verticalScroll(rememberScrollState())
                 .padding(Spacing.md),
             verticalArrangement = Arrangement.spacedBy(Spacing.lg)
         ) {
@@ -81,7 +110,109 @@ fun SettingsScreen(
                 Text("Theme", style = MaterialTheme.typography.labelLarge)
                 ThemePicker(uiState.themeMode, viewModel::onThemeModeChanged)
             }
+
+            SectionTitle("Reminders")
+            ReminderSetting(
+                title = "Habits left",
+                description = "An evening nudge, only if habits are still unchecked",
+                reminder = uiState.habitReminder,
+                onChange = viewModel::onHabitReminderChanged
+            )
+            ReminderSetting(
+                title = "Mood check-in",
+                description = "A morning nudge, skipped once you've logged today",
+                reminder = uiState.moodReminder,
+                onChange = viewModel::onMoodReminderChanged
+            )
+
+            SectionTitle("Your data")
+            Text(
+                "Everything stays on this phone and is included in your Android backup. " +
+                    "Export a file to keep a copy yourself or move to a phone without Google backup.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                FilledTonalButton(
+                    onClick = { exportLauncher.launch("velto-backup-${LocalDate.now()}.json") },
+                    enabled = !uiState.backupBusy,
+                    shapes = ButtonDefaults.shapes(),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Rounded.Upload, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(Spacing.sm))
+                    Text("Export")
+                }
+                OutlinedButton(
+                    onClick = { importLauncher.launch(arrayOf("application/json", "text/plain", "application/octet-stream")) },
+                    enabled = !uiState.backupBusy,
+                    shapes = ButtonDefaults.shapes(),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Rounded.Download, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(Spacing.sm))
+                    Text("Import")
+                }
+            }
+            if (uiState.backupBusy) LinearWavyProgressIndicator(Modifier.fillMaxWidth())
+            Spacer(Modifier.height(Spacing.lg))
         }
+    }
+
+    pendingImport?.let { uri ->
+        AlertDialog(
+            onDismissRequest = { pendingImport = null },
+            title = { Text("Replace everything?") },
+            text = { Text("Your tasks, habits, journal and progress on this phone will be replaced by the backup. This can't be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.onImport(uri, context.contentResolver)
+                        pendingImport = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) { Text("Replace") }
+            },
+            dismissButton = { TextButton(onClick = { pendingImport = null }) { Text("Cancel") } }
+        )
+    }
+}
+
+@Composable
+private fun SectionTitle(text: String) {
+    Text(text, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = Spacing.sm))
+}
+
+/** A daily reminder: on/off, and a time that opens a picker when tapped. */
+@Composable
+private fun ReminderSetting(title: String, description: String, reminder: Reminder, onChange: (Reminder) -> Unit) {
+    val context = LocalContext.current
+    val use24Hour = remember { DateFormat.is24HourFormat(context) }
+    var picking by remember { mutableStateOf(false) }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.labelLarge)
+            Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        TextButton(onClick = { picking = true }, enabled = reminder.enabled) {
+            Text(formatMinuteOfDay(reminder.minuteOfDay, use24Hour))
+        }
+        Switch(checked = reminder.enabled, onCheckedChange = { onChange(reminder.copy(enabled = it)) })
+    }
+    if (picking) {
+        val state = rememberTimePickerState(reminder.minuteOfDay / 60, reminder.minuteOfDay % 60, use24Hour)
+        AlertDialog(
+            onDismissRequest = { picking = false },
+            title = { Text(title) },
+            text = { TimePicker(state) },
+            confirmButton = {
+                TextButton(onClick = {
+                    onChange(reminder.copy(minuteOfDay = state.hour * 60 + state.minute))
+                    picking = false
+                }) { Text("Set") }
+            },
+            dismissButton = { TextButton(onClick = { picking = false }) { Text("Cancel") } }
+        )
     }
 }
 

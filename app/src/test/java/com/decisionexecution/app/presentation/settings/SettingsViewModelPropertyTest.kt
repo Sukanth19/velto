@@ -36,7 +36,7 @@ class SettingsViewModelPropertyTest : StringSpec({
 
         checkAll(Exhaustive.ints(-10..120)) { minutes ->
             val repository = createRepository()
-            val viewModel = SettingsViewModel(repository)
+            val viewModel = SettingsViewModel(repository, mockk(relaxed = true))
 
             viewModel.onFocusDurationChanged(minutes)
 
@@ -57,7 +57,7 @@ class SettingsViewModelPropertyTest : StringSpec({
 
         checkAll(Exhaustive.ints(-10..60)) { minutes ->
             val repository = createRepository()
-            val viewModel = SettingsViewModel(repository)
+            val viewModel = SettingsViewModel(repository, mockk(relaxed = true))
 
             viewModel.onBreakDurationChanged(minutes)
 
@@ -85,7 +85,7 @@ class SettingsViewModelPropertyTest : StringSpec({
     "loads stored preferences and saves theme changes" {
         checkAll(PROPERTY_ITERATIONS, Arb.int(5..90), Arb.int(1..30), Arb.enum<ThemeMode>()) { focus, brk, theme ->
             val repository = createRepository(UserPreferences(focus, brk, ThemeMode.SYSTEM))
-            val viewModel = SettingsViewModel(repository)
+            val viewModel = SettingsViewModel(repository, mockk(relaxed = true))
 
             viewModel.uiState.value.focusDuration shouldBe focus
             viewModel.uiState.value.breakDuration shouldBe brk

@@ -1,5 +1,6 @@
 package com.decisionexecution.app
 
+import io.mockk.mockk
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
@@ -194,7 +195,7 @@ class UserFlowsTest {
     @Test
     fun `changed preferences apply to the next focus session`() = runTest {
         CreateTaskUseCase(taskRepository)(task("Practice piano", TaskCategory.PERSONAL, 3, 3))
-        val settings = SettingsViewModel(prefs)
+        val settings = SettingsViewModel(prefs, mockk(relaxed = true))
 
         settings.onFocusDurationChanged(50)
         settings.onBreakDurationChanged(10)

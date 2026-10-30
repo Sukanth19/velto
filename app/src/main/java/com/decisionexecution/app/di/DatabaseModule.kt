@@ -6,6 +6,7 @@ import com.decisionexecution.app.data.local.database.AppDatabase
 import com.decisionexecution.app.data.local.dao.TaskDao
 import com.decisionexecution.app.data.local.dao.FocusSessionDao
 import com.decisionexecution.app.data.local.dao.TaskCompletionDao
+import com.decisionexecution.app.data.local.dao.BackupDao
 import com.decisionexecution.app.data.local.dao.HabitDao
 import com.decisionexecution.app.data.local.dao.InboxDao
 import com.decisionexecution.app.data.local.dao.MoodDao
@@ -54,4 +55,7 @@ object DatabaseModule {
 
     @Provides
     fun provideStatsDao(database: AppDatabase): StatsDao = database.statsDao()
+
+    @Provides
+    fun provideBackupDao(database: AppDatabase): BackupDao = database.backupDao()
 }

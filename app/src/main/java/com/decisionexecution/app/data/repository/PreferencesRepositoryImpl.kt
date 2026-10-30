@@ -12,6 +12,7 @@ import com.decisionexecution.app.domain.repository.PreferencesRepository
 import com.decisionexecution.app.domain.model.UserPreferences
 import com.decisionexecution.app.domain.model.FocusSessionData
 import com.decisionexecution.app.domain.model.ThemeMode
+import com.decisionexecution.app.domain.model.Reminder
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -20,6 +21,8 @@ import javax.inject.Inject
 class PreferencesRepositoryImpl @Inject constructor(
     private val dataStore: DataStore<Preferences>
 ) : PreferencesRepository {
+
+    private val defaults = UserPreferences()
     
     private object PreferencesKeys {
         val FOCUS_DURATION = intPreferencesKey("focus_duration_minutes")
@@ -27,6 +30,10 @@ class PreferencesRepositoryImpl @Inject constructor(
         val THEME_MODE = stringPreferencesKey("theme_mode")
         val DAILY_FOCUS_GOAL = intPreferencesKey("daily_focus_goal_minutes")
         val DND_DURING_FOCUS = booleanPreferencesKey("dnd_during_focus")
+        val HABIT_REMINDER_ON = booleanPreferencesKey("habit_reminder_enabled")
+        val HABIT_REMINDER_AT = intPreferencesKey("habit_reminder_minute")
+        val MOOD_REMINDER_ON = booleanPreferencesKey("mood_reminder_enabled")
+        val MOOD_REMINDER_AT = intPreferencesKey("mood_reminder_minute")
         
         // Focus session keys
         val SESSION_TASK_ID = stringPreferencesKey("session_task_id")
@@ -48,7 +55,9 @@ class PreferencesRepositoryImpl @Inject constructor(
                     ThemeMode.valueOf(it) 
                 } ?: ThemeMode.SYSTEM,
                 dailyFocusGoalMinutes = preferences[PreferencesKeys.DAILY_FOCUS_GOAL] ?: 120,
-                dndDuringFocus = preferences[PreferencesKeys.DND_DURING_FOCUS] ?: false
+                dndDuringFocus = preferences[PreferencesKeys.DND_DURING_FOCUS] ?: false,
+                habitReminder = reminder(preferences, PreferencesKeys.HABIT_REMINDER_ON, PreferencesKeys.HABIT_REMINDER_AT, defaults.habitReminder),
+                moodReminder = reminder(preferences, PreferencesKeys.MOOD_REMINDER_ON, PreferencesKeys.MOOD_REMINDER_AT, defaults.moodReminder)
             )
         }
     }
@@ -60,6 +69,8 @@ class PreferencesRepositoryImpl @Inject constructor(
             prefs[PreferencesKeys.THEME_MODE] = preferences.themeMode.name
             prefs[PreferencesKeys.DAILY_FOCUS_GOAL] = preferences.dailyFocusGoalMinutes
             prefs[PreferencesKeys.DND_DURING_FOCUS] = preferences.dndDuringFocus
+            prefs.setReminder(PreferencesKeys.HABIT_REMINDER_ON, PreferencesKeys.HABIT_REMINDER_AT, preferences.habitReminder)
+            prefs.setReminder(PreferencesKeys.MOOD_REMINDER_ON, PreferencesKeys.MOOD_REMINDER_AT, preferences.moodReminder)
         }
     }
     
@@ -87,6 +98,25 @@ class PreferencesRepositoryImpl @Inject constructor(
         }
     }
     
+    override suspend fun updateHabitReminder(reminder: Reminder) {
+        dataStore.edit { it.setReminder(PreferencesKeys.HABIT_REMINDER_ON, PreferencesKeys.HABIT_REMINDER_AT, reminder) }
+    }
+
+    override suspend fun updateMoodReminder(reminder: Reminder) {
+        dataStore.edit { it.setReminder(PreferencesKeys.MOOD_REMINDER_ON, PreferencesKeys.MOOD_REMINDER_AT, reminder) }
+    }
+
+    private fun MutablePreferences.setReminder(on: Preferences.Key<Boolean>, at: Preferences.Key<Int>, reminder: Reminder) {
+        this[on] = reminder.enabled
+        this[at] = reminder.minuteOfDay
+    }
+
+    // A stored time that's somehow out of range falls back rather than crashing every read
+    private fun reminder(prefs: Preferences, on: Preferences.Key<Boolean>, at: Preferences.Key<Int>, default: Reminder) = Reminder(
+        enabled = prefs[on] ?: default.enabled,
+        minuteOfDay = prefs[at]?.takeIf { it in 0 until 24 * 60 } ?: default.minuteOfDay
+    )
+
     override suspend fun saveFocusSession(sessionData: FocusSessionData) {
         dataStore.edit { prefs ->
             // Null fields are removed rather than skipped, so stale values never leak into the next read

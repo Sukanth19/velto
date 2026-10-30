@@ -2,7 +2,14 @@ package com.decisionexecution.app.presentation.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.content.ContentResolver
+import android.net.Uri
+import com.decisionexecution.app.domain.model.Reminder
 import com.decisionexecution.app.domain.model.ThemeMode
+import com.decisionexecution.app.domain.repository.BackupRepository
+import com.decisionexecution.app.domain.repository.InvalidBackupException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.decisionexecution.app.domain.model.UserPreferences
 import com.decisionexecution.app.domain.repository.PreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,6 +26,11 @@ data class SettingsUiState(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val dailyFocusGoal: Int = 120,
     val dndDuringFocus: Boolean = false,
+    val habitReminder: Reminder = UserPreferences().habitReminder,
+    val moodReminder: Reminder = UserPreferences().moodReminder,
+    /** Result of the last export or import, shown once */
+    val backupMessage: String? = null,
+    val backupBusy: Boolean = false,
     val error: String? = null
 )
 
@@ -35,7 +47,8 @@ fun isValidBreakDuration(minutes: Int): Boolean = minutes in BREAK_DURATION_RANG
  */
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    private val preferencesRepository: PreferencesRepository
+    private val preferencesRepository: PreferencesRepository,
+    private val backupRepository: BackupRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -50,7 +63,9 @@ class SettingsViewModel @Inject constructor(
                         breakDuration = prefs.breakDurationMinutes,
                         themeMode = prefs.themeMode,
                         dailyFocusGoal = prefs.dailyFocusGoalMinutes,
-                        dndDuringFocus = prefs.dndDuringFocus
+                        dndDuringFocus = prefs.dndDuringFocus,
+                        habitReminder = prefs.habitReminder,
+                        moodReminder = prefs.moodReminder
                     )
                 }
             }
@@ -87,6 +102,47 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { preferencesRepository.updateDndDuringFocus(enabled) }
     }
 
+    fun onHabitReminderChanged(reminder: Reminder) {
+        viewModelScope.launch { preferencesRepository.updateHabitReminder(reminder) }
+    }
+
+    fun onMoodReminderChanged(reminder: Reminder) {
+        viewModelScope.launch { preferencesRepository.updateMoodReminder(reminder) }
+    }
+
+    /** Writes the backup to a file the user picked with the system file picker */
+    fun onExport(uri: Uri, resolver: ContentResolver) = runBackup("Couldn't save the backup") {
+        val json = backupRepository.export()
+        withContext(Dispatchers.IO) {
+            resolver.openOutputStream(uri, "wt")?.bufferedWriter()?.use { it.write(json) } ?: error("Can't write there")
+        }
+        "Backup saved"
+    }
+
+    fun onImport(uri: Uri, resolver: ContentResolver) = runBackup("Couldn't restore that backup") {
+        val json = withContext(Dispatchers.IO) {
+            resolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() } ?: error("Can't read that file")
+        }
+        val summary = backupRepository.import(json)
+        "Restored ${summary.tasks} tasks, ${summary.habits} habits and ${summary.moodEntries} journal entries"
+    }
+
+    fun onBackupMessageShown() = _uiState.update { it.copy(backupMessage = null) }
+
+    private fun runBackup(failure: String, block: suspend () -> String) {
+        _uiState.update { it.copy(backupBusy = true) }
+        viewModelScope.launch {
+            val message = try {
+                block()
+            } catch (e: InvalidBackupException) {
+                e.message ?: failure
+            } catch (e: Exception) {
+                failure
+            }
+            _uiState.update { it.copy(backupBusy = false, backupMessage = message) }
+        }
+    }
+
     fun onThemeModeChanged(mode: ThemeMode) {
         viewModelScope.launch {
             val current = _uiState.value
@@ -96,7 +152,9 @@ class SettingsViewModel @Inject constructor(
                     breakDurationMinutes = current.breakDuration,
                     themeMode = mode,
                     dailyFocusGoalMinutes = current.dailyFocusGoal,
-                    dndDuringFocus = current.dndDuringFocus
+                    dndDuringFocus = current.dndDuringFocus,
+                    habitReminder = current.habitReminder,
+                    moodReminder = current.moodReminder
                 )
             )
         }

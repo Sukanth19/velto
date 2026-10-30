@@ -81,6 +81,14 @@ class InMemoryPreferencesRepository : PreferencesRepository {
         preferences = preferences.copy(dndDuringFocus = enabled)
     }
 
+    override suspend fun updateHabitReminder(reminder: com.decisionexecution.app.domain.model.Reminder) {
+        preferences = preferences.copy(habitReminder = reminder)
+    }
+
+    override suspend fun updateMoodReminder(reminder: com.decisionexecution.app.domain.model.Reminder) {
+        preferences = preferences.copy(moodReminder = reminder)
+    }
+
     override suspend fun saveFocusSession(sessionData: FocusSessionData) {
         focusSessionData = sessionData
     }

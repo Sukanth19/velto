@@ -3,7 +3,12 @@ package com.decisionexecution.app
 import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import com.decisionexecution.app.data.work.ReminderKind
+import com.decisionexecution.app.data.work.ReminderScheduler
+import com.decisionexecution.app.domain.repository.PreferencesRepository
 import com.decisionexecution.app.domain.service.FocusSessionManager
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import com.decisionexecution.app.presentation.focusmode.FocusAutomation
 import com.decisionexecution.app.presentation.widget.WidgetUpdater
 import dagger.hilt.android.HiltAndroidApp
@@ -28,6 +33,12 @@ class DecisionExecutionApplication : Application(), Configuration.Provider {
     @Inject
     lateinit var focusAutomation: FocusAutomation
 
+    @Inject
+    lateinit var preferencesRepository: PreferencesRepository
+
+    @Inject
+    lateinit var reminderScheduler: ReminderScheduler
+
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override val workManagerConfiguration: Configuration
@@ -39,5 +50,17 @@ class DecisionExecutionApplication : Application(), Configuration.Provider {
         appScope.launch { runCatching { focusSessionManager.sync() } }
         widgetUpdater.start(appScope)
         focusAutomation.start(appScope)
+        appScope.launch {
+            // Rebooking on every start also recovers reminders after a time zone or clock change
+            preferencesRepository.getPreferences()
+                .map { it.habitReminder to it.moodReminder }
+                .distinctUntilChanged()
+                .collect { (habits, mood) ->
+                    runCatching {
+                        reminderScheduler.schedule(ReminderKind.HABITS, habits)
+                        reminderScheduler.schedule(ReminderKind.MOOD, mood)
+                    }
+                }
+        }
     }
 }

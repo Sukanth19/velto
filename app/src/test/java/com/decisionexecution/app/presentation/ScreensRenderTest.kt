@@ -232,7 +232,7 @@ class ScreensRenderTest {
         val prefs = mockk<PreferencesRepository>(relaxed = true)
         every { prefs.getPreferences() } returns flowOf(UserPreferences(45, 10, ThemeMode.SYSTEM))
 
-        render("settings") { SettingsScreen({}, SettingsViewModel(prefs)) }
+        render("settings") { SettingsScreen({}, SettingsViewModel(prefs, mockk(relaxed = true))) }
         composeRule.onNodeWithText("45 min").assertIsDisplayed()
         composeRule.onNodeWithText("10 min").assertIsDisplayed()
     }

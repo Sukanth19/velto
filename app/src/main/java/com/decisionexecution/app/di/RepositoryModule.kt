@@ -7,6 +7,9 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.decisionexecution.app.data.local.dao.FocusSessionDao
 import com.decisionexecution.app.data.local.dao.TaskDao
 import com.decisionexecution.app.data.local.dao.TaskCompletionDao
+import com.decisionexecution.app.data.backup.BackupRepositoryImpl
+import com.decisionexecution.app.data.local.dao.BackupDao
+import com.decisionexecution.app.data.local.database.AppDatabase
 import com.decisionexecution.app.data.local.dao.HabitDao
 import com.decisionexecution.app.data.local.dao.InboxDao
 import com.decisionexecution.app.data.local.dao.MoodDao
@@ -18,6 +21,7 @@ import com.decisionexecution.app.data.repository.PerformanceRepositoryImpl
 import com.decisionexecution.app.data.repository.ProgressRepositoryImpl
 import com.decisionexecution.app.data.repository.TaskRepositoryImpl
 import com.decisionexecution.app.data.repository.PreferencesRepositoryImpl
+import com.decisionexecution.app.domain.repository.BackupRepository
 import com.decisionexecution.app.domain.repository.HabitRepository
 import com.decisionexecution.app.domain.repository.InboxRepository
 import com.decisionexecution.app.domain.repository.MoodRepository
@@ -83,4 +87,13 @@ object RepositoryModule {
         habitDao: HabitDao,
         dataStore: DataStore<Preferences>
     ): ProgressRepository = ProgressRepositoryImpl(statsDao, habitDao, dataStore)
+
+    @Provides
+    @Singleton
+    fun provideBackupRepository(
+        database: AppDatabase,
+        backupDao: BackupDao,
+        preferencesRepository: PreferencesRepository,
+        progressRepository: ProgressRepository
+    ): BackupRepository = BackupRepositoryImpl(database, backupDao, preferencesRepository, progressRepository)
 }
