@@ -132,7 +132,10 @@ class ScreensRenderTest {
         every { getBest() } returns flowOf(null)
         val metrics = mockk<GetProductivityMetricsUseCase>()
         every { metrics(any(), any(), any()) } returns flowOf(ProductivityMetrics(0, 0, 0.0))
-        val viewModel = HomeViewModel(getBest, mockk(relaxed = true), metrics, emptyInsights(), InMemoryPreferencesRepository())
+        // Level 1 with a 1-day streak: the level and streak chips should line up
+        val insights = mockk<GetInsightsUseCase>()
+        every { insights(any(), any()) } returns flowOf(Insights(week = emptyList(), streakDays = 1))
+        val viewModel = HomeViewModel(getBest, mockk(relaxed = true), metrics, insights, InMemoryPreferencesRepository())
 
         val extras = HomeExtrasViewModel(progressUseCase(), InMemoryHabitRepository(), InMemoryInboxRepository(), InMemoryMoodRepository(), plantUseCase())
 

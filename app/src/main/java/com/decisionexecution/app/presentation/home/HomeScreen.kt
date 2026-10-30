@@ -208,7 +208,8 @@ private fun Header(
             )
             Text(greetingFor(now.hour), style = MaterialTheme.typography.displaySmall)
             Spacer(Modifier.height(Spacing.sm))
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            // Centred, because the tappable level chip reserves a 48dp touch target and the streak chip doesn't
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
                 extras.level?.let { LevelChip(it.level, it.title, onOpenProgress) }
                 if (streakDays > 0) StreakChip(streakDays)
             }
@@ -235,7 +236,7 @@ private fun LevelChip(level: Int, title: String, onClick: () -> Unit) {
         contentColor = MaterialTheme.colorScheme.onPrimaryContainer
     ) {
         Row(
-            Modifier.padding(start = Spacing.xs, end = Spacing.md, top = Spacing.xs, bottom = Spacing.xs),
+            Modifier.height(CHIP_HEIGHT).padding(start = Spacing.xs, end = Spacing.md),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.xs)
         ) {
@@ -348,7 +349,7 @@ private fun StreakChip(days: Int) {
         contentColor = MaterialTheme.colorScheme.onTertiaryContainer
     ) {
         Row(
-            Modifier.padding(start = Spacing.xs, end = Spacing.md, top = Spacing.xs, bottom = Spacing.xs),
+            Modifier.height(CHIP_HEIGHT).padding(start = Spacing.xs, end = Spacing.md),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.xs)
         ) {
@@ -531,3 +532,5 @@ fun JustStartRoute(
 }
 
 private const val FAB_COLLAPSE_SCROLL = 48
+
+private val CHIP_HEIGHT = 34.dp
