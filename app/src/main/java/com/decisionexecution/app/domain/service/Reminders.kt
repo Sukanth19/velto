@@ -1,8 +1,10 @@
 package com.decisionexecution.app.domain.service
 
+import java.time.DayOfWeek
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.LocalTime
+import java.time.temporal.TemporalAdjusters
 
 /** How long from [now] until the next [minuteOfDay]: later today, or tomorrow if it's passed */
 fun delayUntil(now: LocalDateTime, minuteOfDay: Int): Duration {
@@ -10,6 +12,21 @@ fun delayUntil(now: LocalDateTime, minuteOfDay: Int): Duration {
     val next = if (today.isAfter(now)) today else today.plusDays(1)
     return Duration.between(now, next)
 }
+
+/** How long until the next [day] at [minuteOfDay], for weekly reminders */
+fun delayUntilWeekly(now: LocalDateTime, day: DayOfWeek, minuteOfDay: Int): Duration {
+    val time = LocalTime.of(minuteOfDay / 60, minuteOfDay % 60)
+    var next = now.toLocalDate().with(TemporalAdjusters.nextOrSame(day)).atTime(time)
+    if (!next.isAfter(now)) next = next.plusWeeks(1)
+    return Duration.between(now, next)
+}
+
+fun weeklyReviewMessage(tasksDone: Int, focusLabel: String, isEmpty: Boolean): ReminderMessage? =
+    if (isEmpty) null
+    else ReminderMessage(
+        "Your week in review is ready",
+        "${if (tasksDone == 1) "1 task" else "$tasksDone tasks"} done and $focusLabel of focus. See what stood out"
+    )
 
 /** What a reminder says, or null when there's nothing worth interrupting for */
 data class ReminderMessage(val title: String, val text: String)

@@ -89,6 +89,10 @@ class InMemoryPreferencesRepository : PreferencesRepository {
         preferences = preferences.copy(moodReminder = reminder)
     }
 
+    override suspend fun updateWeeklyReviewReminder(reminder: com.decisionexecution.app.domain.model.Reminder) {
+        preferences = preferences.copy(weeklyReviewReminder = reminder)
+    }
+
     override suspend fun saveFocusSession(sessionData: FocusSessionData) {
         focusSessionData = sessionData
     }

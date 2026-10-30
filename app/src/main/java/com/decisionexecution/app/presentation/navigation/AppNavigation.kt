@@ -35,6 +35,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.decisionexecution.app.presentation.decide.DecideScreen
 import com.decisionexecution.app.presentation.decide.DecideViewModel
 import com.decisionexecution.app.presentation.habits.HabitsScreen
+import com.decisionexecution.app.presentation.review.ReviewScreen
 import com.decisionexecution.app.presentation.inbox.InboxScreen
 import com.decisionexecution.app.presentation.journal.JournalScreen
 import com.decisionexecution.app.presentation.progress.CelebrationHost
@@ -77,6 +78,7 @@ object DeepLinks {
     const val JOURNAL = "${BASE}journal"
     const val PROGRESS = "${BASE}progress"
     const val DECIDE = "${BASE}decide"
+    const val REVIEW = "${BASE}review"
 
     fun openTask(taskId: String) = "${BASE}open_task/$taskId"
 }
@@ -89,6 +91,7 @@ object Routes {
     const val INSIGHTS = "insights"
     const val HABITS = "habits"
     const val JOURNAL = "journal"
+    const val REVIEW = "review"
     const val CAPTURE_ARG = "capture"
     const val DECIDE = "decide?${DecideViewModel.MINUTES_ARG}={${DecideViewModel.MINUTES_ARG}}"
     const val INBOX = "inbox?$CAPTURE_ARG={$CAPTURE_ARG}"
@@ -145,6 +148,7 @@ fun NavHostController.openDeepLink(uri: Uri): Boolean {
         "journal" -> navigate(Routes.JOURNAL)
         "progress" -> navigateToTab(Routes.INSIGHTS)
         "decide" -> navigate(Routes.decide())
+        "review" -> navigate(Routes.REVIEW)
         "open_task" -> navigate(Routes.taskDetail(uri.pathSegments.firstOrNull() ?: return false))
         else -> return false
     }
@@ -233,7 +237,10 @@ fun AppNavHost(navController: NavHostController = rememberNavController()) {
                 )
             }
             composable(Routes.INSIGHTS) {
-                InsightsScreen(onOpenJournal = { navController.navigate(Routes.JOURNAL) })
+                InsightsScreen(
+                    onOpenJournal = { navController.navigate(Routes.JOURNAL) },
+                    onOpenReview = { navController.navigate(Routes.REVIEW) }
+                )
             }
             composable(Routes.HABITS) {
                 HabitsScreen()
@@ -252,6 +259,9 @@ fun AppNavHost(navController: NavHostController = rememberNavController()) {
                         navController.navigateToTab(Routes.FOCUS)
                     }
                 )
+            }
+            composable(Routes.REVIEW) {
+                ReviewScreen(onBack = { navController.popBackStack() })
             }
             composable(Routes.JOURNAL) {
                 JournalScreen(onBack = { navController.popBackStack() })

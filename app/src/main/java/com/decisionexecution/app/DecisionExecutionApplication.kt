@@ -5,6 +5,7 @@ import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import com.decisionexecution.app.data.work.ReminderKind
 import com.decisionexecution.app.data.work.ReminderScheduler
+import com.decisionexecution.app.data.work.reminderFor
 import com.decisionexecution.app.domain.repository.PreferencesRepository
 import com.decisionexecution.app.domain.service.FocusSessionManager
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -53,12 +54,11 @@ class DecisionExecutionApplication : Application(), Configuration.Provider {
         appScope.launch {
             // Rebooking on every start also recovers reminders after a time zone or clock change
             preferencesRepository.getPreferences()
-                .map { it.habitReminder to it.moodReminder }
+                .map { prefs -> ReminderKind.entries.map { prefs.reminderFor(it) } }
                 .distinctUntilChanged()
-                .collect { (habits, mood) ->
-                    runCatching {
-                        reminderScheduler.schedule(ReminderKind.HABITS, habits)
-                        reminderScheduler.schedule(ReminderKind.MOOD, mood)
+                .collect { reminders ->
+                    ReminderKind.entries.zip(reminders).forEach { (kind, reminder) ->
+                        runCatching { reminderScheduler.schedule(kind, reminder) }
                     }
                 }
         }

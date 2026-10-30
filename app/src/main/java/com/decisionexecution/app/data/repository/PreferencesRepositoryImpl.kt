@@ -34,6 +34,8 @@ class PreferencesRepositoryImpl @Inject constructor(
         val HABIT_REMINDER_AT = intPreferencesKey("habit_reminder_minute")
         val MOOD_REMINDER_ON = booleanPreferencesKey("mood_reminder_enabled")
         val MOOD_REMINDER_AT = intPreferencesKey("mood_reminder_minute")
+        val REVIEW_REMINDER_ON = booleanPreferencesKey("review_reminder_enabled")
+        val REVIEW_REMINDER_AT = intPreferencesKey("review_reminder_minute")
         
         // Focus session keys
         val SESSION_TASK_ID = stringPreferencesKey("session_task_id")
@@ -57,7 +59,10 @@ class PreferencesRepositoryImpl @Inject constructor(
                 dailyFocusGoalMinutes = preferences[PreferencesKeys.DAILY_FOCUS_GOAL] ?: 120,
                 dndDuringFocus = preferences[PreferencesKeys.DND_DURING_FOCUS] ?: false,
                 habitReminder = reminder(preferences, PreferencesKeys.HABIT_REMINDER_ON, PreferencesKeys.HABIT_REMINDER_AT, defaults.habitReminder),
-                moodReminder = reminder(preferences, PreferencesKeys.MOOD_REMINDER_ON, PreferencesKeys.MOOD_REMINDER_AT, defaults.moodReminder)
+                moodReminder = reminder(preferences, PreferencesKeys.MOOD_REMINDER_ON, PreferencesKeys.MOOD_REMINDER_AT, defaults.moodReminder),
+                weeklyReviewReminder = reminder(
+                    preferences, PreferencesKeys.REVIEW_REMINDER_ON, PreferencesKeys.REVIEW_REMINDER_AT, defaults.weeklyReviewReminder
+                )
             )
         }
     }
@@ -71,6 +76,7 @@ class PreferencesRepositoryImpl @Inject constructor(
             prefs[PreferencesKeys.DND_DURING_FOCUS] = preferences.dndDuringFocus
             prefs.setReminder(PreferencesKeys.HABIT_REMINDER_ON, PreferencesKeys.HABIT_REMINDER_AT, preferences.habitReminder)
             prefs.setReminder(PreferencesKeys.MOOD_REMINDER_ON, PreferencesKeys.MOOD_REMINDER_AT, preferences.moodReminder)
+            prefs.setReminder(PreferencesKeys.REVIEW_REMINDER_ON, PreferencesKeys.REVIEW_REMINDER_AT, preferences.weeklyReviewReminder)
         }
     }
     
@@ -104,6 +110,10 @@ class PreferencesRepositoryImpl @Inject constructor(
 
     override suspend fun updateMoodReminder(reminder: Reminder) {
         dataStore.edit { it.setReminder(PreferencesKeys.MOOD_REMINDER_ON, PreferencesKeys.MOOD_REMINDER_AT, reminder) }
+    }
+
+    override suspend fun updateWeeklyReviewReminder(reminder: Reminder) {
+        dataStore.edit { it.setReminder(PreferencesKeys.REVIEW_REMINDER_ON, PreferencesKeys.REVIEW_REMINDER_AT, reminder) }
     }
 
     private fun MutablePreferences.setReminder(on: Preferences.Key<Boolean>, at: Preferences.Key<Int>, reminder: Reminder) {

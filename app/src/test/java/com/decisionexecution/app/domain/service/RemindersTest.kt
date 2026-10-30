@@ -38,4 +38,16 @@ class RemindersTest : StringSpec({
         formatMinuteOfDay(12 * 60 + 5, use24Hour = false) shouldBe "12:05 PM"
         formatMinuteOfDay(9 * 60 + 5, use24Hour = true) shouldBe "09:05"
     }
+
+    "the weekly review fires on the next Sunday" {
+        // 30 Oct 2026 is a Friday
+        delayUntilWeekly(morning, java.time.DayOfWeek.SUNDAY, 18 * 60) shouldBe Duration.ofDays(2).plusHours(9).plusMinutes(30)
+        val sundayLate = LocalDateTime.of(2026, 11, 1, 19, 0)
+        delayUntilWeekly(sundayLate, java.time.DayOfWeek.SUNDAY, 18 * 60) shouldBe Duration.ofDays(7).minusHours(1)
+    }
+
+    "an empty week sends no review" {
+        weeklyReviewMessage(0, "0m", isEmpty = true) shouldBe null
+        weeklyReviewMessage(1, "25m", isEmpty = false)?.text shouldBe "1 task done and 25m of focus. See what stood out"
+    }
 })

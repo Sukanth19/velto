@@ -12,7 +12,13 @@ import com.decisionexecution.app.domain.model.Reminder
 import com.decisionexecution.app.domain.repository.HabitRepository
 import com.decisionexecution.app.domain.repository.MoodRepository
 import com.decisionexecution.app.domain.repository.PreferencesRepository
+import com.decisionexecution.app.domain.model.UserPreferences
 import com.decisionexecution.app.domain.service.delayUntil
+import com.decisionexecution.app.domain.service.delayUntilWeekly
+import com.decisionexecution.app.domain.service.weeklyReviewMessage
+import com.decisionexecution.app.domain.usecase.GetWeeklyReviewUseCase
+import com.decisionexecution.app.presentation.home.formatMinutes
+import java.time.DayOfWeek
 import com.decisionexecution.app.domain.service.habitReminderMessage
 import com.decisionexecution.app.domain.service.moodReminderMessage
 import com.decisionexecution.app.presentation.navigation.DeepLinks
@@ -26,7 +32,7 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
-enum class ReminderKind { HABITS, MOOD }
+enum class ReminderKind { HABITS, MOOD, REVIEW }
 
 /**
  * Fires at the reminder time, posts only if there's something left to do, then books tomorrow's.
@@ -39,13 +45,14 @@ class ReminderWorker @AssistedInject constructor(
     private val habitRepository: HabitRepository,
     private val moodRepository: MoodRepository,
     private val notificationHelper: NotificationHelper,
+    private val getWeeklyReviewUseCase: GetWeeklyReviewUseCase,
     private val reminderScheduler: ReminderScheduler
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result {
         val kind = inputData.getString(KEY_KIND)?.let { name -> ReminderKind.entries.find { it.name == name } } ?: return Result.failure()
         val prefs = preferencesRepository.getPreferences().first()
-        val reminder = if (kind == ReminderKind.HABITS) prefs.habitReminder else prefs.moodReminder
+        val reminder = prefs.reminderFor(kind)
         if (!reminder.enabled) return Result.success()
 
         runCatching {
@@ -60,6 +67,11 @@ class ReminderWorker @AssistedInject constructor(
                     moodReminderMessage(moodRepository.getEntry(today).first() != null)
                         ?.let { notificationHelper.showReminder(MOOD_NOTIFICATION_ID, it, DeepLinks.JOURNAL) }
                 }
+                ReminderKind.REVIEW -> {
+                    val review = getWeeklyReviewUseCase(today).first()
+                    weeklyReviewMessage(review.thisWeek.tasksDone, formatMinutes(review.thisWeek.focusMinutes), review.isEmpty)
+                        ?.let { notificationHelper.showReminder(REVIEW_NOTIFICATION_ID, it, DeepLinks.REVIEW) }
+                }
             }
         }
         // Chained one-shots rather than periodic work, so the time doesn't drift by hours
@@ -71,7 +83,14 @@ class ReminderWorker @AssistedInject constructor(
         const val KEY_KIND = "kind"
         private const val HABITS_NOTIFICATION_ID = 2001
         private const val MOOD_NOTIFICATION_ID = 2002
+        private const val REVIEW_NOTIFICATION_ID = 2003
     }
+}
+
+fun UserPreferences.reminderFor(kind: ReminderKind): Reminder = when (kind) {
+    ReminderKind.HABITS -> habitReminder
+    ReminderKind.MOOD -> moodReminder
+    ReminderKind.REVIEW -> weeklyReviewReminder
 }
 
 @Singleton
@@ -90,7 +109,11 @@ class ReminderScheduler @Inject constructor(
         }
         // After a run, look from a minute ahead so a run that fired a little early books tomorrow, not today again
         val lookAhead = if (afterRun) 60_000L else 0L
-        val delay = lookAhead + delayUntil(LocalDateTime.now().plusNanos(lookAhead * 1_000_000), reminder.minuteOfDay).toMillis()
+        val from = LocalDateTime.now().plusNanos(lookAhead * 1_000_000)
+        val delay = lookAhead + when (kind) {
+            ReminderKind.REVIEW -> delayUntilWeekly(from, DayOfWeek.SUNDAY, reminder.minuteOfDay)
+            else -> delayUntil(from, reminder.minuteOfDay)
+        }.toMillis()
         val request = OneTimeWorkRequestBuilder<ReminderWorker>()
             .setInitialDelay(delay, TimeUnit.MILLISECONDS)
             .setInputData(workDataOf(ReminderWorker.KEY_KIND to kind.name))

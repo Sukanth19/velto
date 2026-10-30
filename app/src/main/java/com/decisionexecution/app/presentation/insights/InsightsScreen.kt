@@ -32,6 +32,7 @@ import com.decisionexecution.app.domain.usecase.Progress
 import com.decisionexecution.app.presentation.progress.AchievementGrid
 import com.decisionexecution.app.presentation.progress.LevelCard
 import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.rounded.CalendarViewWeek
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import com.decisionexecution.app.presentation.home.formatMinutes
 import com.decisionexecution.app.presentation.theme.Spacing
@@ -44,13 +45,17 @@ import java.util.Locale
  * a focus-time chart and completed tasks per day.
  */
 @Composable
-fun InsightsScreen(viewModel: InsightsViewModel = hiltViewModel(), onOpenJournal: () -> Unit = {}) {
+fun InsightsScreen(
+    viewModel: InsightsViewModel = hiltViewModel(),
+    onOpenJournal: () -> Unit = {},
+    onOpenReview: () -> Unit = {}
+) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(topBar = { LargeTopAppBar(title = { Text("Progress") }) }) { padding ->
         val insights = uiState.insights
         when {
-            insights != null -> InsightsContent(insights, uiState.progress, uiState.plant, onOpenJournal, Modifier.padding(padding))
+            insights != null -> InsightsContent(insights, uiState.progress, uiState.plant, onOpenJournal, onOpenReview, Modifier.padding(padding))
             uiState.error != null -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 Text(uiState.error!!, textAlign = TextAlign.Center, modifier = Modifier.padding(Spacing.xl))
             }
@@ -67,6 +72,7 @@ private fun InsightsContent(
     progress: Progress?,
     plant: com.decisionexecution.app.domain.service.PlantState?,
     onOpenJournal: () -> Unit,
+    onOpenReview: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -85,7 +91,8 @@ private fun InsightsContent(
             )
         }
         progress?.let { LevelCard(it.level) }
-        JournalLink(onOpenJournal)
+        LinkCard(Icons.Rounded.CalendarViewWeek, "Week in review", "Wins, trends and one thing to try", onOpenReview)
+        LinkCard(Icons.AutoMirrored.Rounded.MenuBook, "Mood & energy journal", "See what fuels your best days", onOpenJournal)
         progress?.let { AchievementGrid(it.unlocked) }
         Text("Your week", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = Spacing.sm))
         StreakCard(insights.streakDays)
@@ -115,19 +122,19 @@ private fun InsightsContent(
 }
 
 @Composable
-private fun JournalLink(onOpenJournal: () -> Unit) {
+private fun LinkCard(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit) {
     Surface(
-        onClick = onOpenJournal,
+        onClick = onClick,
         shape = RoundedCornerShape(24.dp),
         color = MaterialTheme.colorScheme.secondaryContainer,
         contentColor = MaterialTheme.colorScheme.onSecondaryContainer
     ) {
         Row(Modifier.fillMaxWidth().padding(Spacing.md), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.AutoMirrored.Rounded.MenuBook, contentDescription = null)
+            Icon(icon, contentDescription = null)
             Spacer(Modifier.width(Spacing.md))
             Column(Modifier.weight(1f)) {
-                Text("Mood & energy journal", style = MaterialTheme.typography.titleSmall)
-                Text("See what fuels your best days", style = MaterialTheme.typography.bodySmall)
+                Text(title, style = MaterialTheme.typography.titleSmall)
+                Text(subtitle, style = MaterialTheme.typography.bodySmall)
             }
             Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null)
         }

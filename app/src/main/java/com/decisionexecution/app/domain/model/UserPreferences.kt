@@ -11,7 +11,9 @@ data class UserPreferences(
     /** Evening nudge when habits are still unchecked */
     val habitReminder: Reminder = Reminder(enabled = true, minuteOfDay = 20 * 60),
     /** Morning nudge to log mood, skipped once it's logged */
-    val moodReminder: Reminder = Reminder(enabled = true, minuteOfDay = 9 * 60)
+    val moodReminder: Reminder = Reminder(enabled = true, minuteOfDay = 9 * 60),
+    /** Sunday evening nudge to look back at the week */
+    val weeklyReviewReminder: Reminder = Reminder(enabled = true, minuteOfDay = 18 * 60)
 )
 
 /** A daily reminder at [minuteOfDay] minutes after midnight, local time */

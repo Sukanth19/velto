@@ -28,6 +28,7 @@ data class SettingsUiState(
     val dndDuringFocus: Boolean = false,
     val habitReminder: Reminder = UserPreferences().habitReminder,
     val moodReminder: Reminder = UserPreferences().moodReminder,
+    val weeklyReviewReminder: Reminder = UserPreferences().weeklyReviewReminder,
     /** Result of the last export or import, shown once */
     val backupMessage: String? = null,
     val backupBusy: Boolean = false,
@@ -65,7 +66,8 @@ class SettingsViewModel @Inject constructor(
                         dailyFocusGoal = prefs.dailyFocusGoalMinutes,
                         dndDuringFocus = prefs.dndDuringFocus,
                         habitReminder = prefs.habitReminder,
-                        moodReminder = prefs.moodReminder
+                        moodReminder = prefs.moodReminder,
+                        weeklyReviewReminder = prefs.weeklyReviewReminder
                     )
                 }
             }
@@ -108,6 +110,10 @@ class SettingsViewModel @Inject constructor(
 
     fun onMoodReminderChanged(reminder: Reminder) {
         viewModelScope.launch { preferencesRepository.updateMoodReminder(reminder) }
+    }
+
+    fun onWeeklyReviewReminderChanged(reminder: Reminder) {
+        viewModelScope.launch { preferencesRepository.updateWeeklyReviewReminder(reminder) }
     }
 
     /** Writes the backup to a file the user picked with the system file picker */
@@ -154,7 +160,8 @@ class SettingsViewModel @Inject constructor(
                     dailyFocusGoalMinutes = current.dailyFocusGoal,
                     dndDuringFocus = current.dndDuringFocus,
                     habitReminder = current.habitReminder,
-                    moodReminder = current.moodReminder
+                    moodReminder = current.moodReminder,
+                    weeklyReviewReminder = current.weeklyReviewReminder
                 )
             )
         }

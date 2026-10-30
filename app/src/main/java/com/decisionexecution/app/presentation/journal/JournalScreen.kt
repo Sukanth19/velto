@@ -16,6 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.lerp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.decisionexecution.app.domain.model.MoodEntry
@@ -59,6 +60,7 @@ fun JournalScreen(onBack: () -> Unit, viewModel: JournalViewModel = hiltViewMode
                 item { MoodCheckInCard(uiState.today, viewModel::onSave) }
                 item { InsightCard(insights) }
                 item { MoodChart(insights.entries) }
+                item { YearInPixels(uiState.year) }
                 if (insights.entries.isNotEmpty()) {
                     item { Text("Entries", style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = Spacing.sm)) }
                 }
@@ -133,6 +135,67 @@ private fun MoodChart(entries: List<MoodEntry>) {
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+/**
+ * The year as pixels: a column per month, a square per day, coloured by that day's mood.
+ */
+@Composable
+private fun YearInPixels(year: Map<LocalDate, MoodEntry>) {
+    val today = LocalDate.now()
+    val scheme = MaterialTheme.colorScheme
+    // Sad to happy, from the error colour through to the primary
+    val moodColors = listOf(
+        scheme.error,
+        lerp(scheme.error, scheme.tertiary, 0.5f),
+        scheme.tertiary,
+        lerp(scheme.tertiary, scheme.primary, 0.5f),
+        scheme.primary
+    )
+    Surface(shape = RoundedCornerShape(24.dp), color = scheme.surfaceContainerLow) {
+        Column(Modifier.fillMaxWidth().padding(Spacing.md), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("${today.year} in pixels", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                Text("${year.size} days logged", style = MaterialTheme.typography.labelMedium, color = scheme.onSurfaceVariant)
+            }
+            Row(
+                Modifier.fillMaxWidth().semantics { contentDescription = "Mood for each day of ${today.year}, ${year.size} days logged" },
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                (1..12).forEach { month ->
+                    val first = LocalDate.of(today.year, month, 1)
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(
+                            first.month.getDisplayName(java.time.format.TextStyle.NARROW, java.util.Locale.getDefault()),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = scheme.onSurfaceVariant
+                        )
+                        (1..first.lengthOfMonth()).forEach { day ->
+                            val date = first.withDayOfMonth(day)
+                            val entry = year[date]
+                            Box(
+                                Modifier
+                                    .size(width = 18.dp, height = 7.dp)
+                                    .clip(RoundedCornerShape(2.dp))
+                                    .background(
+                                        when {
+                                            entry != null -> moodColors[entry.mood - 1]
+                                            date.isAfter(today) -> scheme.surfaceContainer
+                                            else -> scheme.surfaceContainerHighest
+                                        }
+                                    )
+                            )
+                        }
+                    }
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm), verticalAlignment = Alignment.CenterVertically) {
+                Text("Awful", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
+                moodColors.forEach { Box(Modifier.size(12.dp).clip(RoundedCornerShape(3.dp)).background(it)) }
+                Text("Great", style = MaterialTheme.typography.labelSmall, color = scheme.onSurfaceVariant)
             }
         }
     }

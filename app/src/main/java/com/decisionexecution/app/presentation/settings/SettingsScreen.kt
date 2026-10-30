@@ -124,6 +124,12 @@ fun SettingsScreen(
                 reminder = uiState.moodReminder,
                 onChange = viewModel::onMoodReminderChanged
             )
+            ReminderSetting(
+                title = "Week in review",
+                description = "Sunday evening, when there's a week to look back on",
+                reminder = uiState.weeklyReviewReminder,
+                onChange = viewModel::onWeeklyReviewReminderChanged
+            )
 
             SectionTitle("Your data")
             Text(

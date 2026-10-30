@@ -18,6 +18,8 @@ import javax.inject.Inject
 data class JournalUiState(
     val insights: MoodInsights? = null,
     val today: MoodEntry? = null,
+    /** Every check-in this calendar year, for the year-in-pixels grid */
+    val year: Map<LocalDate, MoodEntry> = emptyMap(),
     val savedKey: Int = 0
 )
 
@@ -38,6 +40,11 @@ class JournalViewModel @Inject constructor(
         viewModelScope.launch {
             getMoodInsightsUseCase(todayDate).collect { insights ->
                 _uiState.update { it.copy(insights = insights, today = insights.entries.find { e -> e.day == todayDate }) }
+            }
+        }
+        viewModelScope.launch {
+            moodRepository.getEntries(todayDate.withDayOfYear(1)).collect { entries ->
+                _uiState.update { it.copy(year = entries.associateBy { e -> e.day }) }
             }
         }
     }

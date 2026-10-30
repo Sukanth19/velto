@@ -14,6 +14,7 @@ interface PreferencesRepository {
     suspend fun updateDndDuringFocus(enabled: Boolean)
     suspend fun updateHabitReminder(reminder: Reminder)
     suspend fun updateMoodReminder(reminder: Reminder)
+    suspend fun updateWeeklyReviewReminder(reminder: Reminder)
     suspend fun saveFocusSession(sessionData: FocusSessionData)
     suspend fun getFocusSession(): FocusSessionData?
     suspend fun clearFocusSession()

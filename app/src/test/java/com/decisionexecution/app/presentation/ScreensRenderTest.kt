@@ -445,6 +445,36 @@ class ScreensRenderTest {
         save("navbar_habits")
     }
 
+    @Test
+    fun reviewScreen() {
+        val today = LocalDate.now()
+        val zone = java.time.ZoneId.systemDefault()
+        fun at(daysAgo: Long, hour: Int) = today.minusDays(daysAgo).atTime(hour, 0).atZone(zone).toInstant().toEpochMilli()
+        val performance = mockk<com.decisionexecution.app.domain.repository.PerformanceRepository>()
+        every { performance.getCompletionsInPeriod(any(), any()) } returns flowOf(
+            listOf("Finish quarterly report", "Study for calculus exam", "Reply to client email", "Buy groceries")
+                .mapIndexed { i, title -> com.decisionexecution.app.domain.repository.TaskCompletion("c$i", "t$i", title, at(i.toLong(), 15), null) } +
+                com.decisionexecution.app.domain.repository.TaskCompletion("old", "t9", "Old", at(9, 12), null)
+        )
+        every { performance.getFocusSessionsInPeriod(any(), any()) } returns flowOf(
+            (0L..12L).map { com.decisionexecution.app.domain.repository.FocusSessionRecord("t", at(it, 10), if (it < 7) 50 else 30) } +
+                com.decisionexecution.app.domain.repository.FocusSessionRecord("t", at(2, 21), 25)
+        )
+        val moods = InMemoryMoodRepository(*(0L..6L).map { MoodEntry(today.minusDays(it), 3 + (it % 3).toInt(), 3, null) }.toTypedArray())
+        val insights = mockk<GetInsightsUseCase>()
+        every { insights(any(), any()) } returns flowOf(Insights(emptyList(), streakDays = 6))
+        val viewModel = com.decisionexecution.app.presentation.review.ReviewViewModel(
+            GetWeeklyReviewUseCase(performance, sampleHabits(), moods),
+            insights
+        )
+
+        render("review") { com.decisionexecution.app.presentation.review.ReviewScreen({}, viewModel) }
+        composeRule.onNodeWithText("tasks done").assertIsDisplayed()
+        composeRule.onNodeWithText("Finish quarterly report").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("When you focus best").performScrollTo().assertIsDisplayed()
+        save("review_scrolled")
+    }
+
     private fun sampleHabits(): InMemoryHabitRepository {
         val today = LocalDate.now()
         fun habit(id: String, name: String, icon: HabitIcon, days: List<Long>) =
