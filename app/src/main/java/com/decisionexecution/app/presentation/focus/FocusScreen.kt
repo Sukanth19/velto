@@ -12,7 +12,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -25,12 +24,12 @@ import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -42,9 +41,11 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.decisionexecution.app.domain.usecase.ExtendFocusSessionUseCase
 import com.decisionexecution.app.presentation.theme.Spacing
 
 fun formatSeconds(seconds: Int): String {
@@ -92,7 +93,9 @@ fun FocusScreen(
             when (phase) {
                 FocusUiState.Idle::class -> IdleContent(onGoHome)
                 else -> when (val s = state) {
-                    is FocusUiState.Focus -> FocusContent(s, phaseColor, viewModel::onPause, viewModel::onResume, viewModel::onEnd)
+                    is FocusUiState.Focus -> FocusContent(
+                        s, phaseColor, viewModel::onPause, viewModel::onResume, viewModel::onEnd, viewModel::onExtend
+                    )
                     is FocusUiState.Break -> BreakContent(s, phaseColor, viewModel::onEnd)
                     FocusUiState.Idle -> IdleContent(onGoHome)
                 }
@@ -107,7 +110,8 @@ private fun FocusContent(
     color: Color,
     onPause: () -> Unit,
     onResume: () -> Unit,
-    onEnd: () -> Unit
+    onEnd: () -> Unit,
+    onExtend: () -> Unit
 ) {
     val haptics = LocalHapticFeedback.current
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.lg)) {
@@ -119,22 +123,36 @@ private fun FocusContent(
             maxLines = 3,
             overflow = TextOverflow.Ellipsis
         )
-        TimerRing(state.remainingSeconds, state.totalSeconds, color)
+        // The wave goes flat while paused, so the ring itself shows the timer has stopped
+        TimerRing(state.remainingSeconds, state.totalSeconds, color, wavy = !state.isPaused)
         Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md), verticalAlignment = Alignment.CenterVertically) {
-            RoundAction(Icons.Rounded.Stop, "End session", filled = false) {
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                onEnd()
+            OutlinedIconButton(
+                onClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onEnd()
+                },
+                shapes = IconButtonDefaults.shapes(),
+                modifier = Modifier.size(IconButtonDefaults.mediumContainerSize())
+            ) {
+                Icon(Icons.Rounded.Stop, contentDescription = "End session")
             }
-            if (state.isPaused) {
-                RoundAction(Icons.Rounded.PlayArrow, "Resume", filled = true, large = true) {
+            PlayPauseButton(
+                running = !state.isPaused,
+                onToggle = { run ->
                     haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    onResume()
+                    if (run) onResume() else onPause()
                 }
-            } else {
-                RoundAction(Icons.Rounded.Pause, "Pause", filled = true, large = true) {
+            )
+            FilledTonalButton(
+                onClick = {
                     haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    onPause()
-                }
+                    onExtend()
+                },
+                shapes = ButtonDefaults.shapes(),
+                contentPadding = PaddingValues(horizontal = Spacing.md),
+                modifier = Modifier.height(IconButtonDefaults.mediumContainerSize().height)
+            ) {
+                Text("+${ExtendFocusSessionUseCase.DEFAULT_MINUTES} min", maxLines = 1)
             }
         }
     }
@@ -154,9 +172,17 @@ private fun BreakContent(state: FocusUiState.Break, color: Color, onSkip: () -> 
         PhaseLabel("Break", color)
         Text("Breathe in… breathe out", style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
         Box(Modifier.scale(scale)) {
-            TimerRing(state.remainingSeconds, state.totalSeconds, color, icon = Icons.Rounded.SelfImprovement)
+            // Longer, slower waves than focus: the break should feel calm
+            TimerRing(
+                state.remainingSeconds,
+                state.totalSeconds,
+                color,
+                icon = Icons.Rounded.SelfImprovement,
+                wavelength = 64.dp,
+                waveSpeedFactor = 0.4f
+            )
         }
-        OutlinedButton(onClick = onSkip) {
+        OutlinedButton(onClick = onSkip, shapes = ButtonDefaults.shapes()) {
             Icon(Icons.Rounded.SkipNext, contentDescription = null)
             Spacer(Modifier.width(Spacing.sm))
             Text("Skip break")
@@ -176,30 +202,43 @@ private fun PhaseLabel(text: String, color: Color) {
 }
 
 /**
- * Progress ring drawn by hand for rounded ends. The sweep animates over each one-second tick
- * so it moves continuously instead of jumping.
+ * Squiggly Material 3 Expressive progress ring. The sweep animates over each one-second tick so
+ * it moves continuously instead of jumping, and the wave keeps travelling while time runs.
  */
 @Composable
-private fun TimerRing(remainingSeconds: Int, totalSeconds: Int, color: Color, icon: ImageVector? = null) {
+private fun TimerRing(
+    remainingSeconds: Int,
+    totalSeconds: Int,
+    color: Color,
+    icon: ImageVector? = null,
+    wavy: Boolean = true,
+    wavelength: androidx.compose.ui.unit.Dp = 44.dp,
+    waveSpeedFactor: Float = 1f
+) {
     val target = if (totalSeconds > 0) 1f - remainingSeconds.toFloat() / totalSeconds else 0f
     val progress by animateFloatAsState(target, animationSpec = tween(1000, easing = LinearEasing), label = "progress")
-    val track = MaterialTheme.colorScheme.surfaceVariant
+    // Ease the wave in and out rather than snapping between flat and wavy
+    val amplitude by animateFloatAsState(if (wavy) WAVE_AMPLITUDE else 0f, animationSpec = tween(600), label = "amplitude")
+    val strokeWidth = with(LocalDensity.current) { 10.dp.toPx() }
+    val stroke = remember(strokeWidth) { Stroke(width = strokeWidth, cap = StrokeCap.Round) }
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .size(280.dp)
             .semantics { contentDescription = "${formatSeconds(remainingSeconds)} remaining" }
     ) {
-        Canvas(Modifier.fillMaxSize()) {
-            val stroke = 14.dp.toPx()
-            val inset = stroke / 2
-            val arcSize = Size(size.width - stroke, size.height - stroke)
-            drawArc(track, 0f, 360f, false, Offset(inset, inset), arcSize, style = Stroke(stroke))
-            drawArc(
-                color, -90f, 360f * progress, false, Offset(inset, inset), arcSize,
-                style = Stroke(stroke, cap = StrokeCap.Round)
-            )
-        }
+        CircularWavyProgressIndicator(
+            progress = { progress },
+            modifier = Modifier.fillMaxSize(),
+            color = color,
+            trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+            stroke = stroke,
+            trackStroke = stroke,
+            gapSize = 10.dp,
+            amplitude = { amplitude },
+            wavelength = wavelength,
+            waveSpeed = if (wavy) wavelength * waveSpeedFactor else 0.dp
+        )
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             icon?.let { Icon(it, contentDescription = null, tint = color, modifier = Modifier.size(32.dp)) }
             Text(formatSeconds(remainingSeconds), style = MaterialTheme.typography.displayLarge)
@@ -212,33 +251,54 @@ private fun TimerRing(remainingSeconds: Int, totalSeconds: Int, color: Color, ic
     }
 }
 
+/** Fraction of the indicator's full wave height; full height looks noisy behind the digits */
+private const val WAVE_AMPLITUDE = 0.75f
+
+/**
+ * Big play/pause toggle. Running it's a rounded square, paused it springs back to a circle,
+ * following the expressive toggle shape convention. Filled either way, since it's the main action.
+ */
 @Composable
-private fun RoundAction(
-    icon: ImageVector,
-    description: String,
-    filled: Boolean,
-    large: Boolean = false,
-    onClick: () -> Unit
-) {
-    val size = if (large) 80.dp else 60.dp
-    if (filled) {
-        FilledIconButton(onClick = onClick, modifier = Modifier.size(size)) {
-            Icon(icon, contentDescription = description, modifier = Modifier.size(if (large) 36.dp else 26.dp))
-        }
-    } else {
-        OutlinedIconButton(onClick = onClick, modifier = Modifier.size(size).clip(CircleShape)) {
-            Icon(icon, contentDescription = description)
-        }
+private fun PlayPauseButton(running: Boolean, onToggle: (Boolean) -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    FilledIconToggleButton(
+        checked = running,
+        onCheckedChange = onToggle,
+        shapes = IconButtonDefaults.toggleableShapes(),
+        colors = IconButtonDefaults.filledIconToggleButtonColors(
+            containerColor = scheme.primary,
+            contentColor = scheme.onPrimary,
+            checkedContainerColor = scheme.primary,
+            checkedContentColor = scheme.onPrimary
+        ),
+        modifier = Modifier.size(IconButtonDefaults.largeContainerSize(IconButtonDefaults.IconButtonWidthOption.Wide))
+    ) {
+        Icon(
+            if (running) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+            contentDescription = if (running) "Pause" else "Resume",
+            modifier = Modifier.size(IconButtonDefaults.largeIconSize)
+        )
     }
 }
 
 @Composable
 private fun IdleContent(onGoHome: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
-        Box(
-            Modifier.size(96.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
-            contentAlignment = Alignment.Center
-        ) {
+        // Slowly spinning cookie, the expressive take on an empty-state badge
+        val spin by rememberInfiniteTransition(label = "spin").animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(tween(20_000, easing = LinearEasing)),
+            label = "rotation"
+        )
+        Box(contentAlignment = Alignment.Center) {
+            Box(
+                Modifier
+                    .size(112.dp)
+                    .rotate(spin)
+                    .clip(MaterialShapes.Cookie9Sided.toShape())
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+            )
             Icon(
                 Icons.Rounded.PlayArrow,
                 contentDescription = null,
@@ -253,6 +313,6 @@ private fun IdleContent(onGoHome: () -> Unit) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
-        Button(onClick = onGoHome) { Text("Go to Home") }
+        Button(onClick = onGoHome, shapes = ButtonDefaults.shapes()) { Text("Go to Home") }
     }
 }

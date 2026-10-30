@@ -1,6 +1,7 @@
 package com.decisionexecution.app.presentation
 
 import com.decisionexecution.app.domain.service.EisenhowerClassifier
+import com.decisionexecution.app.testutil.InMemoryPreferencesRepository
 import com.decisionexecution.app.testutil.emptyInsights
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -80,7 +81,7 @@ class ScreensRenderTest {
         every { getBest() } returns flowOf(tasks[0])
         val metrics = mockk<GetProductivityMetricsUseCase>()
         every { metrics(any(), any(), any()) } returns flowOf(ProductivityMetrics(3, 85, 71.4))
-        val viewModel = HomeViewModel(getBest, mockk(relaxed = true), metrics, emptyInsights())
+        val viewModel = HomeViewModel(getBest, mockk(relaxed = true), metrics, emptyInsights(), InMemoryPreferencesRepository())
 
         render("home") { HomeScreen({}, {}, {}, {}, viewModel) }
 
@@ -95,7 +96,7 @@ class ScreensRenderTest {
         every { getBest() } returns flowOf(null)
         val metrics = mockk<GetProductivityMetricsUseCase>()
         every { metrics(any(), any(), any()) } returns flowOf(ProductivityMetrics(0, 0, 0.0))
-        val viewModel = HomeViewModel(getBest, mockk(relaxed = true), metrics, emptyInsights())
+        val viewModel = HomeViewModel(getBest, mockk(relaxed = true), metrics, emptyInsights(), InMemoryPreferencesRepository())
 
         render("home_empty_dark", ThemeMode.DARK) { HomeScreen({}, {}, {}, {}, viewModel) }
 
@@ -152,7 +153,8 @@ class ScreensRenderTest {
             manager,
             PauseFocusSessionUseCase(manager),
             ResumeFocusSessionUseCase(manager),
-            EndFocusSessionUseCase(manager)
+            EndFocusSessionUseCase(manager),
+            ExtendFocusSessionUseCase(manager)
         )
 
         render("focus") { FocusScreen({}, viewModel) }

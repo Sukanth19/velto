@@ -71,4 +71,34 @@ class WidgetStateTest : StringSpec({
         focusing shouldNotBe timerWidgetKey(FocusSessionState.Breaking(0, 300))
         focusing shouldNotBe timerWidgetKey(FocusSessionState.Idle)
     }
+
+    "timer widget redraws when a paused session is extended" {
+        timerWidgetKey(FocusSessionState.Paused(task, 100, 1500)) shouldNotBe
+            timerWidgetKey(FocusSessionState.Paused(task, 100, 1800))
+    }
+
+    "timer widget offers break controls only during a break" {
+        (timerWidgetState(FocusSessionState.Breaking(0, 300)) as TimerWidgetState.Active).isBreak shouldBe true
+        (timerWidgetState(FocusSessionState.Focusing(task, 0, 1500)) as TimerWidgetState.Active).isBreak shouldBe false
+    }
+
+    "today widget tracks progress towards the daily goal" {
+        val halfway = TodayWidgetState(focusMinutes = 60, goalMinutes = 120, completedTasks = 2, streakDays = 1)
+        halfway.progress shouldBe 0.5f
+        halfway.goalReached shouldBe false
+        halfway.goalLabel shouldBe "50% of 2h 00m"
+        halfway.streakLabel shouldBe "1-day streak"
+
+        val over = TodayWidgetState(focusMinutes = 150, goalMinutes = 120, completedTasks = 4, streakDays = 0)
+        over.progress shouldBe 1f
+        over.goalLabel shouldBe "Goal reached"
+        over.streakLabel shouldBe null
+
+        TodayWidgetState(0, 0, 0, 0).progress shouldBe 0f
+    }
+
+    "top tasks widget shows at most three rows" {
+        val tasks = (1..5).map { task.copy(id = "t-$it", title = "Task $it") }
+        topTaskRows(tasks).map { it.taskId } shouldBe listOf("t-1", "t-2", "t-3")
+    }
 })

@@ -14,8 +14,8 @@ import androidx.compose.material.icons.rounded.Insights
 import androidx.compose.material.icons.rounded.TaskAlt
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.ShortNavigationBar
+import androidx.compose.material3.ShortNavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -52,6 +52,7 @@ object DeepLinks {
     const val HOME = "${BASE}home"
     const val FOCUS = "${BASE}focus"
     const val JUST_START = "${BASE}just_start"
+    const val ADD_TASK = "${BASE}add_task"
 
     fun openTask(taskId: String) = "${BASE}open_task/$taskId"
 }
@@ -102,6 +103,7 @@ fun NavHostController.openDeepLink(uri: Uri): Boolean {
         "home" -> navigateToTab(Routes.HOME)
         "focus" -> navigateToTab(Routes.FOCUS)
         "just_start" -> navigate(Routes.JUST_START)
+        "add_task" -> navigate(Routes.addTask())
         "open_task" -> navigate(Routes.taskDetail(uri.pathSegments.firstOrNull() ?: return false))
         else -> return false
     }
@@ -124,10 +126,11 @@ fun AppNavHost(navController: NavHostController = rememberNavController()) {
         contentWindowInsets = WindowInsets(0),
         bottomBar = {
             if (showBottomBar) {
-                NavigationBar {
+                // Expressive short bar: pill indicator, tighter height
+                ShortNavigationBar {
                     TopLevelTab.entries.forEach { tab ->
                         val selected = currentDestination?.hierarchy?.any { it.route == tab.route } == true
-                        NavigationBarItem(
+                        ShortNavigationBarItem(
                             selected = selected,
                             onClick = { navController.navigateToTab(tab.route) },
                             icon = { Icon(if (selected) tab.selectedIcon else tab.icon, contentDescription = null) },

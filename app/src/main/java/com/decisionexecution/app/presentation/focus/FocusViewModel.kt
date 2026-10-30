@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.decisionexecution.app.domain.model.FocusSessionState
 import com.decisionexecution.app.domain.service.FocusSessionManager
 import com.decisionexecution.app.domain.usecase.EndFocusSessionUseCase
+import com.decisionexecution.app.domain.usecase.ExtendFocusSessionUseCase
 import com.decisionexecution.app.domain.usecase.PauseFocusSessionUseCase
 import com.decisionexecution.app.domain.usecase.ResumeFocusSessionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -57,7 +58,7 @@ fun FocusSessionState.toUiState(): FocusUiState = when (this) {
 }
 
 /**
- * ViewModel for the Focus screen: mirrors the session manager and exposes pause, resume, end.
+ * ViewModel for the Focus screen: mirrors the session manager and exposes pause, resume, extend, end.
  *
  * Requirements: 4.6, 4.7, 4.8, 5.1, 5.2, 5.3, 5.4, 5.6
  */
@@ -66,7 +67,8 @@ class FocusViewModel @Inject constructor(
     private val focusSessionManager: FocusSessionManager,
     private val pauseFocusSessionUseCase: PauseFocusSessionUseCase,
     private val resumeFocusSessionUseCase: ResumeFocusSessionUseCase,
-    private val endFocusSessionUseCase: EndFocusSessionUseCase
+    private val endFocusSessionUseCase: EndFocusSessionUseCase,
+    private val extendFocusSessionUseCase: ExtendFocusSessionUseCase
 ) : ViewModel() {
 
     val uiState: StateFlow<FocusUiState> = focusSessionManager.sessionState
@@ -94,6 +96,10 @@ class FocusViewModel @Inject constructor(
 
     fun onResume() {
         viewModelScope.launch { resumeFocusSessionUseCase() }
+    }
+
+    fun onExtend() {
+        viewModelScope.launch { extendFocusSessionUseCase() }
     }
 
     fun onEnd() {

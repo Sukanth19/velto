@@ -16,6 +16,43 @@ import java.util.UUID
  * Feature: decision-driven-execution-app
  */
 class FocusSessionManagerTest : StringSpec({
+
+    "extending adds time to the focus phase, running or paused, but not to a break" {
+        val clock = FakeTimeSource()
+        val manager = focusSessionManager(clock = clock)
+        manager.startSession(createTestTask(), focusDuration = 25, breakDuration = 5)
+        clock.advanceSeconds(600)
+
+        manager.extendSession(5)
+        (manager.sessionState.value as FocusSessionState.Focusing).let {
+            it.totalSeconds shouldBe 30 * 60
+            it.elapsedSeconds shouldBe 600
+        }
+
+        manager.pauseSession()
+        manager.extendSession(5)
+        (manager.sessionState.value as FocusSessionState.Paused).totalSeconds shouldBe 35 * 60
+
+        manager.resumeSession()
+        manager.transitionToBreak()
+        manager.extendSession(5)
+        (manager.sessionState.value as FocusSessionState.Breaking).totalSeconds shouldBe 5 * 60
+    }
+
+    "an extended session only moves to the break once the extra time has run out" {
+        val clock = FakeTimeSource()
+        val manager = focusSessionManager(clock = clock)
+        manager.startSession(createTestTask(), focusDuration = 25, breakDuration = 5)
+        manager.extendSession(5)
+
+        clock.advanceSeconds(26 * 60)
+        manager.sync()
+        manager.sessionState.value.shouldBeInstanceOf<FocusSessionState.Focusing>()
+
+        clock.advanceSeconds(4 * 60)
+        manager.sync()
+        manager.sessionState.value.shouldBeInstanceOf<FocusSessionState.Breaking>()
+    }
     
     "should use default durations of 25 minutes focus and 5 minutes break" {
         // Requirements: 4.1, 11.5

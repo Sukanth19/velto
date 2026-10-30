@@ -9,6 +9,7 @@ interface PreferencesRepository {
     suspend fun savePreferences(preferences: UserPreferences)
     suspend fun updateFocusDuration(minutes: Int)
     suspend fun updateBreakDuration(minutes: Int)
+    suspend fun updateDailyFocusGoal(minutes: Int)
     suspend fun saveFocusSession(sessionData: FocusSessionData)
     suspend fun getFocusSession(): FocusSessionData?
     suspend fun clearFocusSession()

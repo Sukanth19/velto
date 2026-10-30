@@ -4,6 +4,8 @@ import android.content.Context
 import com.decisionexecution.app.domain.model.FocusSessionState
 import com.decisionexecution.app.domain.model.Task
 import com.decisionexecution.app.presentation.components.label
+import com.decisionexecution.app.presentation.components.quadrant
+import com.decisionexecution.app.presentation.home.formatMinutes
 import kotlinx.coroutines.withTimeoutOrNull
 
 /**
@@ -82,7 +84,9 @@ sealed class TimerWidgetState {
         val label: String,
         val title: String,
         val remainingMillis: Long,
-        val isRunning: Boolean
+        val isRunning: Boolean,
+        /** Breaks only offer skip; pause and extend are for focus time */
+        val isBreak: Boolean = false
     ) : TimerWidgetState()
 }
 
@@ -104,19 +108,58 @@ fun timerWidgetState(state: FocusSessionState): TimerWidgetState = when (state) 
         label = "Break",
         title = "Step away for a moment",
         remainingMillis = remainingMillis(state.totalSeconds, state.elapsedSeconds),
-        isRunning = true
+        isRunning = true,
+        isBreak = true
     )
 }
 
 /**
- * Changes only when the widget needs redrawing: phase, pause state or task, not every tick.
+ * Changes only when the widget needs redrawing: phase, pause state, task or an extension, not every tick.
  */
 fun timerWidgetKey(state: FocusSessionState): Any = when (state) {
     is FocusSessionState.Idle -> "idle"
     is FocusSessionState.Focusing -> Triple("focus", state.task.id, state.totalSeconds)
-    is FocusSessionState.Paused -> Triple("paused", state.task.id, state.elapsedSeconds)
+    is FocusSessionState.Paused -> listOf("paused", state.task.id, state.elapsedSeconds, state.totalSeconds)
     is FocusSessionState.Breaking -> Pair("break", state.totalSeconds)
 }
 
 private fun remainingMillis(totalSeconds: Int, elapsedSeconds: Int): Long =
     (totalSeconds - elapsedSeconds).coerceAtLeast(0) * 1000L
+
+/**
+ * What the Today widget shows: focus time against the daily goal, tasks done and the streak.
+ */
+data class TodayWidgetState(
+    val focusMinutes: Int,
+    val goalMinutes: Int,
+    val completedTasks: Int,
+    val streakDays: Int
+) {
+    val progress: Float get() = if (goalMinutes > 0) (focusMinutes.toFloat() / goalMinutes).coerceIn(0f, 1f) else 0f
+    val goalReached: Boolean get() = goalMinutes > 0 && focusMinutes >= goalMinutes
+    val focusLabel: String get() = formatMinutes(focusMinutes)
+
+    val goalLabel: String
+        get() = if (goalReached) "Goal reached" else "${(progress * 100).toInt()}% of ${formatMinutes(goalMinutes)}"
+
+    val streakLabel: String?
+        get() = when (streakDays) {
+            0 -> null
+            1 -> "1-day streak"
+            else -> "$streakDays-day streak"
+        }
+}
+
+/**
+ * One row of the top-tasks widget. Checking it off completes the task without opening the app.
+ */
+data class TopTaskRow(
+    val taskId: String,
+    val title: String,
+    val quadrantLabel: String
+)
+
+fun topTaskRows(tasks: List<Task>): List<TopTaskRow> =
+    tasks.take(TOP_TASKS_LIMIT).map { TopTaskRow(it.id, it.title, it.quadrant.label) }
+
+const val TOP_TASKS_LIMIT = 3

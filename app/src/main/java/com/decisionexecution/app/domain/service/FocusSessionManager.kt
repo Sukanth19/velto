@@ -82,6 +82,20 @@ class FocusSessionManager @Inject constructor(
         publish(now)
     }
 
+    /**
+     * Adds time to the current focus phase, running or paused. Breaks can't be extended; skipping
+     * them is the only control there.
+     */
+    suspend fun extendSession(minutes: Int) = mutex.withLock {
+        val current = session ?: return@withLock
+        if (current.isOnBreak || minutes <= 0) return@withLock
+        val now = timeSource.nowMillis()
+        val extended = current.copy(focusDurationSeconds = (current.focusDurationSeconds ?: 0) + minutes * 60)
+        save(extended)
+        if (!extended.isPaused) scheduler.scheduleCheck(remainingMillis(extended, now))
+        publish(now)
+    }
+
     suspend fun endSession() = mutex.withLock {
         clear()
         scheduler.cancel()

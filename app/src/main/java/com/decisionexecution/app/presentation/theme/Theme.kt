@@ -2,7 +2,10 @@ package com.decisionexecution.app.presentation.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialExpressiveTheme
+import androidx.compose.material3.MotionScheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
@@ -93,6 +96,15 @@ private val AppTypography = Typography(
     labelSmall = TextStyle(fontFamily = Jakarta, fontSize = 11.sp, fontWeight = FontWeight.W600, letterSpacing = 0.5.sp)
 )
 
+// Expressive corners: noticeably rounder than the baseline so cards and sheets feel soft
+private val AppShapes = Shapes(
+    extraSmall = RoundedCornerShape(8.dp),
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(20.dp),
+    large = RoundedCornerShape(28.dp),
+    extraLarge = RoundedCornerShape(36.dp)
+)
+
 /**
  * Spacing tokens so every screen uses the same rhythm. Requirements: 12.7
  */
@@ -108,7 +120,8 @@ object Spacing {
 
 /**
  * App theme. Uses Material You wallpaper colours on Android 12+ and the purple palette before that.
- * Follows the system light/dark setting unless the user picked one in settings.
+ * Follows the system light/dark setting unless the user picked one in settings. Uses the expressive
+ * motion scheme, so components spring and overshoot slightly instead of easing.
  * Requirements: 12.1, 12.2, 12.8
  */
 @Composable
@@ -130,8 +143,10 @@ fun VeltoTheme(
         dark -> DarkColors
         else -> LightColors
     }
-    MaterialTheme(
+    MaterialExpressiveTheme(
         colorScheme = colorScheme,
+        motionScheme = MotionScheme.expressive(),
+        shapes = AppShapes,
         typography = AppTypography,
         content = content
     )

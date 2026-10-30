@@ -14,11 +14,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.EmojiEvents
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Timer
-import androidx.compose.material.icons.rounded.TrendingUp
+import androidx.compose.material.icons.automirrored.rounded.TrendingUp
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,7 +33,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.decisionexecution.app.domain.model.Task
 import com.decisionexecution.app.presentation.components.QuadrantBadge
@@ -53,7 +55,7 @@ fun formatMinutes(minutes: Int): String =
     if (minutes < 60) "${minutes}m" else "${minutes / 60}h ${(minutes % 60).toString().padStart(2, '0')}m"
 
 /**
- * Home: greeting, the next best task with one big Just Start, streak and today's stats.
+ * Home: greeting, the next best task with one big Just Start, streak, daily goal and today's stats.
  * Requirements: 12.4, 7.7
  */
 @Composable
@@ -115,7 +117,7 @@ fun HomeScreen(
             ) { (loading, task) ->
                 when {
                     loading -> Box(Modifier.fillMaxWidth().height(220.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+                        LoadingIndicator(Modifier.size(64.dp))
                     }
                     task == null -> EmptyHero(onAddTask)
                     else -> HeroCard(
@@ -133,10 +135,11 @@ fun HomeScreen(
                 Text("Today", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
                 TextButton(onClick = onOpenInsights) { Text("See your week") }
             }
+            DailyGoalCard(focusMinutes = uiState.totalFocusTimeToday, goalMinutes = uiState.dailyFocusGoal)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 StatTile(Icons.Rounded.CheckCircle, uiState.completedTasksToday.toString(), "Done today", Modifier.weight(1f))
                 StatTile(Icons.Rounded.Timer, formatMinutes(uiState.totalFocusTimeToday), "Focus", Modifier.weight(1f))
-                StatTile(Icons.Rounded.TrendingUp, "${uiState.consistencyScore.roundToInt()}%", "Consistency", Modifier.weight(1f))
+                StatTile(Icons.AutoMirrored.Rounded.TrendingUp, "${uiState.consistencyScore.roundToInt()}%", "Consistency", Modifier.weight(1f))
             }
             // Room for the extended FAB
             Spacer(Modifier.height(72.dp))
@@ -179,11 +182,24 @@ private fun StreakChip(days: Int) {
         contentColor = MaterialTheme.colorScheme.onTertiaryContainer
     ) {
         Row(
-            Modifier.padding(start = Spacing.sm, end = Spacing.md, top = Spacing.xs, bottom = Spacing.xs),
+            Modifier.padding(start = Spacing.xs, end = Spacing.md, top = Spacing.xs, bottom = Spacing.xs),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.xs)
         ) {
-            Icon(Icons.Rounded.LocalFireDepartment, contentDescription = null, modifier = Modifier.size(18.dp))
+            Box(
+                Modifier
+                    .size(26.dp)
+                    .clip(MaterialShapes.SoftBurst.toShape())
+                    .background(MaterialTheme.colorScheme.tertiary),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Rounded.LocalFireDepartment,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onTertiary,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
             Text(if (days == 1) "1-day streak" else "$days-day streak", style = MaterialTheme.typography.labelLarge)
         }
     }
@@ -218,10 +234,11 @@ private fun HeroCard(task: Task, onOpenTask: () -> Unit, onJustStart: () -> Unit
                 color = scheme.onPrimaryContainer.copy(alpha = 0.75f)
             )
             Spacer(Modifier.height(Spacing.sm))
+            // Squishes to a squarer shape while pressed, then springs back
             Button(
                 onClick = onJustStart,
                 modifier = Modifier.fillMaxWidth().height(60.dp),
-                shape = RoundedCornerShape(20.dp)
+                shapes = ButtonDefaults.shapes(pressedShape = RoundedCornerShape(12.dp))
             ) {
                 Icon(Icons.Rounded.PlayArrow, contentDescription = null)
                 Spacer(Modifier.width(Spacing.sm))
@@ -231,7 +248,6 @@ private fun HeroCard(task: Task, onOpenTask: () -> Unit, onJustStart: () -> Unit
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EmptyHero(onAddTask: () -> Unit) {
     OutlinedCard(
@@ -247,11 +263,56 @@ private fun EmptyHero(onAddTask: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(Modifier.height(Spacing.xs))
-            FilledTonalButton(onClick = onAddTask) {
+            FilledTonalButton(onClick = onAddTask, shapes = ButtonDefaults.shapes()) {
                 Icon(Icons.Rounded.Add, contentDescription = null)
                 Spacer(Modifier.width(Spacing.sm))
                 Text("Add your first task")
             }
+        }
+    }
+}
+
+/**
+ * Today's focus time against the daily goal, as a squiggly bar that flattens out once the goal is hit.
+ */
+@Composable
+private fun DailyGoalCard(focusMinutes: Int, goalMinutes: Int) {
+    val reached = goalMinutes > 0 && focusMinutes >= goalMinutes
+    val target = if (goalMinutes > 0) (focusMinutes.toFloat() / goalMinutes).coerceIn(0f, 1f) else 0f
+    val progress by animateFloatAsState(target, animationSpec = WavyProgressIndicatorDefaults.ProgressAnimationSpec, label = "goal")
+    val scheme = MaterialTheme.colorScheme
+    Surface(
+        modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) {},
+        shape = RoundedCornerShape(24.dp),
+        color = scheme.surfaceContainerLow
+    ) {
+        Column(Modifier.padding(Spacing.md), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        if (reached) "Daily goal reached" else "Daily focus goal",
+                        style = MaterialTheme.typography.titleSmall
+                    )
+                    Text(
+                        "${formatMinutes(focusMinutes)} of ${formatMinutes(goalMinutes)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = scheme.onSurfaceVariant
+                    )
+                }
+                if (reached) {
+                    Icon(Icons.Rounded.EmojiEvents, contentDescription = null, tint = scheme.tertiary)
+                } else {
+                    Text("${(progress * 100).roundToInt()}%", style = MaterialTheme.typography.titleMedium, color = scheme.primary)
+                }
+            }
+            LinearWavyProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.fillMaxWidth().height(14.dp),
+                color = if (reached) scheme.tertiary else scheme.primary,
+                trackColor = scheme.surfaceContainerHighest,
+                // A finished goal lies flat; work in progress wiggles
+                amplitude = { if (reached) 0f else WavyProgressIndicatorDefaults.indicatorAmplitude(it) }
+            )
         }
     }
 }
@@ -262,8 +323,7 @@ private fun StatTile(icon: ImageVector, value: String, label: String, modifier: 
         // Read as one item ("3, Done today") rather than two fragments
         modifier = modifier.semantics(mergeDescendants = true) {},
         shape = RoundedCornerShape(20.dp),
-        // Material 3 1.1 has no surfaceContainerLow; a light tint of surfaceVariant reads the same
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
+        color = MaterialTheme.colorScheme.surfaceContainerLow
     ) {
         // Three tiles share a phone's width, so keep the padding and type compact
         Column(Modifier.padding(Spacing.sm + Spacing.xs), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
@@ -302,5 +362,5 @@ fun JustStartRoute(
             uiState.error != null -> onFailed()
         }
     }
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { LoadingIndicator(Modifier.size(64.dp)) }
 }

@@ -24,7 +24,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.decisionexecution.app.domain.usecase.DayStats
 import com.decisionexecution.app.domain.usecase.Insights
@@ -51,7 +51,7 @@ fun InsightsScreen(viewModel: InsightsViewModel = hiltViewModel()) {
                 Text(uiState.error!!, textAlign = TextAlign.Center, modifier = Modifier.padding(Spacing.xl))
             }
             else -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+                LoadingIndicator()
             }
         }
     }
@@ -153,7 +153,7 @@ private fun ChartCard(week: List<DayStats>) {
                     Bar(day, maxMinutes, isToday = day.date == today, modifier = Modifier.weight(1f))
                 }
             }
-            Divider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
             Text("Tasks done", style = MaterialTheme.typography.titleSmall)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 week.forEach { day ->

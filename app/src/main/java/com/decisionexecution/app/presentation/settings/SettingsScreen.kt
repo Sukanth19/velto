@@ -1,25 +1,28 @@
 package com.decisionexecution.app.presentation.settings
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.BrightnessAuto
+import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.decisionexecution.app.domain.model.ThemeMode
+import com.decisionexecution.app.presentation.home.formatMinutes
 import com.decisionexecution.app.presentation.theme.Spacing
 import kotlin.math.roundToInt
 
 /**
- * Focus/break durations and theme. Sliders only save when released, not on every drag step.
+ * Focus/break durations, daily focus goal and theme. Sliders only save when released, not on every drag step.
  * Requirements: 11.1, 11.2, 11.3
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
@@ -32,7 +35,7 @@ fun SettingsScreen(
             TopAppBar(
                 title = { Text("Settings") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") }
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back") }
                 }
             )
         }
@@ -56,54 +59,81 @@ fun SettingsScreen(
                 range = BREAK_DURATION_RANGE,
                 onCommit = viewModel::onBreakDurationChanged
             )
+            DurationSlider(
+                title = "Daily focus goal",
+                value = uiState.dailyFocusGoal,
+                range = DAILY_FOCUS_GOAL_RANGE,
+                // Quarter-hour steps; nobody sets a goal of 97 minutes
+                stepMinutes = 15,
+                format = ::formatMinutes,
+                onCommit = viewModel::onDailyFocusGoalChanged
+            )
             uiState.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
 
-            Column {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 Text("Theme", style = MaterialTheme.typography.labelLarge)
-                ThemeMode.entries.forEach { mode ->
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .selectable(
-                                selected = uiState.themeMode == mode,
-                                onClick = { viewModel.onThemeModeChanged(mode) },
-                                role = Role.RadioButton
-                            )
-                            .padding(vertical = Spacing.sm),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(selected = uiState.themeMode == mode, onClick = null)
-                        Spacer(Modifier.width(Spacing.md))
-                        Text(
-                            when (mode) {
-                                ThemeMode.LIGHT -> "Light"
-                                ThemeMode.DARK -> "Dark"
-                                ThemeMode.SYSTEM -> "Follow system"
-                            }
-                        )
-                    }
-                }
+                ThemePicker(uiState.themeMode, viewModel::onThemeModeChanged)
+            }
+        }
+    }
+}
+
+/** Connected button group: the picked option morphs into a pill. */
+@Composable
+private fun ThemePicker(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
+    val options = listOf(
+        Triple(ThemeMode.LIGHT, "Light", Icons.Rounded.LightMode),
+        Triple(ThemeMode.DARK, "Dark", Icons.Rounded.DarkMode),
+        Triple(ThemeMode.SYSTEM, "System", Icons.Rounded.BrightnessAuto)
+    )
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)
+    ) {
+        options.forEachIndexed { index, (mode, label, icon) ->
+            ToggleButton(
+                checked = selected == mode,
+                onCheckedChange = { onSelect(mode) },
+                modifier = Modifier.weight(1f).semantics { role = Role.RadioButton },
+                shapes = when (index) {
+                    0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                    options.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
+                    else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
+                },
+                // Three to a row on a phone; the default padding wraps "System"
+                contentPadding = PaddingValues(horizontal = Spacing.sm)
+            ) {
+                Icon(icon, contentDescription = null, modifier = Modifier.size(ToggleButtonDefaults.IconSize))
+                Spacer(Modifier.size(ToggleButtonDefaults.IconSpacing))
+                Text(label, maxLines = 1)
             }
         }
     }
 }
 
 @Composable
-private fun DurationSlider(title: String, value: Int, range: IntRange, onCommit: (Int) -> Unit) {
+private fun DurationSlider(
+    title: String,
+    value: Int,
+    range: IntRange,
+    onCommit: (Int) -> Unit,
+    stepMinutes: Int = 1,
+    format: (Int) -> String = { "$it min" }
+) {
     // Local value while dragging; reset whenever the stored value changes
     var dragValue by remember(value) { mutableFloatStateOf(value.toFloat()) }
     Column {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(title, style = MaterialTheme.typography.labelLarge)
             Text(
-                "${dragValue.roundToInt()} min",
+                format(dragValue.roundToInt()),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary
             )
         }
         Slider(
             value = dragValue,
-            onValueChange = { dragValue = it },
+            onValueChange = { dragValue = (it / stepMinutes).roundToInt() * stepMinutes.toFloat() },
             onValueChangeFinished = { onCommit(dragValue.roundToInt()) },
             // Continuous track and rounding; per-minute tick marks are too dense to read
             valueRange = range.first.toFloat()..range.last.toFloat()

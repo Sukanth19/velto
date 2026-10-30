@@ -5,6 +5,7 @@ import com.decisionexecution.app.domain.model.*
 import com.decisionexecution.app.domain.repository.PreferencesRepository
 import com.decisionexecution.app.domain.service.FocusSessionManager
 import com.decisionexecution.app.domain.usecase.EndFocusSessionUseCase
+import com.decisionexecution.app.domain.usecase.ExtendFocusSessionUseCase
 import com.decisionexecution.app.domain.usecase.PauseFocusSessionUseCase
 import com.decisionexecution.app.domain.usecase.ResumeFocusSessionUseCase
 import io.kotest.core.spec.style.StringSpec
@@ -114,7 +115,8 @@ private fun createViewModel(manager: FocusSessionManager) = FocusViewModel(
     manager,
     PauseFocusSessionUseCase(manager),
     ResumeFocusSessionUseCase(manager),
-    EndFocusSessionUseCase(manager)
+    EndFocusSessionUseCase(manager),
+    ExtendFocusSessionUseCase(manager)
 )
 
 private fun taskArb(): Arb<Task> = arbitrary {

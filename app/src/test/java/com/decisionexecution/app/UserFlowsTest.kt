@@ -89,7 +89,7 @@ class UserFlowsTest {
         val important = task("Finish report", TaskCategory.WORK, 5, 5)
         create(important)
 
-        val home = HomeViewModel(getBestTask, justStart, metrics, GetInsightsUseCase(performanceRepository))
+        val home = HomeViewModel(getBestTask, justStart, metrics, GetInsightsUseCase(performanceRepository), InMemoryPreferencesRepository())
         settle()
         home.uiState.value.bestTask shouldBe important
 
@@ -209,7 +209,7 @@ class UserFlowsTest {
 
     @Test
     fun `just start with no tasks tells the user to add one`() = runTest {
-        val home = HomeViewModel(getBestTask, justStart, metrics, GetInsightsUseCase(performanceRepository))
+        val home = HomeViewModel(getBestTask, justStart, metrics, GetInsightsUseCase(performanceRepository), InMemoryPreferencesRepository())
         settle()
         home.onJustStartClicked()
         settle()

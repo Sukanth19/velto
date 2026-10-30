@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.decisionexecution.app.domain.model.JustStartResult
 import com.decisionexecution.app.domain.model.Task
+import com.decisionexecution.app.domain.repository.PreferencesRepository
 import com.decisionexecution.app.domain.usecase.GetBestTaskUseCase
 import com.decisionexecution.app.domain.usecase.GetInsightsUseCase
 import com.decisionexecution.app.domain.usecase.GetProductivityMetricsUseCase
@@ -28,6 +29,7 @@ data class HomeUiState(
     val totalFocusTimeToday: Int = 0,
     val consistencyScore: Double = 0.0,
     val streakDays: Int = 0,
+    val dailyFocusGoal: Int = 120,
     val isLoading: Boolean = false,
     val error: String? = null,
     /** The error came from loading, so the UI can offer Retry */
@@ -45,7 +47,8 @@ class HomeViewModel @Inject constructor(
     private val getBestTaskUseCase: GetBestTaskUseCase,
     private val justStartUseCase: JustStartUseCase,
     private val getProductivityMetricsUseCase: GetProductivityMetricsUseCase,
-    private val getInsightsUseCase: GetInsightsUseCase
+    private val getInsightsUseCase: GetInsightsUseCase,
+    private val preferencesRepository: PreferencesRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -69,14 +72,16 @@ class HomeViewModel @Inject constructor(
             combine(
                 getBestTaskUseCase(),
                 getProductivityMetricsUseCase(startOfToday, endOfToday, CONSISTENCY_DAYS),
-                getInsightsUseCase()
-            ) { bestTask, metrics, insights ->
+                getInsightsUseCase(),
+                preferencesRepository.getPreferences()
+            ) { bestTask, metrics, insights, prefs ->
                 _uiState.value.copy(
                     bestTask = bestTask,
                     completedTasksToday = metrics.completedTasks,
                     totalFocusTimeToday = metrics.totalFocusTime,
                     consistencyScore = metrics.consistencyScore,
                     streakDays = insights.streakDays,
+                    dailyFocusGoal = prefs.dailyFocusGoalMinutes,
                     isLoading = false
                 )
             }

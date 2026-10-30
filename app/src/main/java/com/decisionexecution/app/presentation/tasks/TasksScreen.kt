@@ -1,11 +1,9 @@
 package com.decisionexecution.app.presentation.tasks
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -32,11 +30,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import kotlinx.coroutines.launch
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.decisionexecution.app.domain.model.EisenhowerQuadrant
 import com.decisionexecution.app.domain.model.Task
@@ -155,33 +155,30 @@ fun TasksScreen(
     }
 }
 
+/** Connected button group: the selected half morphs to a pill, the other keeps its squarer outer corners. */
 @Composable
 private fun ViewModeToggle(mode: TasksViewMode, onChange: (TasksViewMode) -> Unit) {
+    val options = listOf(
+        Triple(TasksViewMode.LIST, Icons.Rounded.ViewAgenda, "List view"),
+        Triple(TasksViewMode.MATRIX, Icons.Rounded.GridView, "Priority matrix")
+    )
     Row(
-        Modifier
-            .padding(end = Spacing.sm)
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(Spacing.xs)
+        Modifier.padding(end = Spacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)
     ) {
-        listOf(
-            Triple(TasksViewMode.LIST, Icons.Rounded.ViewAgenda, "List view"),
-            Triple(TasksViewMode.MATRIX, Icons.Rounded.GridView, "Priority matrix")
-        ).forEach { (value, icon, description) ->
-            val selected = mode == value
-            val background by animateColorAsState(
-                if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
-                label = "toggle"
-            )
-            IconButton(
-                onClick = { onChange(value) },
-                modifier = Modifier.size(40.dp).clip(CircleShape).background(background)
+        options.forEachIndexed { index, (value, icon, description) ->
+            ToggleButton(
+                checked = mode == value,
+                onCheckedChange = { onChange(value) },
+                shapes = if (index == 0) {
+                    ButtonGroupDefaults.connectedLeadingButtonShapes()
+                } else {
+                    ButtonGroupDefaults.connectedTrailingButtonShapes()
+                },
+                contentPadding = PaddingValues(horizontal = Spacing.md),
+                modifier = Modifier.semantics { contentDescription = description }
             ) {
-                Icon(
-                    icon,
-                    contentDescription = description,
-                    tint = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Icon(icon, contentDescription = null, modifier = Modifier.size(ToggleButtonDefaults.IconSize))
             }
         }
     }
@@ -210,7 +207,6 @@ private fun CategoryFilter(selected: TaskCategory?, onSelect: (TaskCategory?) ->
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun TaskList(
     sections: Map<TaskCategory, List<Task>>,
@@ -230,7 +226,7 @@ private fun TaskList(
                     tasks.size,
                     accent = category.color(),
                     modifier = Modifier
-                        .animateItemPlacement()
+                        .animateItem()
                         .padding(top = Spacing.md, bottom = Spacing.xs)
                 )
             }
@@ -240,7 +236,7 @@ private fun TaskList(
                     onComplete = { onComplete(task.id) },
                     onShowActions = { onShowActions(task) },
                     onClick = { onOpenTask(task.id) },
-                    modifier = Modifier.animateItemPlacement()
+                    modifier = Modifier.animateItem()
                 )
             }
         }
@@ -259,26 +255,29 @@ private fun SwipeableTaskCard(
     val haptics = LocalHapticFeedback.current
     val currentOnComplete by rememberUpdatedState(onComplete)
     val currentOnShowActions by rememberUpdatedState(onShowActions)
-    val dismissState = rememberDismissState(
-        confirmValueChange = { value ->
-            when (value) {
-                DismissValue.DismissedToEnd -> {
-                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                    currentOnComplete(); true
-                }
-                // Left swipe only reveals actions; the card snaps back
-                DismissValue.DismissedToStart -> { currentOnShowActions(); false }
-                DismissValue.Default -> false
-            }
-        }
-    )
+    val scope = rememberCoroutineScope()
+    val dismissState = rememberSwipeToDismissBoxState()
     val shape = RoundedCornerShape(20.dp)
 
-    SwipeToDismiss(
+    SwipeToDismissBox(
         state = dismissState,
         modifier = modifier,
-        background = {
-            val toEnd = dismissState.dismissDirection == DismissDirection.StartToEnd
+        onDismiss = { value ->
+            when (value) {
+                SwipeToDismissBoxValue.StartToEnd -> {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    currentOnComplete()
+                }
+                // Left swipe only reveals actions; the card snaps back
+                SwipeToDismissBoxValue.EndToStart -> {
+                    currentOnShowActions()
+                    scope.launch { dismissState.reset() }
+                }
+                SwipeToDismissBoxValue.Settled -> Unit
+            }
+        },
+        backgroundContent = {
+            val toEnd = dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd
             val container = if (toEnd) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
             val tint = if (toEnd) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer
             Box(
@@ -295,7 +294,7 @@ private fun SwipeableTaskCard(
                 }
             }
         },
-        dismissContent = {
+        content = {
             Surface(
                 shape = shape,
                 // Opaque so the swipe background only shows once the card moves
@@ -419,7 +418,7 @@ private fun EmptyTasks(selected: TaskCategory?, onAddTask: () -> Unit) {
         verticalArrangement = Arrangement.Center
     ) {
         Box(
-            Modifier.size(72.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer),
+            Modifier.size(88.dp).clip(MaterialShapes.Cookie9Sided.toShape()).background(MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -437,6 +436,6 @@ private fun EmptyTasks(selected: TaskCategory?, onAddTask: () -> Unit) {
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(Modifier.height(Spacing.md))
-        FilledTonalButton(onClick = onAddTask) { Text("Add a task") }
+        FilledTonalButton(onClick = onAddTask, shapes = ButtonDefaults.shapes()) { Text("Add a task") }
     }
 }

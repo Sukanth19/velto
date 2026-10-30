@@ -5,4 +5,8 @@
     <string name="widget_best_task_description">Your best task right now, with a Just Start button</string>
     <string name="widget_focus_timer_name">Focus timer</string>
     <string name="widget_focus_timer_description">Time left in your current focus session</string>
+    <string name="widget_today_name">Today</string>
+    <string name="widget_today_description">Focus time against your daily goal, tasks done and your streak</string>
+    <string name="widget_top_tasks_name">Top tasks</string>
+    <string name="widget_top_tasks_description">Your three best tasks; tick one off without opening the app</string>
 </resources>

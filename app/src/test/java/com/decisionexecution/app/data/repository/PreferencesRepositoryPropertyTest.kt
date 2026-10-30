@@ -1,5 +1,6 @@
 package com.decisionexecution.app.data.repository
 
+import kotlin.io.path.createTempDirectory
 import com.decisionexecution.app.testutil.PROPERTY_ITERATIONS
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import com.decisionexecution.app.domain.model.FocusSessionData
@@ -35,7 +36,7 @@ class PreferencesRepositoryPropertyTest : StringSpec({
             // Create a test DataStore with a unique file for each test iteration
             val testDispatcher = UnconfinedTestDispatcher()
             val testScope = TestScope(testDispatcher)
-            val tempDir = createTempDir()
+            val tempDir = createTempDirectory().toFile()
             
             try {
                 val testDataStore = PreferenceDataStoreFactory.create(
@@ -94,7 +95,7 @@ class PreferencesRepositoryPropertyTest : StringSpec({
         ) { taskId, taskTitle, timestamp, focusDuration, breakDuration, isPaused, pausedAt ->
             val testDispatcher = UnconfinedTestDispatcher()
             val testScope = TestScope(testDispatcher)
-            val tempDir = createTempDir()
+            val tempDir = createTempDirectory().toFile()
             
             try {
                 val testDataStore = PreferenceDataStoreFactory.create(
@@ -136,7 +137,7 @@ class PreferencesRepositoryPropertyTest : StringSpec({
         
         val testDispatcher = UnconfinedTestDispatcher()
         val testScope = TestScope(testDispatcher)
-        val tempDir = createTempDir()
+        val tempDir = createTempDirectory().toFile()
         
         try {
             val testDataStore = PreferenceDataStoreFactory.create(
