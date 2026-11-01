@@ -6,6 +6,7 @@ import android.content.ContentResolver
 import android.net.Uri
 import com.decisionexecution.app.domain.model.Reminder
 import com.decisionexecution.app.domain.model.ThemeMode
+import com.decisionexecution.app.domain.model.ThemePalette
 import com.decisionexecution.app.domain.repository.BackupRepository
 import com.decisionexecution.app.domain.repository.InvalidBackupException
 import kotlinx.coroutines.Dispatchers
@@ -24,6 +25,8 @@ data class SettingsUiState(
     val focusDuration: Int = 25,
     val breakDuration: Int = 5,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val themePalette: ThemePalette = ThemePalette.WALLPAPER,
+    val pureBlack: Boolean = false,
     val dailyFocusGoal: Int = 120,
     val dndDuringFocus: Boolean = false,
     val habitReminder: Reminder = UserPreferences().habitReminder,
@@ -63,6 +66,8 @@ class SettingsViewModel @Inject constructor(
                         focusDuration = prefs.focusDurationMinutes,
                         breakDuration = prefs.breakDurationMinutes,
                         themeMode = prefs.themeMode,
+                        themePalette = prefs.themePalette,
+                        pureBlack = prefs.pureBlack,
                         dailyFocusGoal = prefs.dailyFocusGoalMinutes,
                         dndDuringFocus = prefs.dndDuringFocus,
                         habitReminder = prefs.habitReminder,
@@ -150,20 +155,14 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun onThemeModeChanged(mode: ThemeMode) {
-        viewModelScope.launch {
-            val current = _uiState.value
-            preferencesRepository.savePreferences(
-                UserPreferences(
-                    focusDurationMinutes = current.focusDuration,
-                    breakDurationMinutes = current.breakDuration,
-                    themeMode = mode,
-                    dailyFocusGoalMinutes = current.dailyFocusGoal,
-                    dndDuringFocus = current.dndDuringFocus,
-                    habitReminder = current.habitReminder,
-                    moodReminder = current.moodReminder,
-                    weeklyReviewReminder = current.weeklyReviewReminder
-                )
-            )
-        }
+        viewModelScope.launch { preferencesRepository.updateThemeMode(mode) }
+    }
+
+    fun onThemePaletteChanged(palette: ThemePalette) {
+        viewModelScope.launch { preferencesRepository.updateThemePalette(palette) }
+    }
+
+    fun onPureBlackChanged(enabled: Boolean) {
+        viewModelScope.launch { preferencesRepository.updatePureBlack(enabled) }
     }
 }

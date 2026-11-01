@@ -64,7 +64,11 @@ class MainActivity : ComponentActivity() {
             }
             RequestNotificationPermission()
 
-            VeltoTheme(themeMode = preferences.themeMode) {
+            VeltoTheme(
+                themeMode = preferences.themeMode,
+                palette = preferences.themePalette,
+                pureBlack = preferences.pureBlack
+            ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background

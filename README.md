@@ -22,6 +22,7 @@
 - **Journal**: mood and energy check-ins, a year in pixels, and how energy relates to your focus
 - **Week in review**: wins, trends against last week, your best focus hours and one suggestion, shareable as an image
 - **Progress**: XP, levels, achievements and a plant that grows as you level up
+- **Themes**: wallpaper colours or six built-in palettes, light, dark or system, and a pure black mode for OLED screens
 - **Widgets**: next task, focus timer, today, top tasks, habits, mood, quick capture and level
 - **Private**: no account, no tracking. Data stays on the phone, with export/import and Android backup. See the [privacy policy](docs/PRIVACY.md)
 

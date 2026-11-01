@@ -93,6 +93,18 @@ class InMemoryPreferencesRepository : PreferencesRepository {
         preferences = preferences.copy(weeklyReviewReminder = reminder)
     }
 
+    override suspend fun updateThemeMode(mode: com.decisionexecution.app.domain.model.ThemeMode) {
+        preferences = preferences.copy(themeMode = mode)
+    }
+
+    override suspend fun updateThemePalette(palette: com.decisionexecution.app.domain.model.ThemePalette) {
+        preferences = preferences.copy(themePalette = palette)
+    }
+
+    override suspend fun updatePureBlack(enabled: Boolean) {
+        preferences = preferences.copy(pureBlack = enabled)
+    }
+
     override suspend fun saveFocusSession(sessionData: FocusSessionData) {
         focusSessionData = sessionData
     }

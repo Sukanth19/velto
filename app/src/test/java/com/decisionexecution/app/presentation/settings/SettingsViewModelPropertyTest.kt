@@ -91,7 +91,7 @@ class SettingsViewModelPropertyTest : StringSpec({
             viewModel.uiState.value.breakDuration shouldBe brk
 
             viewModel.onThemeModeChanged(theme)
-            coVerify { repository.savePreferences(UserPreferences(focus, brk, theme)) }
+            coVerify { repository.updateThemeMode(theme) }
         }
     }
 })

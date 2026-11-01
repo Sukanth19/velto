@@ -2,6 +2,8 @@ package com.decisionexecution.app.domain.repository
 
 import com.decisionexecution.app.domain.model.FocusSessionData
 import com.decisionexecution.app.domain.model.Reminder
+import com.decisionexecution.app.domain.model.ThemeMode
+import com.decisionexecution.app.domain.model.ThemePalette
 import com.decisionexecution.app.domain.model.UserPreferences
 import kotlinx.coroutines.flow.Flow
 
@@ -15,6 +17,9 @@ interface PreferencesRepository {
     suspend fun updateHabitReminder(reminder: Reminder)
     suspend fun updateMoodReminder(reminder: Reminder)
     suspend fun updateWeeklyReviewReminder(reminder: Reminder)
+    suspend fun updateThemeMode(mode: ThemeMode)
+    suspend fun updateThemePalette(palette: ThemePalette)
+    suspend fun updatePureBlack(enabled: Boolean)
     suspend fun saveFocusSession(sessionData: FocusSessionData)
     suspend fun getFocusSession(): FocusSessionData?
     suspend fun clearFocusSession()

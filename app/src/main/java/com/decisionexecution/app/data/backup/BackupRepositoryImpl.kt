@@ -12,6 +12,7 @@ import com.decisionexecution.app.data.local.entity.SubtaskEntity
 import com.decisionexecution.app.data.local.entity.TaskCompletionEntity
 import com.decisionexecution.app.data.local.entity.TaskEntity
 import com.decisionexecution.app.domain.model.ThemeMode
+import com.decisionexecution.app.domain.model.ThemePalette
 import com.decisionexecution.app.domain.repository.BackupRepository
 import com.decisionexecution.app.domain.repository.BackupSummary
 import com.decisionexecution.app.domain.repository.InvalidBackupException
@@ -53,6 +54,8 @@ class BackupRepositoryImpl @Inject constructor(
                     .put("focusDurationMinutes", prefs.focusDurationMinutes)
                     .put("breakDurationMinutes", prefs.breakDurationMinutes)
                     .put("themeMode", prefs.themeMode.name)
+                    .put("themePalette", prefs.themePalette.name)
+                    .put("pureBlack", prefs.pureBlack)
                     .put("dailyFocusGoalMinutes", prefs.dailyFocusGoalMinutes)
             )
             .put(
@@ -95,6 +98,8 @@ class BackupRepositoryImpl @Inject constructor(
                     focusDurationMinutes = p.optInt("focusDurationMinutes", current.focusDurationMinutes),
                     breakDurationMinutes = p.optInt("breakDurationMinutes", current.breakDurationMinutes),
                     themeMode = ThemeMode.entries.find { it.name == p.optString("themeMode") } ?: current.themeMode,
+                    themePalette = ThemePalette.entries.find { it.name == p.optString("themePalette") } ?: current.themePalette,
+                    pureBlack = p.optBoolean("pureBlack", current.pureBlack),
                     dailyFocusGoalMinutes = p.optInt("dailyFocusGoalMinutes", current.dailyFocusGoalMinutes)
                 )
             )

@@ -12,6 +12,7 @@ import com.decisionexecution.app.domain.repository.PreferencesRepository
 import com.decisionexecution.app.domain.model.UserPreferences
 import com.decisionexecution.app.domain.model.FocusSessionData
 import com.decisionexecution.app.domain.model.ThemeMode
+import com.decisionexecution.app.domain.model.ThemePalette
 import com.decisionexecution.app.domain.model.Reminder
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -28,6 +29,8 @@ class PreferencesRepositoryImpl @Inject constructor(
         val FOCUS_DURATION = intPreferencesKey("focus_duration_minutes")
         val BREAK_DURATION = intPreferencesKey("break_duration_minutes")
         val THEME_MODE = stringPreferencesKey("theme_mode")
+        val THEME_PALETTE = stringPreferencesKey("theme_palette")
+        val PURE_BLACK = booleanPreferencesKey("pure_black")
         val DAILY_FOCUS_GOAL = intPreferencesKey("daily_focus_goal_minutes")
         val DND_DURING_FOCUS = booleanPreferencesKey("dnd_during_focus")
         val HABIT_REMINDER_ON = booleanPreferencesKey("habit_reminder_enabled")
@@ -53,9 +56,12 @@ class PreferencesRepositoryImpl @Inject constructor(
             UserPreferences(
                 focusDurationMinutes = preferences[PreferencesKeys.FOCUS_DURATION] ?: 25,
                 breakDurationMinutes = preferences[PreferencesKeys.BREAK_DURATION] ?: 5,
-                themeMode = preferences[PreferencesKeys.THEME_MODE]?.let { 
-                    ThemeMode.valueOf(it) 
-                } ?: ThemeMode.SYSTEM,
+                // An unknown stored name (from a newer or older version) falls back instead of crashing
+                themeMode = preferences[PreferencesKeys.THEME_MODE]?.let { name -> ThemeMode.entries.find { it.name == name } }
+                    ?: ThemeMode.SYSTEM,
+                themePalette = preferences[PreferencesKeys.THEME_PALETTE]?.let { name -> ThemePalette.entries.find { it.name == name } }
+                    ?: defaults.themePalette,
+                pureBlack = preferences[PreferencesKeys.PURE_BLACK] ?: defaults.pureBlack,
                 dailyFocusGoalMinutes = preferences[PreferencesKeys.DAILY_FOCUS_GOAL] ?: 120,
                 dndDuringFocus = preferences[PreferencesKeys.DND_DURING_FOCUS] ?: false,
                 habitReminder = reminder(preferences, PreferencesKeys.HABIT_REMINDER_ON, PreferencesKeys.HABIT_REMINDER_AT, defaults.habitReminder),
@@ -72,6 +78,8 @@ class PreferencesRepositoryImpl @Inject constructor(
             prefs[PreferencesKeys.FOCUS_DURATION] = preferences.focusDurationMinutes
             prefs[PreferencesKeys.BREAK_DURATION] = preferences.breakDurationMinutes
             prefs[PreferencesKeys.THEME_MODE] = preferences.themeMode.name
+            prefs[PreferencesKeys.THEME_PALETTE] = preferences.themePalette.name
+            prefs[PreferencesKeys.PURE_BLACK] = preferences.pureBlack
             prefs[PreferencesKeys.DAILY_FOCUS_GOAL] = preferences.dailyFocusGoalMinutes
             prefs[PreferencesKeys.DND_DURING_FOCUS] = preferences.dndDuringFocus
             prefs.setReminder(PreferencesKeys.HABIT_REMINDER_ON, PreferencesKeys.HABIT_REMINDER_AT, preferences.habitReminder)
@@ -114,6 +122,18 @@ class PreferencesRepositoryImpl @Inject constructor(
 
     override suspend fun updateWeeklyReviewReminder(reminder: Reminder) {
         dataStore.edit { it.setReminder(PreferencesKeys.REVIEW_REMINDER_ON, PreferencesKeys.REVIEW_REMINDER_AT, reminder) }
+    }
+
+    override suspend fun updateThemeMode(mode: ThemeMode) {
+        dataStore.edit { it[PreferencesKeys.THEME_MODE] = mode.name }
+    }
+
+    override suspend fun updateThemePalette(palette: ThemePalette) {
+        dataStore.edit { it[PreferencesKeys.THEME_PALETTE] = palette.name }
+    }
+
+    override suspend fun updatePureBlack(enabled: Boolean) {
+        dataStore.edit { it[PreferencesKeys.PURE_BLACK] = enabled }
     }
 
     private fun MutablePreferences.setReminder(on: Preferences.Key<Boolean>, at: Preferences.Key<Int>, reminder: Reminder) {

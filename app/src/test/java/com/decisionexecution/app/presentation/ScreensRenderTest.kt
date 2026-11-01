@@ -71,6 +71,7 @@ import com.decisionexecution.app.presentation.settings.SettingsViewModel
 import com.decisionexecution.app.presentation.tasks.TasksScreen
 import com.decisionexecution.app.presentation.tasks.TasksViewModel
 import com.decisionexecution.app.presentation.theme.VeltoTheme
+import com.decisionexecution.app.domain.model.ThemePalette
 import io.kotest.matchers.shouldBe
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -233,6 +234,42 @@ class ScreensRenderTest {
         composeRule.waitForIdle()
         composeRule.onNodeWithText("Title is required").assertIsDisplayed()
         save("add_task_error")
+    }
+
+    @Test
+    fun homeInSunset() = homeInPalette("home_sunset", ThemeMode.LIGHT, ThemePalette.SUNSET)
+
+    @Test
+    fun homeInForestPureBlack() = homeInPalette("home_forest_black", ThemeMode.DARK, ThemePalette.FOREST, pureBlack = true)
+
+    @Test
+    fun homeInOceanDark() = homeInPalette("home_ocean_dark", ThemeMode.DARK, ThemePalette.OCEAN)
+
+    @Test
+    fun homeInRose() = homeInPalette("home_rose", ThemeMode.LIGHT, ThemePalette.ROSE)
+
+    @Test
+    fun homeInGraphiteDark() = homeInPalette("home_graphite_dark", ThemeMode.DARK, ThemePalette.MONO)
+
+    private fun homeInPalette(name: String, mode: ThemeMode, palette: ThemePalette, pureBlack: Boolean = false) {
+        val getBest = mockk<GetBestTaskUseCase>()
+        every { getBest() } returns flowOf(tasks[0])
+        val metrics = mockk<GetProductivityMetricsUseCase>()
+        every { metrics(any(), any(), any()) } returns flowOf(ProductivityMetrics(3, 85, 71.4))
+        val viewModel = HomeViewModel(getBest, mockk(relaxed = true), metrics, emptyInsights(), InMemoryPreferencesRepository())
+
+        val habits = sampleHabits()
+        val extras = HomeExtrasViewModel(progressUseCase(SAMPLE_STATS), habits, InMemoryInboxRepository(*sampleInbox()), InMemoryMoodRepository(), plantUseCase(SAMPLE_STATS, habits))
+        render(name, mode, palette, pureBlack) { HomeScreen({}, {}, {}, {}, viewModel, extrasViewModel = extras) }
+        composeRule.onNodeWithText("Just Start").assertIsDisplayed()
+    }
+
+    @Test
+    fun settingsInOcean() {
+        val prefs = mockk<PreferencesRepository>(relaxed = true)
+        every { prefs.getPreferences() } returns flowOf(UserPreferences(themePalette = ThemePalette.OCEAN))
+        render("settings_ocean", palette = ThemePalette.OCEAN) { SettingsScreen({}, SettingsViewModel(prefs, mockk(relaxed = true))) }
+        composeRule.onNodeWithText("Ocean").assertIsDisplayed()
     }
 
     @Test
@@ -494,8 +531,14 @@ class ScreensRenderTest {
         )
     }
 
-    private fun render(name: String, themeMode: ThemeMode = ThemeMode.LIGHT, content: @Composable () -> Unit) {
-        composeRule.setContent { VeltoTheme(themeMode = themeMode, dynamicColor = false) { content() } }
+    private fun render(
+        name: String,
+        themeMode: ThemeMode = ThemeMode.LIGHT,
+        palette: ThemePalette = ThemePalette.WALLPAPER,
+        pureBlack: Boolean = false,
+        content: @Composable () -> Unit
+    ) {
+        composeRule.setContent { VeltoTheme(themeMode = themeMode, palette = palette, pureBlack = pureBlack, dynamicColor = false) { content() } }
         composeRule.waitForIdle()
         save(name)
     }

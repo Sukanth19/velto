@@ -4,6 +4,21 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.BrightnessAuto
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import android.os.Build
+import com.decisionexecution.app.domain.model.ThemePalette
+import com.decisionexecution.app.presentation.theme.label
+import com.decisionexecution.app.presentation.theme.swatch
 import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.Download
@@ -38,7 +53,7 @@ import com.decisionexecution.app.presentation.theme.Spacing
 import kotlin.math.roundToInt
 
 /**
- * Focus/break durations, daily focus goal and theme. Sliders only save when released, not on every drag step.
+ * Focus/break durations, daily focus goal, appearance (palette, light/dark, pure black), reminders and backup. Sliders only save when released, not on every drag step.
  */
 @Composable
 fun SettingsScreen(
@@ -81,6 +96,33 @@ fun SettingsScreen(
                 .padding(Spacing.md),
             verticalArrangement = Arrangement.spacedBy(Spacing.lg)
         ) {
+            SectionTitle("Appearance")
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                Text("Colours", style = MaterialTheme.typography.labelLarge)
+                PalettePicker(uiState.themePalette, viewModel::onThemePaletteChanged)
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                Text("Mode", style = MaterialTheme.typography.labelLarge)
+                ThemePicker(uiState.themeMode, viewModel::onThemeModeChanged)
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Pure black", style = MaterialTheme.typography.labelLarge)
+                    Text(
+                        "True black backgrounds in dark mode, easier on OLED screens",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Spacer(Modifier.width(Spacing.md))
+                Switch(
+                    checked = uiState.pureBlack,
+                    onCheckedChange = viewModel::onPureBlackChanged,
+                    enabled = uiState.themeMode != ThemeMode.LIGHT
+                )
+            }
+
+            SectionTitle("Focus")
             DurationSlider(
                 title = "Focus duration",
                 value = uiState.focusDuration,
@@ -105,11 +147,6 @@ fun SettingsScreen(
             uiState.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
 
             DndSetting(enabled = uiState.dndDuringFocus, onChange = viewModel::onDndDuringFocusChanged)
-
-            Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-                Text("Theme", style = MaterialTheme.typography.labelLarge)
-                ThemePicker(uiState.themeMode, viewModel::onThemeModeChanged)
-            }
 
             SectionTitle("Reminders")
             ReminderSetting(
@@ -255,6 +292,80 @@ private fun DndSetting(enabled: Boolean, onChange: (Boolean) -> Unit) {
                 }
                 onChange(on)
             }
+        )
+    }
+}
+
+/**
+ * A row of colour swatches, one per palette. Picking one recolours the app straight away, so the
+ * screen itself is the preview. The wallpaper option only exists where Material You does (Android 12+).
+ */
+@Composable
+private fun PalettePicker(selected: ThemePalette, onSelect: (ThemePalette) -> Unit) {
+    val context = LocalContext.current
+    val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val wallpaper = remember(dark) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val scheme = if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            listOf(scheme.primary, scheme.primaryContainer, scheme.tertiary)
+        } else null
+    }
+    val palettes = ThemePalette.entries.filter { it != ThemePalette.WALLPAPER || wallpaper != null }
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+    ) {
+        palettes.forEach { palette ->
+            val colors = if (palette == ThemePalette.WALLPAPER) wallpaper!! else palette.swatch(dark)
+            PaletteSwatch(palette.label, colors, selected == palette) { onSelect(palette) }
+        }
+    }
+}
+
+@Composable
+private fun PaletteSwatch(label: String, colors: List<Color>, selected: Boolean, onClick: () -> Unit) {
+    // The picked swatch squircles and grows a ring, matching the expressive shape morphs elsewhere
+    val corner by animateDpAsState(if (selected) 18.dp else 28.dp, label = "swatchCorner")
+    val ring by animateDpAsState(if (selected) 3.dp else 0.dp, label = "swatchRing")
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clip(MaterialTheme.shapes.medium)
+            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
+            .padding(Spacing.xs)
+    ) {
+        Box(
+            Modifier
+                .size(56.dp)
+                // A zero-width border still draws a hairline, so leave it off entirely when unselected
+                .then(if (ring > 0.dp) Modifier.border(ring, MaterialTheme.colorScheme.onSurface, RoundedCornerShape(corner + 4.dp)) else Modifier)
+                .padding(5.dp)
+                .clip(RoundedCornerShape(corner)),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(Modifier.fillMaxSize()) {
+                Box(Modifier.fillMaxWidth().weight(1f).background(colors[0]))
+                Row(Modifier.fillMaxWidth().weight(1f)) {
+                    Box(Modifier.fillMaxHeight().weight(1f).background(colors[1]))
+                    Box(Modifier.fillMaxHeight().weight(1f).background(colors[2]))
+                }
+            }
+            if (selected) {
+                Box(
+                    Modifier.size(24.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surface),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                }
+            }
+        }
+        Spacer(Modifier.height(Spacing.xs))
+        Text(
+            label,
+            style = MaterialTheme.typography.labelMedium,
+            color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
