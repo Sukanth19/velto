@@ -39,6 +39,9 @@ class DecisionExecutionApplication : Application(), Configuration.Provider {
     lateinit var preferencesRepository: PreferencesRepository
 
     @Inject
+    lateinit var focusSoundController: com.decisionexecution.app.presentation.sound.FocusSoundController
+
+    @Inject
     lateinit var reminderScheduler: ReminderScheduler
 
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -53,6 +56,7 @@ class DecisionExecutionApplication : Application(), Configuration.Provider {
         appScope.launch { runCatching { focusSessionManager.sync() } }
         widgetUpdater.start(appScope)
         focusAutomation.start(appScope)
+        focusSoundController.start(appScope)
         appScope.launch {
             // Rebooking on every start also recovers reminders after a time zone or clock change
             preferencesRepository.getPreferences()

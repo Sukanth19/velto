@@ -17,7 +17,9 @@ data class UserPreferences(
     /** Colour palette for the whole app; [ThemePalette.WALLPAPER] uses Material You colours where available */
     val themePalette: ThemePalette = ThemePalette.WALLPAPER,
     /** True black backgrounds in dark mode, easier on OLED batteries */
-    val pureBlack: Boolean = false
+    val pureBlack: Boolean = false,
+    /** Background sound while a focus phase runs */
+    val focusSound: FocusSound = FocusSound.OFF
 )
 
 /** A daily reminder at [minuteOfDay] minutes after midnight, local time */
@@ -28,6 +30,14 @@ data class Reminder(val enabled: Boolean, val minuteOfDay: Int) {
 }
 
 enum class ThemeMode { LIGHT, DARK, SYSTEM }
+
+/** Background sounds for focus, generated on the phone. Order is the order shown. */
+enum class FocusSound(val label: String) {
+    OFF("Off"),
+    BROWN("Brown noise"),
+    RAIN("Rain"),
+    CAFE("Café")
+}
 
 /** Colour palettes the user can pick in settings. Order is the order shown. */
 enum class ThemePalette { WALLPAPER, VIOLET, OCEAN, FOREST, SUNSET, ROSE, MONO }

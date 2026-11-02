@@ -2,6 +2,7 @@ package com.decisionexecution.app.domain.repository
 
 import com.decisionexecution.app.domain.model.FocusSessionData
 import com.decisionexecution.app.domain.model.Reminder
+import com.decisionexecution.app.domain.model.FocusSound
 import com.decisionexecution.app.domain.model.ThemeMode
 import com.decisionexecution.app.domain.model.ThemePalette
 import com.decisionexecution.app.domain.model.UserPreferences
@@ -20,6 +21,7 @@ interface PreferencesRepository {
     suspend fun updateThemeMode(mode: ThemeMode)
     suspend fun updateThemePalette(palette: ThemePalette)
     suspend fun updatePureBlack(enabled: Boolean)
+    suspend fun updateFocusSound(sound: FocusSound)
     suspend fun saveFocusSession(sessionData: FocusSessionData)
     suspend fun getFocusSession(): FocusSessionData?
     suspend fun clearFocusSession()

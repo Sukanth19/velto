@@ -8,6 +8,7 @@ import com.decisionexecution.app.domain.repository.TaskRepository
 import com.decisionexecution.app.domain.repository.PreferencesRepository
 import com.decisionexecution.app.domain.model.Task
 import com.decisionexecution.app.domain.model.UserPreferences
+import com.decisionexecution.app.domain.model.FocusSound
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -101,6 +102,14 @@ class FocusViewModel @Inject constructor(
     }
 
     fun onStarterDone() = focusSessionManager.dismissStarter()
+
+    val focusSound: StateFlow<FocusSound> = preferencesRepository.getPreferences()
+        .map { it.focusSound }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, FocusSound.OFF)
+
+    fun onFocusSoundChange(sound: FocusSound) {
+        viewModelScope.launch { preferencesRepository.updateFocusSound(sound) }
+    }
 
     val uiState: StateFlow<FocusUiState> = focusSessionManager.sessionState
         .map { it.toUiState() }

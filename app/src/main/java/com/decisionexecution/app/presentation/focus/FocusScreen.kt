@@ -24,6 +24,11 @@ import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.SelfImprovement
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.Stop
+import androidx.compose.material.icons.rounded.GraphicEq
+import androidx.compose.material.icons.rounded.MusicOff
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.decisionexecution.app.domain.model.FocusSound
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -69,6 +74,7 @@ fun FocusScreen(
     val steps by viewModel.steps.collectAsStateWithLifecycle()
     val starterTask by viewModel.starterFinished.collectAsStateWithLifecycle()
     val keepGoingMinutes by viewModel.keepGoingMinutes.collectAsStateWithLifecycle()
+    val sound by viewModel.focusSound.collectAsStateWithLifecycle()
     val phaseColor = when (val s = state) {
         is FocusUiState.Break -> MaterialTheme.colorScheme.tertiary
         is FocusUiState.Focus -> if (s.isPaused) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.primary
@@ -109,7 +115,8 @@ fun FocusScreen(
                 } ?: IdleContent(onGoHome)
                 else -> when (val s = state) {
                     is FocusUiState.Focus -> FocusContent(
-                        s, steps, phaseColor, viewModel::onPause, viewModel::onResume, viewModel::onEnd, viewModel::onExtend, viewModel::onStepDone
+                        s, steps, phaseColor, viewModel::onPause, viewModel::onResume, viewModel::onEnd, viewModel::onExtend, viewModel::onStepDone,
+                        sound = sound, onSoundChange = viewModel::onFocusSoundChange
                     )
                     is FocusUiState.Break -> BreakContent(s, phaseColor, viewModel::onEnd)
                     FocusUiState.Idle -> IdleContent(onGoHome)
@@ -128,10 +135,13 @@ private fun FocusContent(
     onResume: () -> Unit,
     onEnd: () -> Unit,
     onExtend: () -> Unit,
-    onStepDone: (Subtask) -> Unit
+    onStepDone: (Subtask) -> Unit,
+    sound: FocusSound = FocusSound.OFF,
+    onSoundChange: (FocusSound) -> Unit = {}
 ) {
     val haptics = LocalHapticFeedback.current
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.lg)) {
+        SoundPicker(sound, onSoundChange)
         PhaseLabel(
             when {
                 state.isPaused -> "Paused"
@@ -249,6 +259,37 @@ private fun NextStepCard(steps: List<Subtask>, onDone: (Subtask) -> Unit) {
                     },
                     shapes = IconButtonDefaults.shapes()
                 ) { Icon(Icons.Rounded.Check, contentDescription = "Step done: ${next.title}") }
+            }
+        }
+    }
+}
+
+/** Switch the background sound without leaving the timer */
+@Composable
+private fun SoundPicker(sound: FocusSound, onChange: (FocusSound) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        AssistChip(
+            onClick = { open = true },
+            label = { Text(if (sound == FocusSound.OFF) "Add sound" else sound.label) },
+            leadingIcon = {
+                Icon(
+                    if (sound == FocusSound.OFF) Icons.Rounded.MusicOff else Icons.Rounded.GraphicEq,
+                    contentDescription = null,
+                    modifier = Modifier.size(AssistChipDefaults.IconSize)
+                )
+            }
+        )
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            FocusSound.entries.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option.label) },
+                    onClick = {
+                        open = false
+                        onChange(option)
+                    },
+                    trailingIcon = { if (option == sound) Icon(Icons.Rounded.Check, contentDescription = "Selected") }
+                )
             }
         }
     }

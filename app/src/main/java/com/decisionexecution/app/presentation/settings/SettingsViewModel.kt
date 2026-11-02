@@ -7,6 +7,7 @@ import android.net.Uri
 import com.decisionexecution.app.domain.model.Reminder
 import com.decisionexecution.app.domain.model.ThemeMode
 import com.decisionexecution.app.domain.model.ThemePalette
+import com.decisionexecution.app.domain.model.FocusSound
 import com.decisionexecution.app.domain.repository.BackupRepository
 import com.decisionexecution.app.domain.repository.InvalidBackupException
 import kotlinx.coroutines.Dispatchers
@@ -27,6 +28,7 @@ data class SettingsUiState(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val themePalette: ThemePalette = ThemePalette.WALLPAPER,
     val pureBlack: Boolean = false,
+    val focusSound: FocusSound = FocusSound.OFF,
     val dailyFocusGoal: Int = 120,
     val dndDuringFocus: Boolean = false,
     val habitReminder: Reminder = UserPreferences().habitReminder,
@@ -68,6 +70,7 @@ class SettingsViewModel @Inject constructor(
                         themeMode = prefs.themeMode,
                         themePalette = prefs.themePalette,
                         pureBlack = prefs.pureBlack,
+                        focusSound = prefs.focusSound,
                         dailyFocusGoal = prefs.dailyFocusGoalMinutes,
                         dndDuringFocus = prefs.dndDuringFocus,
                         habitReminder = prefs.habitReminder,
@@ -160,6 +163,10 @@ class SettingsViewModel @Inject constructor(
 
     fun onThemePaletteChanged(palette: ThemePalette) {
         viewModelScope.launch { preferencesRepository.updateThemePalette(palette) }
+    }
+
+    fun onFocusSoundChanged(sound: FocusSound) {
+        viewModelScope.launch { preferencesRepository.updateFocusSound(sound) }
     }
 
     fun onPureBlackChanged(enabled: Boolean) {

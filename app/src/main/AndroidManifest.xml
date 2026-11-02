@@ -5,6 +5,11 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Only used when the user turns on "Silence notifications while focusing" -->
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+    <!-- Lets the running timer show as a Live Update chip in the status bar on Android 16+ -->
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
+    <!-- Focus sounds keep playing with the screen off -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
     <application
         android:name=".DecisionExecutionApplication"
@@ -36,6 +41,16 @@
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />
         </activity>
+
+        <!-- Pause, resume and stop on the live timer notification -->
+        <receiver
+            android:name=".presentation.notifications.TimerActionReceiver"
+            android:exported="false" />
+
+        <service
+            android:name=".presentation.sound.FocusSoundService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
 
         <service
             android:name=".presentation.focusmode.FocusTileService"

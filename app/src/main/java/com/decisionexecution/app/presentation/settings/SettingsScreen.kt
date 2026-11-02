@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import android.os.Build
 import com.decisionexecution.app.domain.model.ThemePalette
+import com.decisionexecution.app.domain.model.FocusSound
 import com.decisionexecution.app.presentation.theme.label
 import com.decisionexecution.app.presentation.theme.swatch
 import androidx.compose.material.icons.rounded.DarkMode
@@ -146,6 +147,8 @@ fun SettingsScreen(
             )
             uiState.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
 
+            FocusSoundSetting(uiState.focusSound, viewModel::onFocusSoundChanged)
+
             DndSetting(enabled = uiState.dndDuringFocus, onChange = viewModel::onDndDuringFocusChanged)
 
             SectionTitle("Reminders")
@@ -224,6 +227,25 @@ fun SettingsScreen(
 @Composable
 private fun SectionTitle(text: String) {
     Text(text, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = Spacing.sm))
+}
+
+/** Background sound while focusing; generated on the phone, so nothing to download */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun FocusSoundSetting(selected: FocusSound, onSelect: (FocusSound) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+        Text("Focus sound", style = MaterialTheme.typography.labelLarge)
+        Text(
+            "Plays while you focus and stops for breaks",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            FocusSound.entries.forEach { sound ->
+                FilterChip(selected = sound == selected, onClick = { onSelect(sound) }, label = { Text(sound.label) })
+            }
+        }
+    }
 }
 
 /** A daily reminder: on/off, and a time that opens a picker when tapped. */

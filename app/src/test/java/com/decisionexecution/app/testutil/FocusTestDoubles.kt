@@ -116,6 +116,10 @@ class InMemoryPreferencesRepository : PreferencesRepository {
         preferences = preferences.copy(pureBlack = enabled)
     }
 
+    override suspend fun updateFocusSound(sound: com.decisionexecution.app.domain.model.FocusSound) {
+        preferences = preferences.copy(focusSound = sound)
+    }
+
     override suspend fun saveFocusSession(sessionData: FocusSessionData) {
         focusSessionData = sessionData
     }
