@@ -78,4 +78,4 @@ fun plantUseCase(
     stats: LifetimeStats = LifetimeStats(),
     habits: HabitRepository = InMemoryHabitRepository(),
     moods: MoodRepository = InMemoryMoodRepository()
-) = GetPlantUseCase(progressUseCase(stats), emptyInsights(), habits, moods)
+) = GetPlantUseCase(progressUseCase(stats), emptyInsights(), habits, moods, InMemoryPreferencesRepository())

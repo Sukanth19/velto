@@ -17,7 +17,11 @@ class CelebrationTest : StringSpec({
             celebratedLevel = 3,
             celebrated = setOf("IN_THE_ZONE")
         )
-        celebration shouldBe Celebration(newLevel = 4, achievements = listOf(Achievement.FIRST_STEP))
+        celebration shouldBe Celebration(
+            newLevel = 4,
+            achievements = listOf(Achievement.FIRST_STEP),
+            rewards = listOf(com.decisionexecution.app.domain.service.Reward(4, "Sunflower plant"))
+        )
     }
 
     "achievements alone are still celebrated" {

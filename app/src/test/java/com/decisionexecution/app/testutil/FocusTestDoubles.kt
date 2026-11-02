@@ -116,6 +116,10 @@ class InMemoryPreferencesRepository : PreferencesRepository {
         preferences = preferences.copy(pureBlack = enabled)
     }
 
+    override suspend fun updatePlantVariety(variety: com.decisionexecution.app.domain.service.PlantVariety) {
+        preferences = preferences.copy(plantVariety = variety)
+    }
+
     override suspend fun updateFocusSound(sound: com.decisionexecution.app.domain.model.FocusSound) {
         preferences = preferences.copy(focusSound = sound)
     }

@@ -15,7 +15,8 @@ enum class PlantHealth { THRIVING, OKAY, THIRSTY, WILTING }
 data class PlantState(
     val stage: PlantStage,
     val health: PlantHealth,
-    val daysSinceActive: Int
+    val daysSinceActive: Int,
+    val variety: PlantVariety = PlantVariety.BLOSSOM
 ) {
     val message: String
         get() = when (health) {
@@ -39,5 +40,11 @@ fun plantHealthFor(daysSinceActive: Int): PlantHealth = when {
     else -> PlantHealth.WILTING
 }
 
-fun plantFor(level: Int, daysSinceActive: Int): PlantState =
-    PlantState(plantStageFor(level), plantHealthFor(daysSinceActive), daysSinceActive)
+/** A variety the user picked but hasn't unlocked (say, after an undo cost a level) falls back to the default */
+fun plantFor(level: Int, daysSinceActive: Int, variety: PlantVariety = PlantVariety.BLOSSOM): PlantState =
+    PlantState(
+        plantStageFor(level),
+        plantHealthFor(daysSinceActive),
+        daysSinceActive,
+        variety.takeIf { it.isUnlocked(level) } ?: PlantVariety.BLOSSOM
+    )

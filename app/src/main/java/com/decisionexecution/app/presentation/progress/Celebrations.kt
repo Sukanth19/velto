@@ -13,6 +13,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.decisionexecution.app.domain.repository.ProgressRepository
 import com.decisionexecution.app.domain.service.Achievement
+import com.decisionexecution.app.domain.service.Reward
+import com.decisionexecution.app.domain.service.rewardsBetween
+import androidx.compose.foundation.shape.RoundedCornerShape
 import com.decisionexecution.app.domain.usecase.GetProgressUseCase
 import com.decisionexecution.app.presentation.components.ConfettiBurst
 import com.decisionexecution.app.presentation.theme.Spacing
@@ -27,7 +30,9 @@ import javax.inject.Inject
 /** Something earned that hasn't been shown yet */
 data class Celebration(
     val newLevel: Int?,
-    val achievements: List<Achievement>
+    val achievements: List<Achievement>,
+    /** Palettes and plants this level-up unlocked */
+    val rewards: List<Reward> = emptyList()
 ) {
     /** Different for every distinct celebration, so the confetti fires once per reward */
     val key: Int get() = (newLevel ?: 0) * 1000 + achievements.sumOf { it.ordinal + 1 }
@@ -36,7 +41,8 @@ data class Celebration(
 fun pendingCelebration(level: Int, unlocked: Set<Achievement>, celebratedLevel: Int, celebrated: Set<String>): Celebration? {
     val newLevel = level.takeIf { it > celebratedLevel }
     val newAchievements = unlocked.filter { it.name !in celebrated }.sortedBy { it.ordinal }
-    return if (newLevel == null && newAchievements.isEmpty()) null else Celebration(newLevel, newAchievements)
+    return if (newLevel == null && newAchievements.isEmpty()) null
+    else Celebration(newLevel, newAchievements, newLevel?.let { rewardsBetween(celebratedLevel, it) }.orEmpty())
 }
 
 /**
@@ -92,6 +98,23 @@ fun CelebrationHost(viewModel: CelebrationViewModel) {
                         "You're now a ${com.decisionexecution.app.domain.service.levelTitle(it)}. Keep going!",
                         textAlign = TextAlign.Center
                     )
+                }
+                if (current.rewards.isNotEmpty()) {
+                    Surface(shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.tertiaryContainer) {
+                        Column(Modifier.padding(Spacing.md), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("Unlocked", style = MaterialTheme.typography.labelLarge)
+                            Text(
+                                current.rewards.joinToString(" and ") { it.description },
+                                style = MaterialTheme.typography.bodyMedium,
+                                textAlign = TextAlign.Center
+                            )
+                            Text(
+                                "Try it in Settings",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.75f)
+                            )
+                        }
+                    }
                 }
                 current.achievements.take(MAX_SHOWN).forEach { achievement ->
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {

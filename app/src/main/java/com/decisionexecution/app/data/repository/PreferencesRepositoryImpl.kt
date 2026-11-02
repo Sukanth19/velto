@@ -14,6 +14,7 @@ import com.decisionexecution.app.domain.model.FocusSessionData
 import com.decisionexecution.app.domain.model.ThemeMode
 import com.decisionexecution.app.domain.model.ThemePalette
 import com.decisionexecution.app.domain.model.FocusSound
+import com.decisionexecution.app.domain.service.PlantVariety
 import com.decisionexecution.app.domain.model.Reminder
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -33,6 +34,7 @@ class PreferencesRepositoryImpl @Inject constructor(
         val THEME_PALETTE = stringPreferencesKey("theme_palette")
         val PURE_BLACK = booleanPreferencesKey("pure_black")
         val FOCUS_SOUND = stringPreferencesKey("focus_sound")
+        val PLANT_VARIETY = stringPreferencesKey("plant_variety")
         val DAILY_FOCUS_GOAL = intPreferencesKey("daily_focus_goal_minutes")
         val DND_DURING_FOCUS = booleanPreferencesKey("dnd_during_focus")
         val HABIT_REMINDER_ON = booleanPreferencesKey("habit_reminder_enabled")
@@ -66,6 +68,8 @@ class PreferencesRepositoryImpl @Inject constructor(
                 pureBlack = preferences[PreferencesKeys.PURE_BLACK] ?: defaults.pureBlack,
                 focusSound = preferences[PreferencesKeys.FOCUS_SOUND]?.let { name -> FocusSound.entries.find { it.name == name } }
                     ?: defaults.focusSound,
+                plantVariety = preferences[PreferencesKeys.PLANT_VARIETY]?.let { name -> PlantVariety.entries.find { it.name == name } }
+                    ?: defaults.plantVariety,
                 dailyFocusGoalMinutes = preferences[PreferencesKeys.DAILY_FOCUS_GOAL] ?: 120,
                 dndDuringFocus = preferences[PreferencesKeys.DND_DURING_FOCUS] ?: false,
                 habitReminder = reminder(preferences, PreferencesKeys.HABIT_REMINDER_ON, PreferencesKeys.HABIT_REMINDER_AT, defaults.habitReminder),
@@ -85,6 +89,7 @@ class PreferencesRepositoryImpl @Inject constructor(
             prefs[PreferencesKeys.THEME_PALETTE] = preferences.themePalette.name
             prefs[PreferencesKeys.PURE_BLACK] = preferences.pureBlack
             prefs[PreferencesKeys.FOCUS_SOUND] = preferences.focusSound.name
+            prefs[PreferencesKeys.PLANT_VARIETY] = preferences.plantVariety.name
             prefs[PreferencesKeys.DAILY_FOCUS_GOAL] = preferences.dailyFocusGoalMinutes
             prefs[PreferencesKeys.DND_DURING_FOCUS] = preferences.dndDuringFocus
             prefs.setReminder(PreferencesKeys.HABIT_REMINDER_ON, PreferencesKeys.HABIT_REMINDER_AT, preferences.habitReminder)
@@ -139,6 +144,10 @@ class PreferencesRepositoryImpl @Inject constructor(
 
     override suspend fun updatePureBlack(enabled: Boolean) {
         dataStore.edit { it[PreferencesKeys.PURE_BLACK] = enabled }
+    }
+
+    override suspend fun updatePlantVariety(variety: PlantVariety) {
+        dataStore.edit { it[PreferencesKeys.PLANT_VARIETY] = variety.name }
     }
 
     override suspend fun updateFocusSound(sound: FocusSound) {

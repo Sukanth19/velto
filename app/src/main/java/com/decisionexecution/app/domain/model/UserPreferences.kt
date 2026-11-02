@@ -1,5 +1,7 @@
 package com.decisionexecution.app.domain.model
 
+import com.decisionexecution.app.domain.service.PlantVariety
+
 data class UserPreferences(
     val focusDurationMinutes: Int = 25,
     val breakDurationMinutes: Int = 5,
@@ -19,7 +21,9 @@ data class UserPreferences(
     /** True black backgrounds in dark mode, easier on OLED batteries */
     val pureBlack: Boolean = false,
     /** Background sound while a focus phase runs */
-    val focusSound: FocusSound = FocusSound.OFF
+    val focusSound: FocusSound = FocusSound.OFF,
+    /** Which companion plant grows on Home; more unlock with levels */
+    val plantVariety: PlantVariety = PlantVariety.BLOSSOM
 )
 
 /** A daily reminder at [minuteOfDay] minutes after midnight, local time */

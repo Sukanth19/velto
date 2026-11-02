@@ -199,7 +199,7 @@ class UserFlowsTest {
     @Test
     fun `changed preferences apply to the next focus session`() = runTest {
         CreateTaskUseCase(taskRepository)(task("Practice piano", TaskCategory.PERSONAL, 3, 3))
-        val settings = SettingsViewModel(prefs, mockk(relaxed = true))
+        val settings = SettingsViewModel(prefs, mockk(relaxed = true), progressUseCase(com.decisionexecution.app.domain.service.LifetimeStats()))
 
         settings.onFocusDurationChanged(50)
         settings.onBreakDurationChanged(10)

@@ -280,6 +280,29 @@ class ScreensRenderTest {
     }
 
     @Test
+    fun plantVarieties() {
+        render("plants") {
+            androidx.compose.foundation.layout.Column {
+                listOf(
+                    com.decisionexecution.app.domain.service.PlantStage.SAPLING,
+                    com.decisionexecution.app.domain.service.PlantStage.BLOOM,
+                    com.decisionexecution.app.domain.service.PlantStage.TREE
+                ).forEach { stage ->
+                    androidx.compose.foundation.layout.Row {
+                        com.decisionexecution.app.domain.service.PlantVariety.entries.forEach { variety ->
+                            com.decisionexecution.app.presentation.components.PlantCompanion(
+                                com.decisionexecution.app.domain.service.PlantState(stage, com.decisionexecution.app.domain.service.PlantHealth.THRIVING, 0, variety),
+                                plantSize = androidx.compose.ui.unit.Dp(90f),
+                                talkative = false
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
     fun homeInSunset() = homeInPalette("home_sunset", ThemeMode.LIGHT, ThemePalette.SUNSET)
 
     @Test
@@ -312,7 +335,7 @@ class ScreensRenderTest {
     fun settingsInOcean() {
         val prefs = mockk<PreferencesRepository>(relaxed = true)
         every { prefs.getPreferences() } returns flowOf(UserPreferences(themePalette = ThemePalette.OCEAN))
-        render("settings_ocean", palette = ThemePalette.OCEAN) { SettingsScreen({}, SettingsViewModel(prefs, mockk(relaxed = true))) }
+        render("settings_ocean", palette = ThemePalette.OCEAN) { SettingsScreen({}, SettingsViewModel(prefs, mockk(relaxed = true), progressUseCase(SAMPLE_STATS))) }
         composeRule.onNodeWithText("Ocean").assertIsDisplayed()
     }
 
@@ -321,9 +344,12 @@ class ScreensRenderTest {
         val prefs = mockk<PreferencesRepository>(relaxed = true)
         every { prefs.getPreferences() } returns flowOf(UserPreferences(45, 10, ThemeMode.SYSTEM))
 
-        render("settings") { SettingsScreen({}, SettingsViewModel(prefs, mockk(relaxed = true))) }
-        composeRule.onNodeWithText("45 min").assertIsDisplayed()
-        composeRule.onNodeWithText("10 min").assertIsDisplayed()
+        render("settings") { SettingsScreen({}, SettingsViewModel(prefs, mockk(relaxed = true), progressUseCase(SAMPLE_STATS))) }
+        // Level 7: Rose is unlocked, Graphite and the bonsai are still to come
+        composeRule.onNodeWithText("Rose").assertExists()
+        composeRule.onNodeWithText("Level 9").assertExists()
+        composeRule.onNodeWithText("45 min").performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText("10 min").performScrollTo().assertIsDisplayed()
     }
 
     @Test

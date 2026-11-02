@@ -22,6 +22,7 @@ interface PreferencesRepository {
     suspend fun updateThemePalette(palette: ThemePalette)
     suspend fun updatePureBlack(enabled: Boolean)
     suspend fun updateFocusSound(sound: FocusSound)
+    suspend fun updatePlantVariety(variety: com.decisionexecution.app.domain.service.PlantVariety)
     suspend fun saveFocusSession(sessionData: FocusSessionData)
     suspend fun getFocusSession(): FocusSessionData?
     suspend fun clearFocusSession()

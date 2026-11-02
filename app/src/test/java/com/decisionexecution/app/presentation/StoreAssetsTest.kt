@@ -114,7 +114,7 @@ class StoreAssetsTest {
         val home = HomeViewModel(getBest, mockk(relaxed = true), metrics, insights, InMemoryPreferencesRepository(), mockk(relaxed = true), mockk(relaxed = true), noCalibration())
         val extras = HomeExtrasViewModel(
             progressUseCase(stats), habits, InMemoryInboxRepository(), moods,
-            GetPlantUseCase(progressUseCase(stats), insights, habits, moods)
+            GetPlantUseCase(progressUseCase(stats), insights, habits, moods, InMemoryPreferencesRepository())
         )
         shoot("1_home") { HomeScreen({}, {}, {}, {}, home, extrasViewModel = extras) }
 
@@ -144,7 +144,7 @@ class StoreAssetsTest {
         val review = ReviewViewModel(GetWeeklyReviewUseCase(performance(), habits, moodsForWeek()), insights)
         shoot("5_review") { ReviewScreen({}, review) }
 
-        val progress = InsightsViewModel(insights, progressUseCase(stats), GetPlantUseCase(progressUseCase(stats), insights, habits, moods))
+        val progress = InsightsViewModel(insights, progressUseCase(stats), GetPlantUseCase(progressUseCase(stats), insights, habits, moods, InMemoryPreferencesRepository()))
         shoot("6_progress") { InsightsScreen(progress) }
     }
 

@@ -2,6 +2,7 @@ package com.decisionexecution.app.domain.usecase
 
 import com.decisionexecution.app.domain.repository.HabitRepository
 import com.decisionexecution.app.domain.repository.MoodRepository
+import com.decisionexecution.app.domain.repository.PreferencesRepository
 import com.decisionexecution.app.domain.service.PlantState
 import com.decisionexecution.app.domain.service.plantFor
 import kotlinx.coroutines.flow.Flow
@@ -18,7 +19,8 @@ class GetPlantUseCase @Inject constructor(
     private val getProgressUseCase: GetProgressUseCase,
     private val getInsightsUseCase: GetInsightsUseCase,
     private val habitRepository: HabitRepository,
-    private val moodRepository: MoodRepository
+    private val moodRepository: MoodRepository,
+    private val preferencesRepository: PreferencesRepository
 ) {
     operator fun invoke(today: LocalDate = LocalDate.now()): Flow<PlantState> {
         val since = today.minusDays(LOOK_BACK_DAYS)
@@ -26,12 +28,13 @@ class GetPlantUseCase @Inject constructor(
             getProgressUseCase(),
             getInsightsUseCase(today),
             habitRepository.getHabits(since),
-            moodRepository.getEntries(since)
-        ) { progress, insights, habits, moods ->
+            moodRepository.getEntries(since),
+            preferencesRepository.getPreferences()
+        ) { progress, insights, habits, moods, prefs ->
             val activeDays = insights.week.filter { it.isActive }.map { it.date } +
                 habits.flatMap { it.doneDays } +
                 moods.map { it.day }
-            plantFor(progress.level.level, daysSince(activeDays.maxOrNull(), today))
+            plantFor(progress.level.level, daysSince(activeDays.maxOrNull(), today), prefs.plantVariety)
         }
     }
 

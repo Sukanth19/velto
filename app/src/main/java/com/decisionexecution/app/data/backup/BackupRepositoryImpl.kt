@@ -58,6 +58,7 @@ class BackupRepositoryImpl @Inject constructor(
                     .put("themePalette", prefs.themePalette.name)
                     .put("pureBlack", prefs.pureBlack)
                     .put("focusSound", prefs.focusSound.name)
+                    .put("plantVariety", prefs.plantVariety.name)
                     .put("dailyFocusGoalMinutes", prefs.dailyFocusGoalMinutes)
             )
             .put(
@@ -103,6 +104,8 @@ class BackupRepositoryImpl @Inject constructor(
                     themePalette = ThemePalette.entries.find { it.name == p.optString("themePalette") } ?: current.themePalette,
                     pureBlack = p.optBoolean("pureBlack", current.pureBlack),
                     focusSound = FocusSound.entries.find { it.name == p.optString("focusSound") } ?: current.focusSound,
+                    plantVariety = com.decisionexecution.app.domain.service.PlantVariety.entries
+                        .find { it.name == p.optString("plantVariety") } ?: current.plantVariety,
                     dailyFocusGoalMinutes = p.optInt("dailyFocusGoalMinutes", current.dailyFocusGoalMinutes)
                 )
             )

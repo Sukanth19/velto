@@ -15,14 +15,19 @@
 
 - **Just Start**: one tap ranks your tasks by urgency, importance, effort and energy, and starts a focus session on the best one
 - **Pick for me**: say how long you've got and how much energy you have, and Velto spins up the best fit
+- **Knows your day**: hard tasks in your best focus hours, easy ones in slow stretches or on low-energy days
+- **Shrink it**: dodge a task three times and Velto offers to make it tiny: name a first step and do just two minutes
+- **Learns your estimates**: guess how long a task takes and Velto learns how your guesses really turn out ("you usually take 1.6× your estimate")
 - **Planning**: due dates that raise urgency as they get close, steps you tick off while focusing, repeating tasks, and a priority matrix
 - **Focus**: a Material 3 Expressive wavy timer, +5 minutes, Do Not Disturb while focusing, and a Quick Settings tile
+- **Live timer**: counts down on the lock screen and, on Android 16+, as a Live Update chip in the status bar
+- **Focus sounds**: brown noise, rain or a café, generated on the phone with nothing to download
 - **Habits**: daily check-ins, streaks and a 12-week grid
 - **Inbox**: capture a thought in a tap, sort it into a task or habit later
 - **Journal**: mood and energy check-ins, a year in pixels, and how energy relates to your focus
 - **Week in review**: wins, trends against last week, your best focus hours and one suggestion, shareable as an image
-- **Progress**: XP, levels, achievements and a plant that grows as you level up
-- **Themes**: wallpaper colours or six built-in palettes, light, dark or system, and a pure black mode for OLED screens
+- **Progress**: XP, levels, achievements and a plant that grows as you level up. Levelling up unlocks new colour palettes and plants (sunflower, cactus, bonsai)
+- **Themes**: wallpaper colours or six built-in palettes (unlocked as you level up), light, dark or system, and a pure black mode for OLED screens
 - **Widgets**: next task, focus timer, today, top tasks, habits, mood, quick capture and level
 - **Private**: no account, no tracking. Data stays on the phone, with export/import and Android backup. See the [privacy policy](docs/PRIVACY.md)
 

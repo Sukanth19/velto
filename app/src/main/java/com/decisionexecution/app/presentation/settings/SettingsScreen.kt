@@ -17,6 +17,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import android.os.Build
 import com.decisionexecution.app.domain.model.ThemePalette
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.ui.draw.alpha
+import com.decisionexecution.app.domain.service.PlantHealth
+import com.decisionexecution.app.domain.service.PlantStage
+import com.decisionexecution.app.domain.service.PlantState
+import com.decisionexecution.app.domain.service.PlantVariety
+import com.decisionexecution.app.domain.service.isUnlocked
+import com.decisionexecution.app.domain.service.nextReward
+import com.decisionexecution.app.domain.service.unlockLevel
+import com.decisionexecution.app.presentation.components.PlantCompanion
 import com.decisionexecution.app.domain.model.FocusSound
 import com.decisionexecution.app.presentation.theme.label
 import com.decisionexecution.app.presentation.theme.swatch
@@ -100,7 +110,18 @@ fun SettingsScreen(
             SectionTitle("Appearance")
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 Text("Colours", style = MaterialTheme.typography.labelLarge)
-                PalettePicker(uiState.themePalette, viewModel::onThemePaletteChanged)
+                PalettePicker(uiState.themePalette, uiState.level, viewModel::onThemePaletteChanged)
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                Text("Plant", style = MaterialTheme.typography.labelLarge)
+                PlantPicker(uiState.plantVariety, uiState.level, viewModel::onPlantVarietyChanged)
+            }
+            nextReward(uiState.level)?.let { next ->
+                Text(
+                    "Level ${next.level} unlocks ${next.description}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 Text("Mode", style = MaterialTheme.typography.labelLarge)
@@ -323,7 +344,7 @@ private fun DndSetting(enabled: Boolean, onChange: (Boolean) -> Unit) {
  * screen itself is the preview. The wallpaper option only exists where Material You does (Android 12+).
  */
 @Composable
-private fun PalettePicker(selected: ThemePalette, onSelect: (ThemePalette) -> Unit) {
+private fun PalettePicker(selected: ThemePalette, level: Int, onSelect: (ThemePalette) -> Unit) {
     val context = LocalContext.current
     val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val wallpaper = remember(dark) {
@@ -341,13 +362,52 @@ private fun PalettePicker(selected: ThemePalette, onSelect: (ThemePalette) -> Un
     ) {
         palettes.forEach { palette ->
             val colors = if (palette == ThemePalette.WALLPAPER) wallpaper!! else palette.swatch(dark)
-            PaletteSwatch(palette.label, colors, selected == palette) { onSelect(palette) }
+            PaletteSwatch(palette.label, colors, selected == palette, lockedUntil = palette.unlockLevel.takeIf { it > level }) { onSelect(palette) }
+        }
+    }
+}
+
+/** Companion plants: tap one to plant it on Home. Locked ones show the level they come at. */
+@Composable
+private fun PlantPicker(selected: PlantVariety, level: Int, onSelect: (PlantVariety) -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
+    ) {
+        PlantVariety.entries.forEach { variety ->
+            val locked = !variety.isUnlocked(level)
+            val isSelected = variety == selected
+            Surface(
+                shape = MaterialTheme.shapes.medium,
+                color = if (isSelected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerLow,
+                modifier = Modifier
+                    .clip(MaterialTheme.shapes.medium)
+                    .selectable(selected = isSelected, enabled = !locked, role = Role.RadioButton) { onSelect(variety) }
+            ) {
+                Column(
+                    Modifier.padding(Spacing.sm).alpha(if (locked) 0.45f else 1f),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        PlantCompanion(
+                            PlantState(PlantStage.BLOOM, PlantHealth.THRIVING, 0, variety),
+                            plantSize = 64.dp,
+                            talkative = false
+                        )
+                        if (locked) Icon(Icons.Rounded.Lock, contentDescription = null, modifier = Modifier.size(20.dp))
+                    }
+                    Text(
+                        if (locked) "Level ${variety.unlockLevel}" else variety.label,
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-private fun PaletteSwatch(label: String, colors: List<Color>, selected: Boolean, onClick: () -> Unit) {
+private fun PaletteSwatch(label: String, colors: List<Color>, selected: Boolean, lockedUntil: Int? = null, onClick: () -> Unit) {
     // The picked swatch squircles and grows a ring, matching the expressive shape morphs elsewhere
     val corner by animateDpAsState(if (selected) 18.dp else 28.dp, label = "swatchCorner")
     val ring by animateDpAsState(if (selected) 3.dp else 0.dp, label = "swatchRing")
@@ -355,8 +415,9 @@ private fun PaletteSwatch(label: String, colors: List<Color>, selected: Boolean,
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .clip(MaterialTheme.shapes.medium)
-            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
+            .selectable(selected = selected, enabled = lockedUntil == null, role = Role.RadioButton, onClick = onClick)
             .padding(Spacing.xs)
+            .alpha(if (lockedUntil != null) 0.45f else 1f)
     ) {
         Box(
             Modifier
@@ -374,18 +435,18 @@ private fun PaletteSwatch(label: String, colors: List<Color>, selected: Boolean,
                     Box(Modifier.fillMaxHeight().weight(1f).background(colors[2]))
                 }
             }
-            if (selected) {
+            if (selected || lockedUntil != null) {
                 Box(
                     Modifier.size(24.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surface),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Icon(if (lockedUntil != null) Icons.Rounded.Lock else Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(16.dp))
                 }
             }
         }
         Spacer(Modifier.height(Spacing.xs))
         Text(
-            label,
+            lockedUntil?.let { "Level $it" } ?: label,
             style = MaterialTheme.typography.labelMedium,
             color = if (selected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
         )

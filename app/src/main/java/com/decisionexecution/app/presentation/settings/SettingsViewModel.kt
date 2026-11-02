@@ -8,6 +8,9 @@ import com.decisionexecution.app.domain.model.Reminder
 import com.decisionexecution.app.domain.model.ThemeMode
 import com.decisionexecution.app.domain.model.ThemePalette
 import com.decisionexecution.app.domain.model.FocusSound
+import com.decisionexecution.app.domain.service.PlantVariety
+import com.decisionexecution.app.domain.service.isUnlocked
+import com.decisionexecution.app.domain.usecase.GetProgressUseCase
 import com.decisionexecution.app.domain.repository.BackupRepository
 import com.decisionexecution.app.domain.repository.InvalidBackupException
 import kotlinx.coroutines.Dispatchers
@@ -29,6 +32,9 @@ data class SettingsUiState(
     val themePalette: ThemePalette = ThemePalette.WALLPAPER,
     val pureBlack: Boolean = false,
     val focusSound: FocusSound = FocusSound.OFF,
+    val plantVariety: PlantVariety = PlantVariety.BLOSSOM,
+    /** Current level, for which palettes and plants are unlocked */
+    val level: Int = 1,
     val dailyFocusGoal: Int = 120,
     val dndDuringFocus: Boolean = false,
     val habitReminder: Reminder = UserPreferences().habitReminder,
@@ -54,13 +60,17 @@ fun isValidBreakDuration(minutes: Int): Boolean = minutes in BREAK_DURATION_RANG
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val preferencesRepository: PreferencesRepository,
-    private val backupRepository: BackupRepository
+    private val backupRepository: BackupRepository,
+    private val getProgressUseCase: GetProgressUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            getProgressUseCase().collect { progress -> _uiState.update { it.copy(level = progress.level.level) } }
+        }
         viewModelScope.launch {
             preferencesRepository.getPreferences().collect { prefs ->
                 _uiState.update {
@@ -71,6 +81,7 @@ class SettingsViewModel @Inject constructor(
                         themePalette = prefs.themePalette,
                         pureBlack = prefs.pureBlack,
                         focusSound = prefs.focusSound,
+                        plantVariety = prefs.plantVariety,
                         dailyFocusGoal = prefs.dailyFocusGoalMinutes,
                         dndDuringFocus = prefs.dndDuringFocus,
                         habitReminder = prefs.habitReminder,
@@ -162,7 +173,13 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun onThemePaletteChanged(palette: ThemePalette) {
+        if (!palette.isUnlocked(_uiState.value.level)) return
         viewModelScope.launch { preferencesRepository.updateThemePalette(palette) }
+    }
+
+    fun onPlantVarietyChanged(variety: PlantVariety) {
+        if (!variety.isUnlocked(_uiState.value.level)) return
+        viewModelScope.launch { preferencesRepository.updatePlantVariety(variety) }
     }
 
     fun onFocusSoundChanged(sound: FocusSound) {
