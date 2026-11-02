@@ -22,14 +22,26 @@ data class TaskPicks(
 
 class PickTaskUseCase @Inject constructor(
     private val taskRepository: TaskRepository,
-    private val moodRepository: MoodRepository
+    private val moodRepository: MoodRepository,
+    private val dayPhaseSource: DayPhaseSource,
+    private val getEstimateCalibrationUseCase: GetEstimateCalibrationUseCase
 ) {
     private val picker = TaskPicker()
 
     suspend operator fun invoke(minutes: Int, energy: Int? = null, today: LocalDate = LocalDate.now()): TaskPicks {
-        val context = PickContext(minutes, energy ?: moodRepository.getEntry(today).first()?.energy)
-        return TaskPicks(picker.rank(taskRepository.getAllTasks().first(), context), context)
+        val context = PickContext(
+            minutes = minutes,
+            energy = energy ?: moodRepository.getEntry(today).first()?.energy,
+            phase = dayPhaseSource.phase().first(),
+            calibration = getEstimateCalibrationUseCase().first()
+        )
+        // Snoozed tasks stay out of the spinner too, unless that would leave it empty
+        val tasks = taskRepository.getAllTasks().first().let { all -> all.filterNot { it.isSnoozed(today) }.ifEmpty { all } }
+        return TaskPicks(picker.rank(tasks, context), context)
     }
+
+    /** The user spun past this one: it counts as a dodge */
+    suspend fun onPassedOver(task: Task) = taskRepository.addDodge(task.id)
 
     fun reason(task: Task, context: PickContext): String = picker.reason(task, context)
 }

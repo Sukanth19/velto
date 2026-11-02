@@ -13,6 +13,8 @@ import com.decisionexecution.app.domain.repository.TaskRepository
 import java.time.LocalDate
 import com.decisionexecution.app.domain.repository.InboxRepository
 import com.decisionexecution.app.domain.usecase.CreateTaskUseCase
+import com.decisionexecution.app.domain.usecase.GetEstimateCalibrationUseCase
+import com.decisionexecution.app.domain.service.EstimateCalibration
 import com.decisionexecution.app.domain.usecase.GetTaskByIdUseCase
 import com.decisionexecution.app.domain.usecase.UpdateTaskUseCase
 import com.decisionexecution.app.presentation.common.toUserMessage
@@ -37,6 +39,9 @@ data class AddEditTaskUiState(
     val energyTag: EnergyTag? = null,
     val dueDate: LocalDate? = null,
     val recurrence: Recurrence? = null,
+    val estimateMinutes: Int? = null,
+    /** How the user's estimates usually turn out, for the "plan for" hint; null until known */
+    val calibration: EstimateCalibration? = null,
     val steps: List<Subtask> = emptyList(),
     val stepDraft: String = "",
     val titleError: String? = null,
@@ -55,7 +60,8 @@ class AddEditTaskViewModel @Inject constructor(
     private val createTaskUseCase: CreateTaskUseCase,
     private val updateTaskUseCase: UpdateTaskUseCase,
     private val inboxRepository: InboxRepository,
-    private val taskRepository: TaskRepository
+    private val taskRepository: TaskRepository,
+    getEstimateCalibrationUseCase: GetEstimateCalibrationUseCase
 ) : ViewModel() {
 
     private val taskId: String? = savedStateHandle[TASK_ID_ARG]
@@ -68,6 +74,9 @@ class AddEditTaskViewModel @Inject constructor(
     val uiState: StateFlow<AddEditTaskUiState> = _uiState.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            getEstimateCalibrationUseCase().collect { calibration -> _uiState.update { it.copy(calibration = calibration) } }
+        }
         if (taskId != null) {
             viewModelScope.launch {
                 val task = getTaskByIdUseCase(taskId).first()
@@ -87,6 +96,7 @@ class AddEditTaskViewModel @Inject constructor(
                         energyTag = task.energyTag,
                         dueDate = task.dueDate,
                         recurrence = task.recurrence,
+                        estimateMinutes = task.estimateMinutes,
                         steps = taskRepository.getSubtasks(task.id).first()
                     )
                 }
@@ -103,6 +113,7 @@ class AddEditTaskViewModel @Inject constructor(
     fun onEnergyTagChange(value: EnergyTag?) = _uiState.update { it.copy(energyTag = value) }
     fun onDueDateChange(value: LocalDate?) = _uiState.update { it.copy(dueDate = value) }
     fun onRecurrenceChange(value: Recurrence?) = _uiState.update { it.copy(recurrence = value) }
+    fun onEstimateChange(value: Int?) = _uiState.update { it.copy(estimateMinutes = value) }
     fun onStepDraftChange(value: String) = _uiState.update { it.copy(stepDraft = value) }
 
     fun onAddStep() {
@@ -136,7 +147,11 @@ class AddEditTaskViewModel @Inject constructor(
                     createdAt = existing?.createdAt ?: System.currentTimeMillis(),
                     // A repeating task needs a date to repeat from; start today
                     dueDate = state.dueDate ?: LocalDate.now().takeIf { state.recurrence != null },
-                    recurrence = state.recurrence
+                    recurrence = state.recurrence,
+                    estimateMinutes = state.estimateMinutes,
+                    // Editing doesn't wipe the dodge history or a snooze
+                    dodges = existing?.dodges ?: 0,
+                    snoozedUntil = existing?.snoozedUntil
                 )
                 if (existing != null) updateTaskUseCase(task) else createTaskUseCase(task)
                 // Also catches a step typed but never added with the + button

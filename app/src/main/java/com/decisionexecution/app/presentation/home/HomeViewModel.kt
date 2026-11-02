@@ -9,6 +9,9 @@ import com.decisionexecution.app.domain.usecase.GetBestTaskUseCase
 import com.decisionexecution.app.domain.usecase.GetInsightsUseCase
 import com.decisionexecution.app.domain.usecase.GetProductivityMetricsUseCase
 import com.decisionexecution.app.domain.usecase.JustStartUseCase
+import com.decisionexecution.app.domain.usecase.GetEstimateCalibrationUseCase
+import com.decisionexecution.app.domain.usecase.ShrinkTaskUseCase
+import com.decisionexecution.app.domain.usecase.SnoozeTaskUseCase
 import com.decisionexecution.app.presentation.common.toUserMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -25,6 +28,10 @@ import javax.inject.Inject
 
 data class HomeUiState(
     val bestTask: Task? = null,
+    /** Why this task suits the time of day, when that's what tipped it */
+    val pickReason: String? = null,
+    /** How long the best task will likely take, corrected by the user's estimate history */
+    val likelyMinutes: Int? = null,
     val completedTasksToday: Int = 0,
     val totalFocusTimeToday: Int = 0,
     val consistencyScore: Double = 0.0,
@@ -46,7 +53,10 @@ class HomeViewModel @Inject constructor(
     private val justStartUseCase: JustStartUseCase,
     private val getProductivityMetricsUseCase: GetProductivityMetricsUseCase,
     private val getInsightsUseCase: GetInsightsUseCase,
-    private val preferencesRepository: PreferencesRepository
+    private val preferencesRepository: PreferencesRepository,
+    private val snoozeTaskUseCase: SnoozeTaskUseCase,
+    private val shrinkTaskUseCase: ShrinkTaskUseCase,
+    private val getEstimateCalibrationUseCase: GetEstimateCalibrationUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -68,13 +78,16 @@ class HomeViewModel @Inject constructor(
             val endOfToday = LocalDate.now(zone).plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli() - 1
 
             combine(
-                getBestTaskUseCase(),
+                combine(getBestTaskUseCase.pick(), getEstimateCalibrationUseCase()) { pick, calibration -> pick to calibration },
                 getProductivityMetricsUseCase(startOfToday, endOfToday, CONSISTENCY_DAYS),
                 getInsightsUseCase(),
                 preferencesRepository.getPreferences()
-            ) { bestTask, metrics, insights, prefs ->
+            ) { (pick, calibration), metrics, insights, prefs ->
+                val estimate = pick?.task?.estimateMinutes
                 _uiState.value.copy(
-                    bestTask = bestTask,
+                    bestTask = pick?.task,
+                    pickReason = pick?.reason,
+                    likelyMinutes = estimate?.let { calibration?.likelyMinutes(it) ?: it },
                     completedTasksToday = metrics.completedTasks,
                     totalFocusTimeToday = metrics.totalFocusTime,
                     consistencyScore = metrics.consistencyScore,
@@ -101,6 +114,28 @@ class HomeViewModel @Inject constructor(
                         _uiState.update { it.copy(error = NO_TASKS_ERROR) }
                     }
                 }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = e.toUserMessage("start a focus session")) }
+            }
+        }
+    }
+
+    /** Not now: tomorrow's problem. Home moves on to the next best task. */
+    fun onNotNow() {
+        val task = _uiState.value.bestTask ?: return
+        viewModelScope.launch {
+            runCatching { snoozeTaskUseCase(task) }
+                .onFailure { e -> _uiState.update { it.copy(error = e.toUserMessage("snooze the task")) } }
+        }
+    }
+
+    /** Shrink it: add a tiny first step and start a two-minute starter on it */
+    fun onShrink(firstStep: String?) {
+        val task = _uiState.value.bestTask ?: return
+        viewModelScope.launch {
+            try {
+                shrinkTaskUseCase(task, firstStep)
+                _uiState.update { it.copy(focusSessionStarted = true) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.toUserMessage("start a focus session")) }
             }

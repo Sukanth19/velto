@@ -53,6 +53,17 @@ class RecordingNotifier : FocusNotifier {
     override fun onBreakComplete() {
         breakCompletedCount++
     }
+
+    val starterCompletions = mutableListOf<String>()
+    val timers = mutableListOf<com.decisionexecution.app.domain.service.TimerNotice?>()
+
+    override fun onStarterComplete(taskTitle: String) {
+        starterCompletions += taskTitle
+    }
+
+    override fun onTimerChanged(timer: com.decisionexecution.app.domain.service.TimerNotice?) {
+        timers += timer
+    }
 }
 
 class InMemoryPreferencesRepository : PreferencesRepository {

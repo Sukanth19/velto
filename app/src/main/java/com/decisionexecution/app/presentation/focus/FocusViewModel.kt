@@ -5,6 +5,10 @@ import androidx.lifecycle.viewModelScope
 import com.decisionexecution.app.domain.model.FocusSessionState
 import com.decisionexecution.app.domain.model.Subtask
 import com.decisionexecution.app.domain.repository.TaskRepository
+import com.decisionexecution.app.domain.repository.PreferencesRepository
+import com.decisionexecution.app.domain.model.Task
+import com.decisionexecution.app.domain.model.UserPreferences
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
@@ -34,7 +38,8 @@ sealed class FocusUiState {
         val taskTitle: String,
         val remainingSeconds: Int,
         val totalSeconds: Int,
-        val isPaused: Boolean
+        val isPaused: Boolean,
+        val isStarter: Boolean = false
     ) : FocusUiState()
 
     data class Break(
@@ -49,13 +54,15 @@ fun FocusSessionState.toUiState(): FocusUiState = when (this) {
         taskTitle = task.title,
         remainingSeconds = (totalSeconds - elapsedSeconds).coerceAtLeast(0),
         totalSeconds = totalSeconds,
-        isPaused = false
+        isPaused = false,
+        isStarter = isStarter
     )
     is FocusSessionState.Paused -> FocusUiState.Focus(
         taskTitle = task.title,
         remainingSeconds = (totalSeconds - elapsedSeconds).coerceAtLeast(0),
         totalSeconds = totalSeconds,
-        isPaused = true
+        isPaused = true,
+        isStarter = isStarter
     )
     is FocusSessionState.Breaking -> FocusUiState.Break(
         remainingSeconds = (totalSeconds - elapsedSeconds).coerceAtLeast(0),
@@ -73,8 +80,27 @@ class FocusViewModel @Inject constructor(
     private val resumeFocusSessionUseCase: ResumeFocusSessionUseCase,
     private val endFocusSessionUseCase: EndFocusSessionUseCase,
     private val extendFocusSessionUseCase: ExtendFocusSessionUseCase,
-    private val taskRepository: TaskRepository
+    private val taskRepository: TaskRepository,
+    private val preferencesRepository: PreferencesRepository
 ) : ViewModel() {
+
+    /** Set when a two-minute starter just ended, so the screen can ask whether to keep going */
+    val starterFinished: StateFlow<Task?> = focusSessionManager.starterFinished
+
+    /** Minutes "Keep going" would run for: the user's usual focus length */
+    val keepGoingMinutes: StateFlow<Int> = preferencesRepository.getPreferences()
+        .map { it.focusDurationMinutes }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, UserPreferences().focusDurationMinutes)
+
+    fun onKeepGoing() {
+        val task = starterFinished.value ?: return
+        viewModelScope.launch {
+            val prefs = preferencesRepository.getPreferences().first()
+            focusSessionManager.startSession(task, prefs.focusDurationMinutes, prefs.breakDurationMinutes)
+        }
+    }
+
+    fun onStarterDone() = focusSessionManager.dismissStarter()
 
     val uiState: StateFlow<FocusUiState> = focusSessionManager.sessionState
         .map { it.toUiState() }

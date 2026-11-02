@@ -63,6 +63,8 @@ class DecideViewModel @Inject constructor(
 
     /** Lands on the next-best fit, wrapping round */
     fun onSpinAgain() {
+        // Passing over a pick counts as dodging it, so a task skipped again and again gets offered a shrink
+        _uiState.value.pick?.let { passed -> viewModelScope.launch { runCatching { pickTaskUseCase.onPassedOver(passed) } } }
         _uiState.update {
             if (it.ranked.isEmpty()) it
             else it.copy(pickIndex = (it.pickIndex + 1) % it.ranked.size, spinKey = it.spinKey + 1)

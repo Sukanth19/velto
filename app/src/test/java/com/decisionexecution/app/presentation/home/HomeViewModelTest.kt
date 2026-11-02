@@ -1,5 +1,9 @@
 package com.decisionexecution.app.presentation.home
 
+import com.decisionexecution.app.testutil.noCalibration
+import com.decisionexecution.app.testutil.stubPick
+import com.decisionexecution.app.domain.usecase.DayPhaseSource
+
 import com.decisionexecution.app.testutil.emptyInsights
 import com.decisionexecution.app.testutil.InMemoryPreferencesRepository
 import com.decisionexecution.app.domain.model.*
@@ -90,7 +94,8 @@ class HomeViewModelTest : StringSpec({
         }
         val metrics = mockk<GetProductivityMetricsUseCase>()
         every { metrics(any(), any(), any()) } returns flowOf(ProductivityMetrics(0, 0, 0.0))
-        val viewModel = HomeViewModel(getBest, mockk(relaxed = true), metrics, emptyInsights(), InMemoryPreferencesRepository())
+        stubPick(getBest)
+        val viewModel = HomeViewModel(getBest, mockk(relaxed = true), metrics, emptyInsights(), InMemoryPreferencesRepository(), mockk(relaxed = true), mockk(relaxed = true), noCalibration())
 
         viewModel.uiState.value.canRetry shouldBe true
         viewModel.uiState.value.error shouldBe "Couldn't load today's data. Please try again."
@@ -123,7 +128,8 @@ private fun createViewModel(
     every { getBestTask() } returns flowOf(bestTask)
     val getMetrics = mockk<GetProductivityMetricsUseCase>()
     every { getMetrics(any(), any(), any()) } returns flowOf(metrics)
-    return HomeViewModel(getBestTask, justStartUseCase, getMetrics, emptyInsights(), InMemoryPreferencesRepository())
+    stubPick(getBestTask)
+    return HomeViewModel(getBestTask, justStartUseCase, getMetrics, emptyInsights(), InMemoryPreferencesRepository(), mockk(relaxed = true), mockk(relaxed = true), noCalibration())
 }
 
 private fun createTestTask(): Task = Task(

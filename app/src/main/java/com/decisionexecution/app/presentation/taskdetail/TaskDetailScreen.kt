@@ -123,6 +123,7 @@ private fun TaskDetailContent(
         DetailRow("Urgency", if (urgencyNow > task.urgency) "$urgencyNow / 5 (due soon)" else "${task.urgency} / 5")
         DetailRow("Importance", "${task.importance} / 5")
         DetailRow("Effort", task.effort.label)
+        task.estimateMinutes?.let { DetailRow("Estimate", com.decisionexecution.app.presentation.home.formatMinutes(it)) }
         DetailRow("Energy", task.energyTag?.label ?: "Any")
         DetailRow("Created", DateFormat.getDateInstance(DateFormat.MEDIUM).format(Date(task.createdAt)))
         error?.let { Text(it, color = MaterialTheme.colorScheme.error) }

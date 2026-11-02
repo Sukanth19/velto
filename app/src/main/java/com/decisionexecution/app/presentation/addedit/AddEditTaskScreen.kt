@@ -27,6 +27,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.decisionexecution.app.domain.model.EnergyTag
 import com.decisionexecution.app.domain.model.TaskCategory
 import com.decisionexecution.app.domain.model.TaskEffort
+import com.decisionexecution.app.domain.service.ESTIMATE_CHOICES
+import com.decisionexecution.app.domain.service.EstimateCalibration
+import com.decisionexecution.app.presentation.home.formatMinutes
 import com.decisionexecution.app.presentation.components.label
 import com.decisionexecution.app.presentation.theme.Spacing
 import kotlin.math.roundToInt
@@ -104,6 +107,8 @@ fun AddEditTaskScreen(
                 viewModel::onEffortChange
             )
 
+            EstimatePicker(uiState.estimateMinutes, uiState.calibration, viewModel::onEstimateChange)
+
             DueDatePicker(uiState.dueDate, viewModel::onDueDateChange)
             ChoiceGroup(
                 "Repeat",
@@ -127,6 +132,30 @@ fun AddEditTaskScreen(
                 uiState.energyTag,
                 { it?.label ?: "Any" },
                 viewModel::onEnergyTagChange
+            )
+        }
+    }
+}
+
+/**
+ * How long the user thinks it'll take. Once Velto knows how their guesses usually turn out, it
+ * says what to really plan for.
+ */
+@Composable
+private fun EstimatePicker(estimate: Int?, calibration: EstimateCalibration?, onChange: (Int?) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+        ChoiceGroup(
+            "How long will it take?",
+            listOf<Int?>(null) + ESTIMATE_CHOICES,
+            estimate,
+            { it?.let(::formatMinutes) ?: "Not sure" },
+            onChange
+        )
+        if (calibration != null && !calibration.isAccurate) {
+            Text(
+                calibration.summary + (estimate?.let { ", so plan for about ${formatMinutes(calibration.likelyMinutes(it))}" } ?: ""),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary
             )
         }
     }

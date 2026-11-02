@@ -1,5 +1,9 @@
 package com.decisionexecution.app.presentation
 
+import com.decisionexecution.app.testutil.noCalibration
+import com.decisionexecution.app.testutil.stubPick
+import com.decisionexecution.app.domain.usecase.DayPhaseSource
+
 import com.decisionexecution.app.domain.service.EisenhowerClassifier
 import com.decisionexecution.app.testutil.taskRepositoryWithSteps
 import com.decisionexecution.app.testutil.InMemoryPreferencesRepository
@@ -116,7 +120,8 @@ class ScreensRenderTest {
         every { getBest() } returns flowOf(tasks[0])
         val metrics = mockk<GetProductivityMetricsUseCase>()
         every { metrics(any(), any(), any()) } returns flowOf(ProductivityMetrics(3, 85, 71.4))
-        val viewModel = HomeViewModel(getBest, mockk(relaxed = true), metrics, emptyInsights(), InMemoryPreferencesRepository())
+        stubPick(getBest)
+        val viewModel = HomeViewModel(getBest, mockk(relaxed = true), metrics, emptyInsights(), InMemoryPreferencesRepository(), mockk(relaxed = true), mockk(relaxed = true), noCalibration())
 
         val habits = sampleHabits()
         val extras = HomeExtrasViewModel(progressUseCase(SAMPLE_STATS), habits, InMemoryInboxRepository(*sampleInbox()), InMemoryMoodRepository(), plantUseCase(SAMPLE_STATS, habits))
@@ -139,7 +144,8 @@ class ScreensRenderTest {
         // Level 1 with a 1-day streak: the level and streak chips should line up
         val insights = mockk<GetInsightsUseCase>()
         every { insights(any(), any()) } returns flowOf(Insights(week = emptyList(), streakDays = 1))
-        val viewModel = HomeViewModel(getBest, mockk(relaxed = true), metrics, insights, InMemoryPreferencesRepository())
+        stubPick(getBest)
+        val viewModel = HomeViewModel(getBest, mockk(relaxed = true), metrics, insights, InMemoryPreferencesRepository(), mockk(relaxed = true), mockk(relaxed = true), noCalibration())
 
         val extras = HomeExtrasViewModel(progressUseCase(), InMemoryHabitRepository(), InMemoryInboxRepository(), InMemoryMoodRepository(), plantUseCase())
 
@@ -203,7 +209,8 @@ class ScreensRenderTest {
                 Subtask("s-1", tasks[0].id, "Pull the Q3 numbers", true, 0),
                 Subtask("s-2", tasks[0].id, "Draft the summary", false, 1),
                 Subtask("s-3", tasks[0].id, "Send it to the team", false, 2)
-            )
+            ),
+            InMemoryPreferencesRepository()
         )
 
         render("focus") { FocusScreen({}, viewModel) }
@@ -227,13 +234,49 @@ class ScreensRenderTest {
     @Test
     fun addTaskScreenShowsTitleError() {
         val getTask = mockk<GetTaskByIdUseCase>()
-        val viewModel = AddEditTaskViewModel(SavedStateHandle(), getTask, mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true), taskRepositoryWithSteps())
+        val viewModel = AddEditTaskViewModel(SavedStateHandle(), getTask, mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true), taskRepositoryWithSteps(), noCalibration())
 
         render("add_task") { AddEditTaskScreen({}, viewModel) }
         composeRule.onNodeWithText("Save").performClick()
         composeRule.waitForIdle()
         composeRule.onNodeWithText("Title is required").assertIsDisplayed()
         save("add_task_error")
+    }
+
+    @Test
+    fun homeWithDodgedTask() {
+        val dodged = tasks[0].copy(dodges = 4, estimateMinutes = 45)
+        val getBest = mockk<GetBestTaskUseCase>()
+        every { getBest() } returns flowOf(dodged)
+        every { getBest.pick(any()) } returns flowOf(com.decisionexecution.app.domain.usecase.NextPick(dodged, "Your peak focus hours. Hard stuff first"))
+        val metrics = mockk<GetProductivityMetricsUseCase>()
+        every { metrics(any(), any(), any()) } returns flowOf(ProductivityMetrics(3, 85, 71.4))
+        val calibration = mockk<com.decisionexecution.app.domain.usecase.GetEstimateCalibrationUseCase>()
+        every { calibration() } returns flowOf(com.decisionexecution.app.domain.service.EstimateCalibration(1.6, 5))
+        val viewModel = HomeViewModel(getBest, mockk(relaxed = true), metrics, emptyInsights(), InMemoryPreferencesRepository(), mockk(relaxed = true), mockk(relaxed = true), calibration)
+        val habits = sampleHabits()
+        val extras = HomeExtrasViewModel(progressUseCase(SAMPLE_STATS), habits, InMemoryInboxRepository(*sampleInbox()), InMemoryMoodRepository(), plantUseCase(SAMPLE_STATS, habits))
+
+        render("home_dodged") { HomeScreen({}, {}, {}, {}, viewModel, extrasViewModel = extras) }
+        composeRule.onNodeWithText("Shrink it").assertIsDisplayed()
+        composeRule.onNodeWithText("Not now").assertIsDisplayed()
+    }
+
+    @Test
+    fun focusAfterStarter() {
+        val clock = FakeTimeSource()
+        val manager = focusSessionManager(clock = clock)
+        runBlocking {
+            manager.startStarter(tasks[0])
+            clock.advanceSeconds(130)
+            manager.sync()
+        }
+        val viewModel = FocusViewModel(
+            manager, PauseFocusSessionUseCase(manager), ResumeFocusSessionUseCase(manager), EndFocusSessionUseCase(manager),
+            ExtendFocusSessionUseCase(manager), taskRepositoryWithSteps(), InMemoryPreferencesRepository()
+        )
+        render("focus_starter_done") { FocusScreen({}, viewModel) }
+        composeRule.onNodeWithText("Keep going for 25 min").assertIsDisplayed()
     }
 
     @Test
@@ -256,7 +299,8 @@ class ScreensRenderTest {
         every { getBest() } returns flowOf(tasks[0])
         val metrics = mockk<GetProductivityMetricsUseCase>()
         every { metrics(any(), any(), any()) } returns flowOf(ProductivityMetrics(3, 85, 71.4))
-        val viewModel = HomeViewModel(getBest, mockk(relaxed = true), metrics, emptyInsights(), InMemoryPreferencesRepository())
+        stubPick(getBest)
+        val viewModel = HomeViewModel(getBest, mockk(relaxed = true), metrics, emptyInsights(), InMemoryPreferencesRepository(), mockk(relaxed = true), mockk(relaxed = true), noCalibration())
 
         val habits = sampleHabits()
         val extras = HomeExtrasViewModel(progressUseCase(SAMPLE_STATS), habits, InMemoryInboxRepository(*sampleInbox()), InMemoryMoodRepository(), plantUseCase(SAMPLE_STATS, habits))
@@ -442,7 +486,7 @@ class ScreensRenderTest {
         val moods = InMemoryMoodRepository(MoodEntry(LocalDate.now(), mood = 4, energy = 2, note = null))
         val viewModel = DecideViewModel(
             SavedStateHandle(mapOf(DecideViewModel.MINUTES_ARG to 15)),
-            PickTaskUseCase(taskRepository, moods),
+            PickTaskUseCase(taskRepository, moods, DayPhaseSource.NEUTRAL, noCalibration()),
             mockk(relaxed = true)
         )
 

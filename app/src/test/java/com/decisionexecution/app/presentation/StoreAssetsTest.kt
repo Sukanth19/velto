@@ -1,5 +1,9 @@
 package com.decisionexecution.app.presentation
 
+import com.decisionexecution.app.testutil.noCalibration
+import com.decisionexecution.app.testutil.stubPick
+import com.decisionexecution.app.domain.usecase.DayPhaseSource
+
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.AdaptiveIconDrawable
@@ -106,7 +110,8 @@ class StoreAssetsTest {
             every { it(any(), any(), any()) } returns flowOf(ProductivityMetrics(3, 95, 86.0))
         }
         val insights = insights()
-        val home = HomeViewModel(getBest, mockk(relaxed = true), metrics, insights, InMemoryPreferencesRepository())
+        stubPick(getBest)
+        val home = HomeViewModel(getBest, mockk(relaxed = true), metrics, insights, InMemoryPreferencesRepository(), mockk(relaxed = true), mockk(relaxed = true), noCalibration())
         val extras = HomeExtrasViewModel(
             progressUseCase(stats), habits, InMemoryInboxRepository(), moods,
             GetPlantUseCase(progressUseCase(stats), insights, habits, moods)
@@ -125,7 +130,8 @@ class StoreAssetsTest {
                 Subtask("s1", "1", "Pull the Q3 numbers", true, 0),
                 Subtask("s2", "1", "Draft the summary", false, 1),
                 Subtask("s3", "1", "Send it to the team", false, 2)
-            )
+            ),
+            InMemoryPreferencesRepository()
         )
         shoot("2_focus") { FocusScreen({}, focus) }
 

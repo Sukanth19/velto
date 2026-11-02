@@ -1,5 +1,6 @@
 package com.decisionexecution.app.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import java.util.UUID
@@ -18,5 +19,8 @@ data class TaskEntity(
     val isCompleted: Boolean = false,
     val completedAt: Long? = null,
     val dueDate: Long? = null,     // epoch day
-    val recurrence: String? = null // "DAILY", "WEEKDAYS", "WEEKLY", "MONTHLY", or null
+    val recurrence: String? = null, // "DAILY", "WEEKDAYS", "WEEKLY", "MONTHLY", or null
+    val estimateMinutes: Int? = null,
+    @ColumnInfo(defaultValue = "0") val dodges: Int = 0,
+    val snoozedUntil: Long? = null // epoch day
 )

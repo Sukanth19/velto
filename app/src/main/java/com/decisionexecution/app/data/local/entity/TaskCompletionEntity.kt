@@ -10,5 +10,9 @@ data class TaskCompletionEntity(
     val taskId: String,
     val taskTitle: String,
     val completedAt: Long,
-    val focusDuration: Int? // in minutes, null if completed without focus session
+    val focusDuration: Int?, // in minutes, null if completed without focus session
+    /** What the user guessed, kept with the completion so estimates can be compared later */
+    val estimateMinutes: Int? = null,
+    /** Focus minutes actually spent on the task before this completion; not counted again in totals */
+    val actualMinutes: Int? = null
 )

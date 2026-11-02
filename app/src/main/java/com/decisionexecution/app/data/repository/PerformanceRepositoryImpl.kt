@@ -4,6 +4,7 @@ import com.decisionexecution.app.data.local.dao.FocusSessionDao
 import com.decisionexecution.app.data.local.dao.TaskCompletionDao
 import com.decisionexecution.app.data.local.entity.FocusSessionEntity
 import com.decisionexecution.app.data.local.entity.TaskCompletionEntity
+import com.decisionexecution.app.domain.repository.EstimateSample
 import com.decisionexecution.app.domain.repository.FocusSessionRecord
 import com.decisionexecution.app.domain.repository.PerformanceRepository
 import com.decisionexecution.app.domain.repository.TaskCompletion
@@ -18,16 +19,32 @@ class PerformanceRepositoryImpl @Inject constructor(
     private val focusSessionDao: FocusSessionDao
 ) : PerformanceRepository {
     
-    override suspend fun recordCompletion(taskId: String, timestamp: Long, focusDuration: Int?) {
+    override suspend fun recordCompletion(
+        taskId: String,
+        timestamp: Long,
+        focusDuration: Int?,
+        estimateMinutes: Int?,
+        actualMinutes: Int?
+    ) {
         val completion = TaskCompletionEntity(
             id = UUID.randomUUID().toString(),
             taskId = taskId,
             taskTitle = "", // Will be populated from task lookup in use case
             completedAt = timestamp,
-            focusDuration = focusDuration
+            focusDuration = focusDuration,
+            estimateMinutes = estimateMinutes,
+            actualMinutes = actualMinutes
         )
         taskCompletionDao.insertCompletion(completion)
     }
+
+    override suspend fun focusMinutesSinceLastCompletion(taskId: String): Int =
+        focusSessionDao.minutesForTaskSince(taskId, taskCompletionDao.lastCompletionAt(taskId) ?: 0L)
+
+    override fun getEstimateSamples(limit: Int): Flow<List<EstimateSample>> =
+        taskCompletionDao.getEstimatedCompletions(limit).map { list ->
+            list.map { EstimateSample(it.estimateMinutes ?: 0, it.actualMinutes ?: 0) }
+        }
     
     override suspend fun recordFocusSession(taskId: String, timestamp: Long, durationMinutes: Int) {
         focusSessionDao.insertFocusSession(

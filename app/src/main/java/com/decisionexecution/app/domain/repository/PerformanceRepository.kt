@@ -3,7 +3,17 @@ package com.decisionexecution.app.domain.repository
 import kotlinx.coroutines.flow.Flow
 
 interface PerformanceRepository {
-    suspend fun recordCompletion(taskId: String, timestamp: Long, focusDuration: Int?)
+    suspend fun recordCompletion(
+        taskId: String,
+        timestamp: Long,
+        focusDuration: Int?,
+        estimateMinutes: Int? = null,
+        actualMinutes: Int? = null
+    )
+    /** Focus minutes spent on a task since it was last completed (or ever, if it never was) */
+    suspend fun focusMinutesSinceLastCompletion(taskId: String): Int
+    /** Recent completions that had both an estimate and focus time, newest first */
+    fun getEstimateSamples(limit: Int = 30): Flow<List<EstimateSample>>
     suspend fun recordFocusSession(taskId: String, timestamp: Long, durationMinutes: Int)
     suspend fun removeCompletion(taskId: String, timestamp: Long)
     fun getFocusSessionsInPeriod(startTimestamp: Long, endTimestamp: Long): Flow<List<FocusSessionRecord>>
@@ -19,6 +29,8 @@ data class TaskCompletion(
     val completedAt: Long,
     val focusDuration: Int?
 )
+
+data class EstimateSample(val estimateMinutes: Int, val actualMinutes: Int)
 
 data class FocusSessionRecord(
     val taskId: String,

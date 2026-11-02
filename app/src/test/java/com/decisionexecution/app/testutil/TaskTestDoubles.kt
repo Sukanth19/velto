@@ -12,3 +12,16 @@ fun taskRepositoryWithSteps(vararg steps: Subtask): TaskRepository {
     every { repository.getSubtasks(any()) } answers { flowOf(steps.filter { it.taskId == firstArg<String>() }) }
     return repository
 }
+
+/** Estimate calibration with no history yet */
+fun noCalibration(): com.decisionexecution.app.domain.usecase.GetEstimateCalibrationUseCase =
+    mockk<com.decisionexecution.app.domain.usecase.GetEstimateCalibrationUseCase>().also { every { it() } returns flowOf(null) }
+
+/** Makes a mocked best-task use case answer [GetBestTaskUseCase.pick] from whatever its plain invoke returns */
+fun stubPick(useCase: com.decisionexecution.app.domain.usecase.GetBestTaskUseCase) {
+    every { useCase.pick(any()) } answers {
+        kotlinx.coroutines.flow.flow {
+            useCase().collect { task -> emit(task?.let { com.decisionexecution.app.domain.usecase.NextPick(it, null) }) }
+        }
+    }
+}

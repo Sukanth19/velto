@@ -4,6 +4,7 @@ import com.decisionexecution.app.domain.model.Subtask
 import com.decisionexecution.app.domain.model.Task
 import com.decisionexecution.app.domain.model.TaskCategory
 import kotlinx.coroutines.flow.Flow
+import java.time.LocalDate
 
 interface TaskRepository {
     fun getAllTasks(): Flow<List<Task>>
@@ -13,6 +14,12 @@ interface TaskRepository {
     suspend fun deleteTask(taskId: String)
     suspend fun completeTask(taskId: String, completionTimestamp: Long)
     suspend fun uncompleteTask(taskId: String)
+    /** The user passed on it once more */
+    suspend fun addDodge(taskId: String)
+    /** The user got stuck in, so forget past dodges and any snooze */
+    suspend fun clearDodges(taskId: String)
+    /** Not now: counts as a dodge and keeps it out of Just Start until [until] */
+    suspend fun snooze(taskId: String, until: LocalDate)
     fun getTasksByCategory(category: TaskCategory): Flow<List<Task>>
 
     /** Steps of a task, in order */

@@ -67,6 +67,8 @@ fun FocusScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val steps by viewModel.steps.collectAsStateWithLifecycle()
+    val starterTask by viewModel.starterFinished.collectAsStateWithLifecycle()
+    val keepGoingMinutes by viewModel.keepGoingMinutes.collectAsStateWithLifecycle()
     val phaseColor = when (val s = state) {
         is FocusUiState.Break -> MaterialTheme.colorScheme.tertiary
         is FocusUiState.Focus -> if (s.isPaused) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.primary
@@ -94,7 +96,17 @@ fun FocusScreen(
             label = "phase"
         ) { phase ->
             when (phase) {
-                FocusUiState.Idle::class -> IdleContent(onGoHome)
+                FocusUiState.Idle::class -> starterTask?.let { task ->
+                    StarterDoneContent(
+                        taskTitle = task.title,
+                        minutes = keepGoingMinutes,
+                        onKeepGoing = viewModel::onKeepGoing,
+                        onDone = {
+                            viewModel.onStarterDone()
+                            onGoHome()
+                        }
+                    )
+                } ?: IdleContent(onGoHome)
                 else -> when (val s = state) {
                     is FocusUiState.Focus -> FocusContent(
                         s, steps, phaseColor, viewModel::onPause, viewModel::onResume, viewModel::onEnd, viewModel::onExtend, viewModel::onStepDone
@@ -120,7 +132,14 @@ private fun FocusContent(
 ) {
     val haptics = LocalHapticFeedback.current
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.lg)) {
-        PhaseLabel(if (state.isPaused) "Paused" else "Focus", color)
+        PhaseLabel(
+            when {
+                state.isPaused -> "Paused"
+                state.isStarter -> "Just two minutes"
+                else -> "Focus"
+            },
+            color
+        )
         Text(
             state.taskTitle,
             style = MaterialTheme.typography.headlineMedium,
@@ -323,6 +342,52 @@ private fun PlayPauseButton(running: Boolean, onToggle: (Boolean) -> Unit) {
             contentDescription = if (running) "Pause" else "Resume",
             modifier = Modifier.size(IconButtonDefaults.largeIconSize)
         )
+    }
+}
+
+/**
+ * After a two-minute starter: starting was the hard part, so offer a proper session without
+ * making it feel like an obligation.
+ */
+@Composable
+private fun StarterDoneContent(taskTitle: String, minutes: Int, onKeepGoing: () -> Unit, onDone: () -> Unit) {
+    val haptics = LocalHapticFeedback.current
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
+        Box(
+            Modifier
+                .size(112.dp)
+                .clip(MaterialShapes.Sunny.toShape())
+                .background(MaterialTheme.colorScheme.tertiaryContainer),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                Icons.Rounded.Check,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                modifier = Modifier.size(48.dp)
+            )
+        }
+        Text("You started!", style = MaterialTheme.typography.headlineSmall)
+        Text(
+            "That was the hardest part of \"$taskTitle\". Want to keep the momentum?",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.height(Spacing.sm))
+        Button(
+            onClick = {
+                haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                onKeepGoing()
+            },
+            shapes = ButtonDefaults.shapes(),
+            modifier = Modifier.fillMaxWidth().height(56.dp)
+        ) {
+            Icon(Icons.Rounded.PlayArrow, contentDescription = null)
+            Spacer(Modifier.width(Spacing.sm))
+            Text("Keep going for $minutes min", style = MaterialTheme.typography.titleMedium)
+        }
+        TextButton(onClick = onDone) { Text("That's enough for now") }
     }
 }
 

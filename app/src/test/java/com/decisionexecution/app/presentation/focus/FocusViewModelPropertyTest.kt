@@ -113,7 +113,8 @@ private fun createViewModel(manager: FocusSessionManager) = FocusViewModel(
     ResumeFocusSessionUseCase(manager),
     EndFocusSessionUseCase(manager),
     ExtendFocusSessionUseCase(manager),
-    taskRepositoryWithSteps()
+    taskRepositoryWithSteps(),
+    com.decisionexecution.app.testutil.InMemoryPreferencesRepository()
 )
 
 private fun taskArb(): Arb<Task> = arbitrary {

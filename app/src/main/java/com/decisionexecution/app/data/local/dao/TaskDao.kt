@@ -29,4 +29,14 @@ interface TaskDao {
 
     @Query("UPDATE tasks SET isCompleted = 0, completedAt = NULL WHERE id = :taskId")
     suspend fun uncompleteTask(taskId: String)
+
+    @Query("UPDATE tasks SET dodges = dodges + 1 WHERE id = :taskId")
+    suspend fun addDodge(taskId: String)
+
+    /** Back to a clean slate once the user actually works on it */
+    @Query("UPDATE tasks SET dodges = 0, snoozedUntil = NULL WHERE id = :taskId")
+    suspend fun clearDodges(taskId: String)
+
+    @Query("UPDATE tasks SET dodges = dodges + 1, snoozedUntil = :untilEpochDay WHERE id = :taskId")
+    suspend fun snooze(taskId: String, untilEpochDay: Long)
 }

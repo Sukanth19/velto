@@ -141,7 +141,8 @@ class TaskUseCasesTest : StringSpec({
         
         every { taskRepository.getTaskById(any()) } returns flowOf(null)
         coEvery { taskRepository.completeTask(any(), any()) } just Runs
-        coEvery { performanceRepository.recordCompletion(any(), any(), any()) } just Runs
+        coEvery { performanceRepository.focusMinutesSinceLastCompletion(any()) } returns 0
+        coEvery { performanceRepository.recordCompletion(any(), any(), any(), any(), any()) } just Runs
         
         val beforeTimestamp = System.currentTimeMillis()
         completeTaskUseCase(taskId, focusDuration)
@@ -155,7 +156,9 @@ class TaskUseCasesTest : StringSpec({
             performanceRepository.recordCompletion(
                 taskId, 
                 match { it in beforeTimestamp..afterTimestamp },
-                focusDuration
+                focusDuration,
+                null,
+                null
             ) 
         }
     }
@@ -169,12 +172,13 @@ class TaskUseCasesTest : StringSpec({
         
         every { taskRepository.getTaskById(any()) } returns flowOf(null)
         coEvery { taskRepository.completeTask(any(), any()) } just Runs
-        coEvery { performanceRepository.recordCompletion(any(), any(), any()) } just Runs
+        coEvery { performanceRepository.focusMinutesSinceLastCompletion(any()) } returns 0
+        coEvery { performanceRepository.recordCompletion(any(), any(), any(), any(), any()) } just Runs
         
         completeTaskUseCase(taskId, focusDuration = null)
         
         // Verify completion was recorded with null focus duration
-        coVerify { performanceRepository.recordCompletion(taskId, any(), null) }
+        coVerify { performanceRepository.recordCompletion(taskId, any(), null, null, null) }
     }
     
     "DeleteTaskUseCase should remove task from queries" {

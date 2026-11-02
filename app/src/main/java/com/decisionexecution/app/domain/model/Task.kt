@@ -15,11 +15,26 @@ data class Task(
     val createdAt: Long,
     val dueDate: LocalDate? = null,
     /** A repeating task moves to its next date when completed instead of closing */
-    val recurrence: Recurrence? = null
+    val recurrence: Recurrence? = null,
+    /** How long the user guessed it would take, in minutes; null if they didn't say */
+    val estimateMinutes: Int? = null,
+    /** Times the user passed on it (Not now, spin again, quitting focus early) since they last got stuck in */
+    val dodges: Int = 0,
+    /** Hidden from Just Start until this day, after a Not now */
+    val snoozedUntil: LocalDate? = null
 ) {
     init {
         require(urgency in 1..5) { "Urgency must be between 1 and 5" }
         require(importance in 1..5) { "Importance must be between 1 and 5" }
+    }
+
+    fun isSnoozed(today: LocalDate): Boolean = snoozedUntil?.isAfter(today) == true
+
+    /** Dodged often enough that it's probably too big to start; time to shrink it */
+    val needsShrinking: Boolean get() = dodges >= SHRINK_AFTER_DODGES
+
+    companion object {
+        const val SHRINK_AFTER_DODGES = 3
     }
 }
 

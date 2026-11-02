@@ -21,6 +21,11 @@ import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material.icons.rounded.Snooze
+import androidx.compose.material.icons.rounded.Compress
+import com.decisionexecution.app.domain.service.FocusSessionManager
+import com.decisionexecution.app.domain.usecase.ShrinkTaskUseCase
 import androidx.compose.material.icons.rounded.Timer
 import androidx.compose.material.icons.automirrored.rounded.TrendingUp
 import androidx.compose.animation.core.animateFloatAsState
@@ -90,6 +95,7 @@ fun HomeScreen(
     val extras by extrasViewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val haptics = LocalHapticFeedback.current
+    var shrinking by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.focusSessionStarted) {
         if (uiState.focusSessionStarted) {
@@ -153,11 +159,18 @@ fun HomeScreen(
                     task == null -> EmptyHero(onAddTask)
                     else -> HeroCard(
                         task = task,
+                        reason = uiState.pickReason,
+                        likelyMinutes = uiState.likelyMinutes,
                         onOpenTask = { onOpenTask(task.id) },
                         onJustStart = {
                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                             viewModel.onJustStartClicked()
-                        }
+                        },
+                        onNotNow = {
+                            haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            viewModel.onNotNow()
+                        },
+                        onShrink = { shrinking = true }
                     )
                 }
             }
@@ -184,6 +197,18 @@ fun HomeScreen(
             // Room for the extended FAB
             Spacer(Modifier.height(72.dp))
         }
+    }
+
+    uiState.bestTask?.takeIf { shrinking }?.let { task ->
+        ShrinkSheet(
+            task = task,
+            onStart = { step ->
+                shrinking = false
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                viewModel.onShrink(step)
+            },
+            onDismiss = { shrinking = false }
+        )
     }
 }
 
@@ -429,7 +454,15 @@ private fun StreakChip(days: Int) {
 }
 
 @Composable
-private fun HeroCard(task: Task, onOpenTask: () -> Unit, onJustStart: () -> Unit) {
+private fun HeroCard(
+    task: Task,
+    reason: String?,
+    likelyMinutes: Int?,
+    onOpenTask: () -> Unit,
+    onJustStart: () -> Unit,
+    onNotNow: () -> Unit,
+    onShrink: () -> Unit
+) {
     val scheme = MaterialTheme.colorScheme
     Box(
         Modifier
@@ -454,10 +487,18 @@ private fun HeroCard(task: Task, onOpenTask: () -> Unit, onJustStart: () -> Unit
                 modifier = Modifier.sharedTaskTitle(task.id)
             )
             Text(
-                "${task.category.label} · ${task.effort.label}" + (task.energyTag?.let { " · ${it.label}" } ?: ""),
+                "${task.category.label} · ${task.effort.label}" + (task.energyTag?.let { " · ${it.label}" } ?: "") +
+                    (likelyMinutes?.let { " · ~${formatMinutes(it)}" } ?: ""),
                 style = MaterialTheme.typography.bodyMedium,
                 color = scheme.onPrimaryContainer.copy(alpha = 0.75f)
             )
+            reason?.let {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
+                    Icon(Icons.Rounded.Schedule, contentDescription = null, tint = scheme.onPrimaryContainer, modifier = Modifier.size(16.dp))
+                    Text(it, style = MaterialTheme.typography.labelLarge, color = scheme.onPrimaryContainer)
+                }
+            }
+            if (task.needsShrinking) DodgeBanner(task.dodges, onShrink)
             Spacer(Modifier.height(Spacing.sm))
             // Squishes to a squarer shape while pressed, then springs back
             Button(
@@ -468,6 +509,81 @@ private fun HeroCard(task: Task, onOpenTask: () -> Unit, onJustStart: () -> Unit
                 Icon(Icons.Rounded.PlayArrow, contentDescription = null)
                 Spacer(Modifier.width(Spacing.sm))
                 Text("Just Start", style = MaterialTheme.typography.titleMedium)
+            }
+            TextButton(
+                onClick = onNotNow,
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                colors = ButtonDefaults.textButtonColors(contentColor = scheme.onPrimaryContainer)
+            ) {
+                Icon(Icons.Rounded.Snooze, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(Spacing.xs))
+                Text("Not now")
+            }
+        }
+    }
+}
+
+/** Shown on a task the user keeps passing on: name it kindly and offer a way in */
+@Composable
+private fun DodgeBanner(dodges: Int, onShrink: () -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    Surface(shape = RoundedCornerShape(20.dp), color = scheme.surface.copy(alpha = 0.7f)) {
+        Row(
+            Modifier.fillMaxWidth().padding(start = Spacing.md, end = Spacing.xs, top = Spacing.xs, bottom = Spacing.xs),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text("You've dodged this $dodges times", style = MaterialTheme.typography.labelLarge)
+                Text("Maybe it's too big to start", style = MaterialTheme.typography.bodySmall, color = scheme.onSurfaceVariant)
+            }
+            FilledTonalButton(onClick = onShrink, shapes = ButtonDefaults.shapes()) {
+                Icon(Icons.Rounded.Compress, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(Spacing.xs))
+                Text("Shrink it")
+            }
+        }
+    }
+}
+
+/**
+ * Shrink it: name the tiniest possible first step, then do just two minutes of it. The step is
+ * optional; two minutes on the task as a whole works too.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ShrinkSheet(task: Task, onStart: (String?) -> Unit, onDismiss: () -> Unit) {
+    var step by remember { mutableStateOf("") }
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = Spacing.lg).padding(bottom = Spacing.lg),
+            verticalArrangement = Arrangement.spacedBy(Spacing.md)
+        ) {
+            Text("Make it tiny", style = MaterialTheme.typography.headlineSmall)
+            Text(
+                "What's the smallest first step for \"${task.title}\"? You only have to do it for two minutes.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            OutlinedTextField(
+                value = step,
+                onValueChange = { step = it },
+                label = { Text("First step (optional)") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                ShrinkTaskUseCase.SUGGESTIONS.forEach { idea ->
+                    SuggestionChip(onClick = { step = idea }, label = { Text(idea) })
+                }
+            }
+            Button(
+                onClick = { onStart(step.ifBlank { null }) },
+                shapes = ButtonDefaults.shapes(),
+                modifier = Modifier.fillMaxWidth().height(56.dp)
+            ) {
+                Icon(Icons.Rounded.PlayArrow, contentDescription = null)
+                Spacer(Modifier.width(Spacing.sm))
+                Text("Start ${FocusSessionManager.STARTER_MINUTES} minutes", style = MaterialTheme.typography.titleMedium)
             }
         }
     }

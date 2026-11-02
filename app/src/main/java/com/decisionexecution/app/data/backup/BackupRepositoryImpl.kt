@@ -150,7 +150,11 @@ class BackupRepositoryImpl @Inject constructor(
                     completedAt = if (it.isNull("completedAt")) null else it.getLong("completedAt"),
                     // Format 1 backups have neither
                     dueDate = if (it.isNull("dueDate")) null else it.getLong("dueDate"),
-                    recurrence = it.optStringOrNull("recurrence")
+                    recurrence = it.optStringOrNull("recurrence"),
+                    // Format 2 and older backups have none of these
+                    estimateMinutes = if (it.isNull("estimateMinutes")) null else it.getInt("estimateMinutes"),
+                    dodges = it.optInt("dodges", 0),
+                    snoozedUntil = if (it.isNull("snoozedUntil")) null else it.getLong("snoozedUntil")
                 )
             }
         val taskIds = tasks.map { it.id }.toSet()
@@ -159,7 +163,9 @@ class BackupRepositoryImpl @Inject constructor(
             completions = root.list("completions") {
                 TaskCompletionEntity(
                     it.getString("id"), it.getString("taskId"), it.getString("taskTitle"), it.getLong("completedAt"),
-                    if (it.isNull("focusDuration")) null else it.getInt("focusDuration")
+                    if (it.isNull("focusDuration")) null else it.getInt("focusDuration"),
+                    estimateMinutes = if (it.isNull("estimateMinutes")) null else it.getInt("estimateMinutes"),
+                    actualMinutes = if (it.isNull("actualMinutes")) null else it.getInt("actualMinutes")
                 )
             },
             focusSessions = root.list("focusSessions") {
@@ -207,10 +213,13 @@ private fun TaskEntity.toJson() = JSONObject()
     .put("effort", effort).put("energyTag", energyTag ?: JSONObject.NULL).put("createdAt", createdAt)
     .put("isCompleted", isCompleted).put("completedAt", completedAt ?: JSONObject.NULL)
     .put("dueDate", dueDate ?: JSONObject.NULL).put("recurrence", recurrence ?: JSONObject.NULL)
+    .put("estimateMinutes", estimateMinutes ?: JSONObject.NULL).put("dodges", dodges)
+    .put("snoozedUntil", snoozedUntil ?: JSONObject.NULL)
 
 private fun TaskCompletionEntity.toJson() = JSONObject()
     .put("id", id).put("taskId", taskId).put("taskTitle", taskTitle).put("completedAt", completedAt)
     .put("focusDuration", focusDuration ?: JSONObject.NULL)
+    .put("estimateMinutes", estimateMinutes ?: JSONObject.NULL).put("actualMinutes", actualMinutes ?: JSONObject.NULL)
 
 private fun FocusSessionEntity.toJson() = JSONObject()
     .put("id", id).put("taskId", taskId).put("completedAt", completedAt).put("durationMinutes", durationMinutes)

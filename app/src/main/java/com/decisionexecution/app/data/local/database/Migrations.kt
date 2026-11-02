@@ -51,3 +51,14 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
         db.execSQL("CREATE INDEX IF NOT EXISTS `index_subtasks_taskId` ON `subtasks` (`taskId`)")
     }
 }
+
+/** Adds time estimates, dodge counts and snoozing to tasks, and estimate vs actual time to completions. */
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `tasks` ADD COLUMN `estimateMinutes` INTEGER")
+        db.execSQL("ALTER TABLE `tasks` ADD COLUMN `dodges` INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE `tasks` ADD COLUMN `snoozedUntil` INTEGER")
+        db.execSQL("ALTER TABLE `task_completions` ADD COLUMN `estimateMinutes` INTEGER")
+        db.execSQL("ALTER TABLE `task_completions` ADD COLUMN `actualMinutes` INTEGER")
+    }
+}

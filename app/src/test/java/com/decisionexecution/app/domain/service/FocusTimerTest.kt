@@ -180,7 +180,7 @@ class FocusTimerTest : StringSpec({
         prefs.getFocusSession() shouldBe null
     }
 
-    "a finished focus phase records its minutes once; ending early records nothing" {
+    "a finished focus phase records its minutes once; ending early keeps real focus time but not a few minutes" {
         val clock = FakeTimeSource()
         val performance = mockk<PerformanceRepository>(relaxed = true)
         val manager = focusSessionManager(clock = clock, performance = performance)
@@ -195,7 +195,13 @@ class FocusTimerTest : StringSpec({
         early.startSession(task, focusDuration = 25, breakDuration = 5)
         clock.advanceSeconds(600)
         early.endSession()
-        coVerify(exactly = 1) { performance.recordFocusSession(any(), any(), any()) }
+        coVerify(exactly = 1) { performance.recordFocusSession("t-1", clock.now, 10) }
+
+        val blip = focusSessionManager(clock = clock, performance = performance)
+        blip.startSession(task, focusDuration = 25, breakDuration = 5)
+        clock.advanceSeconds(120)
+        blip.endSession()
+        coVerify(exactly = 2) { performance.recordFocusSession(any(), any(), any()) }
     }
 
     "ending early clears storage so nothing is restored later" {

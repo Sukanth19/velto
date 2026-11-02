@@ -1,5 +1,9 @@
 package com.decisionexecution.app
 
+import com.decisionexecution.app.testutil.noCalibration
+import com.decisionexecution.app.testutil.stubPick
+import com.decisionexecution.app.domain.usecase.DayPhaseSource
+
 import io.mockk.mockk
 import android.content.Context
 import androidx.room.Room
@@ -72,7 +76,7 @@ class UserFlowsTest {
     private val manager by lazy {
         focusSessionManager(prefs, taskRepository, clock, notifier = notifier, performance = performanceRepository)
     }
-    private val getBestTask by lazy { GetBestTaskUseCase(taskRepository, scoring) }
+    private val getBestTask by lazy { GetBestTaskUseCase(taskRepository, scoring, DayPhaseSource.NEUTRAL) }
     private val justStart by lazy { JustStartUseCase(getBestTask, StartFocusSessionUseCase(manager), prefs) }
     private val metrics by lazy { GetProductivityMetricsUseCase(performanceRepository) }
 
@@ -89,7 +93,7 @@ class UserFlowsTest {
         val important = task("Finish report", TaskCategory.WORK, 5, 5)
         create(important)
 
-        val home = HomeViewModel(getBestTask, justStart, metrics, GetInsightsUseCase(performanceRepository), InMemoryPreferencesRepository())
+        val home = HomeViewModel(getBestTask, justStart, metrics, GetInsightsUseCase(performanceRepository), InMemoryPreferencesRepository(), mockk(relaxed = true), mockk(relaxed = true), noCalibration())
         settle()
         home.uiState.value.bestTask shouldBe important
 
@@ -209,7 +213,7 @@ class UserFlowsTest {
 
     @Test
     fun `just start with no tasks tells the user to add one`() = runTest {
-        val home = HomeViewModel(getBestTask, justStart, metrics, GetInsightsUseCase(performanceRepository), InMemoryPreferencesRepository())
+        val home = HomeViewModel(getBestTask, justStart, metrics, GetInsightsUseCase(performanceRepository), InMemoryPreferencesRepository(), mockk(relaxed = true), mockk(relaxed = true), noCalibration())
         settle()
         home.onJustStartClicked()
         settle()

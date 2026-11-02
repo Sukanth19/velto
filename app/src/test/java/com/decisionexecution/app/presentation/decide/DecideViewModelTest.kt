@@ -1,5 +1,9 @@
 package com.decisionexecution.app.presentation.decide
 
+import com.decisionexecution.app.testutil.noCalibration
+import com.decisionexecution.app.testutil.stubPick
+import com.decisionexecution.app.domain.usecase.DayPhaseSource
+
 import androidx.lifecycle.SavedStateHandle
 import com.decisionexecution.app.domain.model.EnergyTag
 import com.decisionexecution.app.domain.model.Task
@@ -34,7 +38,7 @@ class DecideViewModelTest : StringSpec({
         every { tasks.getAllTasks() } returns flowOf(listOf(report, email))
         return DecideViewModel(
             SavedStateHandle(mapOf(DecideViewModel.MINUTES_ARG to minutes)),
-            PickTaskUseCase(tasks, InMemoryMoodRepository()),
+            PickTaskUseCase(tasks, InMemoryMoodRepository(), DayPhaseSource.NEUTRAL, noCalibration()),
             start
         )
     }

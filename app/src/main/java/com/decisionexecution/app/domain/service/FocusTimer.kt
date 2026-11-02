@@ -23,4 +23,22 @@ interface FocusTimerScheduler {
 interface FocusNotifier {
     fun onFocusComplete(taskTitle: String)
     fun onBreakComplete()
+    /** A two-minute starter ended; ask whether to keep going */
+    fun onStarterComplete(taskTitle: String) {}
+    /** The running timer changed (started, paused, extended, phase change); null once the session is over */
+    fun onTimerChanged(timer: TimerNotice?) {}
 }
+
+/**
+ * What a live timer notification shows. [endsAtMillis] is set while running, so the system can count
+ * down on its own without the app waking up every second.
+ */
+data class TimerNotice(
+    val taskTitle: String,
+    val isBreak: Boolean,
+    val isPaused: Boolean,
+    val isStarter: Boolean,
+    val elapsedSeconds: Int,
+    val totalSeconds: Int,
+    val endsAtMillis: Long?
+)

@@ -57,6 +57,12 @@ class TaskRepositoryImpl @Inject constructor(
         taskDao.uncompleteTask(taskId)
     }
     
+    override suspend fun addDodge(taskId: String) = taskDao.addDodge(taskId)
+
+    override suspend fun clearDodges(taskId: String) = taskDao.clearDodges(taskId)
+
+    override suspend fun snooze(taskId: String, until: LocalDate) = taskDao.snooze(taskId, until.toEpochDay())
+
     override fun getTasksByCategory(category: TaskCategory): Flow<List<Task>> {
         return taskDao.getTasksByCategory(category.name).map { entities ->
             entities.map { it.toDomainModel() }
@@ -95,7 +101,10 @@ class TaskRepositoryImpl @Inject constructor(
             createdAt = createdAt,
             dueDate = dueDate?.let(LocalDate::ofEpochDay),
             // A repeat from a newer app version is dropped rather than crashing
-            recurrence = recurrence?.let { name -> Recurrence.entries.find { it.name == name } }
+            recurrence = recurrence?.let { name -> Recurrence.entries.find { it.name == name } },
+            estimateMinutes = estimateMinutes,
+            dodges = dodges,
+            snoozedUntil = snoozedUntil?.let(LocalDate::ofEpochDay)
         )
     }
     
@@ -114,7 +123,10 @@ class TaskRepositoryImpl @Inject constructor(
             isCompleted = false,
             completedAt = null,
             dueDate = dueDate?.toEpochDay(),
-            recurrence = recurrence?.name
+            recurrence = recurrence?.name,
+            estimateMinutes = estimateMinutes,
+            dodges = dodges,
+            snoozedUntil = snoozedUntil?.toEpochDay()
         )
     }
 }

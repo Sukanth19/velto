@@ -49,6 +49,35 @@ class RecurringTasksTest {
     @After
     fun tearDown() = db.close()
 
+    @Test
+    fun completingRecordsEstimateAgainstFocusSinceLastTime() = runBlocking {
+        val performance = PerformanceRepositoryImpl(db.taskCompletionDao(), db.focusSessionDao())
+        tasks.insertTask(task("est", null, null).copy(estimateMinutes = 30))
+        performance.recordFocusSession("est", 1_000, 25)
+        performance.recordFocusSession("est", 2_000, 20)
+        complete("est", today = today)
+
+        performance.getEstimateSamples().first() shouldBe listOf(com.decisionexecution.app.domain.repository.EstimateSample(30, 45))
+        Unit
+    }
+
+    @Test
+    fun snoozingCountsAsADodgeAndCompletingARepeatClearsIt() = runBlocking {
+        tasks.insertTask(task("r", Recurrence.DAILY, today))
+        tasks.snooze("r", today.plusDays(1))
+        tasks.addDodge("r")
+        tasks.getTaskById("r").first()!!.let {
+            it.dodges shouldBe 2
+            it.snoozedUntil shouldBe today.plusDays(1)
+        }
+        complete("r", today = today)
+        tasks.getTaskById("r").first()!!.let {
+            it.dodges shouldBe 0
+            it.snoozedUntil shouldBe null
+        }
+        Unit
+    }
+
     private fun task(id: String, recurrence: Recurrence?, due: LocalDate?) =
         Task(id, "Water plants", null, TaskCategory.PERSONAL, 3, 3, TaskEffort.LOW, null, 1, dueDate = due, recurrence = recurrence)
 

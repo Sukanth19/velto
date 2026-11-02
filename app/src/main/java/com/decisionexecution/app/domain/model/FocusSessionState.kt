@@ -6,13 +6,16 @@ sealed class FocusSessionState {
     data class Focusing(
         val task: Task,
         val elapsedSeconds: Int,
-        val totalSeconds: Int
+        val totalSeconds: Int,
+        /** A two-minute starter from Shrink it, with no break after */
+        val isStarter: Boolean = false
     ) : FocusSessionState()
     
     data class Paused(
         val task: Task,
         val elapsedSeconds: Int,
-        val totalSeconds: Int
+        val totalSeconds: Int,
+        val isStarter: Boolean = false
     ) : FocusSessionState()
     
     data class Breaking(

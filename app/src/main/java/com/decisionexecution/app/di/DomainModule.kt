@@ -2,6 +2,8 @@ package com.decisionexecution.app.di
 
 import com.decisionexecution.app.domain.service.ScoringEngine
 import com.decisionexecution.app.domain.service.EisenhowerClassifier
+import com.decisionexecution.app.domain.usecase.DayPhaseSource
+import com.decisionexecution.app.domain.usecase.GetDayPhaseUseCase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -17,6 +19,9 @@ object DomainModule {
     @Singleton
     fun provideScoringEngine(): ScoringEngine = ScoringEngine()
     
+    @Provides
+    fun provideDayPhaseSource(useCase: GetDayPhaseUseCase): DayPhaseSource = useCase
+
     @Provides
     @Singleton
     fun provideEisenhowerClassifier(): EisenhowerClassifier = EisenhowerClassifier()

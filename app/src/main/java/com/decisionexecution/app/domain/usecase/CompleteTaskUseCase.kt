@@ -34,17 +34,20 @@ class CompleteTaskUseCase @Inject constructor(
     suspend operator fun invoke(taskId: String, focusDuration: Int? = null, today: LocalDate = LocalDate.now()): CompletionReceipt {
         val timestamp = System.currentTimeMillis()
         val task = taskRepository.getTaskById(taskId).first()
+        // Measured before recording, so this completion's own timestamp doesn't cut the window short
+        val actualMinutes = performanceRepository.focusMinutesSinceLastCompletion(taskId).takeIf { it > 0 }
         val recurrence = task?.recurrence
         val receipt = if (task != null && recurrence != null) {
             val doneSteps = taskRepository.getSubtasks(taskId).first().filter { it.isDone }.map { it.id }.toSet()
-            taskRepository.updateTask(task.copy(dueDate = recurrence.next(task.dueDate ?: today, today)))
+            // The next round starts fresh, without the last one's dodges or snooze
+            taskRepository.updateTask(task.copy(dueDate = recurrence.next(task.dueDate ?: today, today), dodges = 0, snoozedUntil = null))
             taskRepository.setDoneSubtasks(taskId, emptySet())
             CompletionReceipt(taskId, timestamp, rescheduled = task, doneSubtaskIds = doneSteps)
         } else {
             taskRepository.completeTask(taskId, timestamp)
             CompletionReceipt(taskId, timestamp)
         }
-        performanceRepository.recordCompletion(taskId, timestamp, focusDuration)
+        performanceRepository.recordCompletion(taskId, timestamp, focusDuration, task?.estimateMinutes, actualMinutes)
         return receipt
     }
 }

@@ -14,6 +14,7 @@ import com.decisionexecution.app.data.local.dao.StatsDao
 import com.decisionexecution.app.data.local.database.MIGRATION_1_2
 import com.decisionexecution.app.data.local.database.MIGRATION_2_3
 import com.decisionexecution.app.data.local.database.MIGRATION_3_4
+import com.decisionexecution.app.data.local.database.MIGRATION_4_5
 import com.decisionexecution.app.data.local.dao.SubtaskDao
 import dagger.Module
 import dagger.Provides
@@ -33,7 +34,7 @@ object DatabaseModule {
             context,
             AppDatabase::class.java,
             "decision_execution_db"
-        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).build()
+        ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5).build()
     }
     
     @Provides

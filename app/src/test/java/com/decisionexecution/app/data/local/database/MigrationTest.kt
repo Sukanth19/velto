@@ -86,6 +86,33 @@ class MigrationTest {
         db.query("SELECT COUNT(*) FROM subtasks").use { it.moveToFirst(); it.getInt(0) shouldBe 1 }
     }
 
+    @Test
+    fun `migrating 4 to 5 adds estimates, dodges and snoozes with safe defaults`() {
+        helper.createDatabase(DB_NAME, 4).use { db ->
+            db.execSQL(
+                "INSERT INTO tasks (id, title, description, category, urgency, importance, effort, energyTag, createdAt, isCompleted, completedAt, dueDate, recurrence) " +
+                    "VALUES ('t-1', 'Keep me', NULL, 'WORK', 3, 4, 'LOW', NULL, 1, 0, NULL, NULL, NULL)"
+            )
+            db.execSQL("INSERT INTO task_completions (id, taskId, taskTitle, completedAt, focusDuration) VALUES ('c-1', 't-1', '', 5, NULL)")
+        }
+
+        // Validates the migrated schema against 5.json
+        val db = helper.runMigrationsAndValidate(DB_NAME, 5, true, MIGRATION_4_5)
+
+        db.query("SELECT title, estimateMinutes, dodges, snoozedUntil FROM tasks").use {
+            it.moveToFirst()
+            it.getString(0) shouldBe "Keep me"
+            it.isNull(1) shouldBe true
+            it.getInt(2) shouldBe 0
+            it.isNull(3) shouldBe true
+        }
+        db.query("SELECT estimateMinutes, actualMinutes FROM task_completions").use {
+            it.moveToFirst()
+            it.isNull(0) shouldBe true
+            it.isNull(1) shouldBe true
+        }
+    }
+
     private companion object {
         const val DB_NAME = "migration-test"
     }
