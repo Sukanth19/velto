@@ -10,12 +10,14 @@ import javax.inject.Inject
  */
 class UndoCompleteTaskUseCase @Inject constructor(
     private val taskRepository: TaskRepository,
-    private val performanceRepository: PerformanceRepository
+    private val performanceRepository: PerformanceRepository,
+    private val calendarSync: CalendarSyncUseCase
 ) {
     suspend operator fun invoke(receipt: CompletionReceipt) {
         val previous = receipt.rescheduled
         if (previous != null) {
             taskRepository.updateTask(previous)
+            calendarSync.refresh(previous)
             taskRepository.setDoneSubtasks(receipt.taskId, receipt.doneSubtaskIds)
         } else {
             taskRepository.uncompleteTask(receipt.taskId)

@@ -12,6 +12,8 @@ import com.decisionexecution.app.domain.model.Subtask
 import com.decisionexecution.app.domain.repository.TaskRepository
 import java.time.LocalDate
 import com.decisionexecution.app.domain.repository.InboxRepository
+import com.decisionexecution.app.domain.repository.CalendarRepository
+import com.decisionexecution.app.domain.usecase.CalendarSyncUseCase
 import com.decisionexecution.app.domain.usecase.CreateTaskUseCase
 import com.decisionexecution.app.domain.usecase.GetEstimateCalibrationUseCase
 import com.decisionexecution.app.domain.service.EstimateCalibration
@@ -44,6 +46,10 @@ data class AddEditTaskUiState(
     val calibration: EstimateCalibration? = null,
     val steps: List<Subtask> = emptyList(),
     val stepDraft: String = "",
+    /** A calendar is linked in settings, so tasks with a due date can go on it */
+    val calendarLinked: Boolean = false,
+    /** Put this task on the linked calendar when saved; on by default for new tasks once a calendar is linked */
+    val addToCalendar: Boolean = false,
     val titleError: String? = null,
     val error: String? = null,
     val isSaved: Boolean = false
@@ -61,12 +67,15 @@ class AddEditTaskViewModel @Inject constructor(
     private val updateTaskUseCase: UpdateTaskUseCase,
     private val inboxRepository: InboxRepository,
     private val taskRepository: TaskRepository,
-    getEstimateCalibrationUseCase: GetEstimateCalibrationUseCase
+    getEstimateCalibrationUseCase: GetEstimateCalibrationUseCase,
+    private val calendarRepository: CalendarRepository,
+    private val calendarSync: CalendarSyncUseCase
 ) : ViewModel() {
 
     private val taskId: String? = savedStateHandle[TASK_ID_ARG]
     private val inboxItemId: String? = savedStateHandle[INBOX_ID_ARG]
     private var original: Task? = null
+    private var wasOnCalendar = false
 
     private val _uiState = MutableStateFlow(
         AddEditTaskUiState(isEditing = taskId != null, title = savedStateHandle.get<String>(TITLE_ARG).orEmpty())
@@ -76,6 +85,12 @@ class AddEditTaskViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             getEstimateCalibrationUseCase().collect { calibration -> _uiState.update { it.copy(calibration = calibration) } }
+        }
+        viewModelScope.launch {
+            val linked = calendarRepository.settings().first().isLinked
+            wasOnCalendar = taskId != null && calendarSync.isOnCalendar(taskId)
+            // New tasks go on the calendar by default; an edited one keeps whatever it had
+            _uiState.update { it.copy(calendarLinked = linked, addToCalendar = if (taskId == null) linked else wasOnCalendar) }
         }
         if (taskId != null) {
             viewModelScope.launch {
@@ -115,6 +130,7 @@ class AddEditTaskViewModel @Inject constructor(
     fun onRecurrenceChange(value: Recurrence?) = _uiState.update { it.copy(recurrence = value) }
     fun onEstimateChange(value: Int?) = _uiState.update { it.copy(estimateMinutes = value) }
     fun onStepDraftChange(value: String) = _uiState.update { it.copy(stepDraft = value) }
+    fun onAddToCalendarChange(value: Boolean) = _uiState.update { it.copy(addToCalendar = value) }
 
     fun onAddStep() {
         val title = _uiState.value.stepDraft.trim()
@@ -160,10 +176,20 @@ class AddEditTaskViewModel @Inject constructor(
                 val steps = state.steps + listOfNotNull(pending)
                 if (steps.isNotEmpty() || existing != null) taskRepository.replaceSubtasks(task.id, steps)
                 inboxItemId?.let { inboxRepository.delete(it) }
+                syncCalendar(task, state)
                 _uiState.update { it.copy(isSaved = true) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.toUserMessage("save the task")) }
             }
+        }
+    }
+
+    /** The task is saved either way; the calendar only gets a copy */
+    private suspend fun syncCalendar(task: Task, state: AddEditTaskUiState) {
+        if (!state.calendarLinked) return
+        when {
+            state.addToCalendar && task.dueDate != null -> calendarSync.add(task)
+            wasOnCalendar -> calendarSync.remove(task.id)
         }
     }
 

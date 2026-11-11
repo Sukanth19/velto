@@ -41,6 +41,13 @@ import androidx.compose.foundation.verticalScroll
 import android.net.Uri
 import android.text.format.DateFormat
 import com.decisionexecution.app.domain.model.Reminder
+import android.Manifest
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.EventAvailable
+import com.decisionexecution.app.domain.model.CalendarReminder
+import com.decisionexecution.app.domain.model.CalendarSettings
+import com.decisionexecution.app.domain.model.DeviceCalendar
 import com.decisionexecution.app.domain.service.formatMinuteOfDay
 import java.time.LocalDate
 import androidx.compose.ui.unit.dp
@@ -80,6 +87,9 @@ fun SettingsScreen(
     }
     val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         pendingImport = uri
+    }
+    val calendarPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
+        if (results.values.all { it }) viewModel.onCalendarAccessGranted() else viewModel.onCalendarAccessDenied()
     }
     LaunchedEffect(uiState.backupMessage) {
         uiState.backupMessage?.let {
@@ -192,6 +202,15 @@ fun SettingsScreen(
                 onChange = viewModel::onWeeklyReviewReminderChanged
             )
 
+            SectionTitle("Google Calendar")
+            CalendarSetting(
+                settings = uiState.calendar,
+                error = uiState.calendarError,
+                onLink = { calendarPermission.launch(arrayOf(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR)) },
+                onUnlink = viewModel::onUnlinkCalendar,
+                onReminderChange = viewModel::onCalendarReminderChanged
+            )
+
             SectionTitle("Your data")
             Text(
                 "Everything stays on this phone and is included in your Android backup. " +
@@ -226,6 +245,10 @@ fun SettingsScreen(
         }
     }
 
+    uiState.calendarChoices?.let { calendars ->
+        CalendarPickerDialog(calendars, onPick = viewModel::onCalendarPicked, onDismiss = viewModel::onCalendarPickerDismissed)
+    }
+
     pendingImport?.let { uri ->
         AlertDialog(
             onDismissRequest = { pendingImport = null },
@@ -243,6 +266,92 @@ fun SettingsScreen(
             dismissButton = { TextButton(onClick = { pendingImport = null }) { Text("Cancel") } }
         )
     }
+}
+
+/**
+ * Link a calendar on the phone (Google Calendar syncs it to the account) so tasks with due dates
+ * can go on it, and pick when it reminds about them.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun CalendarSetting(
+    settings: CalendarSettings,
+    error: String?,
+    onLink: () -> Unit,
+    onUnlink: () -> Unit,
+    onReminderChange: (CalendarReminder) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+        val calendar = settings.calendar
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                if (calendar != null) Icons.Rounded.EventAvailable else Icons.Rounded.CalendarMonth,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Spacer(Modifier.width(Spacing.md))
+            Column(Modifier.weight(1f)) {
+                Text(if (calendar != null) "Linked to ${calendar.name}" else "Not linked", style = MaterialTheme.typography.labelLarge)
+                Text(
+                    if (calendar != null) calendar.accountName
+                    else "Add tasks with a due date to your calendar, so it reminds you before tests and deadlines",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+            FilledTonalButton(onClick = onLink, shapes = ButtonDefaults.shapes()) {
+                Text(if (calendar != null) "Change calendar" else "Link Google Calendar")
+            }
+            if (calendar != null) OutlinedButton(onClick = onUnlink, shapes = ButtonDefaults.shapes()) { Text("Unlink") }
+        }
+        error?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) }
+        if (calendar != null) {
+            Text("Remind me", style = MaterialTheme.typography.labelLarge)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                CalendarReminder.entries.forEach { reminder ->
+                    FilterChip(
+                        selected = reminder == settings.reminder,
+                        onClick = { onReminderChange(reminder) },
+                        label = { Text(reminder.label) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CalendarPickerDialog(calendars: List<DeviceCalendar>, onPick: (DeviceCalendar) -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Pick a calendar") },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                calendars.forEach { calendar ->
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { onPick(calendar) }
+                            .padding(vertical = Spacing.sm, horizontal = Spacing.xs)
+                    ) {
+                        Text(calendar.name, style = MaterialTheme.typography.titleSmall)
+                        if (calendar.accountName != calendar.name) {
+                            Text(
+                                calendar.accountName,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
 }
 
 @Composable

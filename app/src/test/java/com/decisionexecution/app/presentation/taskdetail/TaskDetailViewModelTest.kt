@@ -1,7 +1,11 @@
 package com.decisionexecution.app.presentation.taskdetail
 
+import com.decisionexecution.app.domain.usecase.CalendarSyncUseCase
 import androidx.lifecycle.SavedStateHandle
 import com.decisionexecution.app.testutil.taskRepositoryWithSteps
+import com.decisionexecution.app.testutil.FakeCalendarRepository
+import com.decisionexecution.app.testutil.GOOGLE_CALENDAR
+import java.time.LocalDate
 import com.decisionexecution.app.domain.model.*
 import com.decisionexecution.app.domain.usecase.CompleteTaskUseCase
 import com.decisionexecution.app.domain.usecase.DeleteTaskUseCase
@@ -63,15 +67,62 @@ class TaskDetailViewModelTest : StringSpec({
         viewModel.uiState.value.isFinished shouldBe false
         viewModel.uiState.value.error shouldBe "Couldn't delete the task. Please try again."
     }
+
+    val test = task.copy(title = "Study for test", dueDate = LocalDate.of(2026, 11, 16))
+
+    "add to calendar puts the task on the linked calendar" {
+        val calendar = FakeCalendarRepository(linked = GOOGLE_CALENDAR)
+        val viewModel = createViewModel(test, calendar = calendar)
+        viewModel.uiState.value.calendarLinked shouldBe true
+        viewModel.uiState.value.onCalendar shouldBe false
+
+        viewModel.onAddToCalendar()
+
+        calendar.events.getValue("t-1").date shouldBe LocalDate.of(2026, 11, 16)
+        viewModel.uiState.value.onCalendar shouldBe true
+        viewModel.uiState.value.calendarMessage shouldBe "Added to your calendar"
+    }
+
+    "remove takes it back off the calendar" {
+        val calendar = FakeCalendarRepository(linked = GOOGLE_CALENDAR)
+        val viewModel = createViewModel(test, calendar = calendar)
+        viewModel.onAddToCalendar()
+
+        viewModel.onRemoveFromCalendar()
+
+        calendar.events shouldBe emptyMap()
+        viewModel.uiState.value.onCalendar shouldBe false
+        viewModel.uiState.value.calendarMessage shouldBe "Removed from your calendar"
+    }
+
+    "lost calendar access says to link again" {
+        val calendar = FakeCalendarRepository(linked = GOOGLE_CALENDAR).apply { failWith = SecurityException("revoked") }
+        val viewModel = createViewModel(test, calendar = calendar)
+
+        viewModel.onAddToCalendar()
+
+        viewModel.uiState.value.onCalendar shouldBe false
+        viewModel.uiState.value.calendarMessage shouldBe "Velto can't reach your calendar. Link it again in Settings"
+    }
+
+    "without a linked calendar it says to link one" {
+        val viewModel = createViewModel(test, calendar = FakeCalendarRepository(linked = null))
+
+        viewModel.uiState.value.calendarLinked shouldBe false
+        viewModel.onAddToCalendar()
+
+        viewModel.uiState.value.calendarMessage shouldBe "Link a calendar in Settings first"
+    }
 })
 
 private fun createViewModel(
     task: Task?,
     complete: CompleteTaskUseCase = mockk(relaxed = true),
-    delete: DeleteTaskUseCase = mockk(relaxed = true)
+    delete: DeleteTaskUseCase = mockk(relaxed = true),
+    calendar: FakeCalendarRepository = FakeCalendarRepository()
 ): TaskDetailViewModel {
     val getTask = mockk<GetTaskByIdUseCase>()
     every { getTask(any()) } returns flowOf(task)
     val handle = SavedStateHandle(mapOf(TaskDetailViewModel.TASK_ID_ARG to "t-1"))
-    return TaskDetailViewModel(handle, getTask, complete, delete, taskRepositoryWithSteps())
+    return TaskDetailViewModel(handle, getTask, complete, delete, taskRepositoryWithSteps(), calendar, CalendarSyncUseCase(calendar))
 }

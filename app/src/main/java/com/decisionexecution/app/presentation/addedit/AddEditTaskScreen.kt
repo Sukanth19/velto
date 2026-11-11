@@ -117,6 +117,9 @@ fun AddEditTaskScreen(
                 { it?.label ?: "Never" },
                 viewModel::onRecurrenceChange
             )
+            if (uiState.dueDate != null || uiState.recurrence != null) {
+                CalendarToggle(uiState.calendarLinked, uiState.addToCalendar, viewModel::onAddToCalendarChange)
+            }
 
             StepsEditor(
                 steps = uiState.steps,
@@ -158,6 +161,34 @@ private fun EstimatePicker(estimate: Int?, calibration: EstimateCalibration?, on
                 color = MaterialTheme.colorScheme.primary
             )
         }
+    }
+}
+
+/**
+ * Put a task with a due date on the linked calendar, so the calendar app reminds about it.
+ * Without a linked calendar it points to where to link one.
+ */
+@Composable
+private fun CalendarToggle(linked: Boolean, checked: Boolean, onChange: (Boolean) -> Unit) {
+    if (!linked) {
+        Text(
+            "Link Google Calendar in Settings to add tasks like this to your calendar with a reminder",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        return
+    }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text("Add to Google Calendar", style = MaterialTheme.typography.labelLarge)
+            Text(
+                "An all-day event on the due date, with your reminder",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Spacer(Modifier.width(Spacing.md))
+        Switch(checked = checked, onCheckedChange = onChange)
     }
 }
 

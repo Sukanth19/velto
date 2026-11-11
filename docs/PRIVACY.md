@@ -1,6 +1,6 @@
 # Velto privacy policy
 
-_Last updated: 30 October 2026_
+_Last updated: 11 November 2026_
 
 Velto is a productivity app: tasks, focus sessions, habits, a quick-capture inbox and a mood journal. This policy explains what happens to the information you put into it.
 
@@ -25,12 +25,13 @@ If Velto crashes, details of the error (the technical error message, the app ver
 
 - **Notifications**: to tell you when focus time and breaks end, and for the optional daily reminders and the weekly review.
 - **Do Not Disturb access**: only if you turn on "Silence notifications while focusing". Velto uses it to turn Do Not Disturb on during focus and back off afterwards.
+- **Calendar**: only if you link a calendar in Settings. Velto reads the list of calendars on your phone so you can pick one, and adds, moves or removes events only for tasks you put on your calendar. It doesn't read your other events. Your calendar app (such as Google Calendar) syncs those events to your account under its own privacy policy.
 
 Velto doesn't use your location, contacts, camera, microphone or the internet.
 
 ## Sharing
 
-The only things that leave your phone are things you share yourself: an exported backup file, a "week in review" image, or a crash report.
+The only things that leave your phone are things you share yourself: an exported backup file, a "week in review" image, a crash report, or tasks you add to a calendar, which your calendar app syncs.
 
 ## Children
 

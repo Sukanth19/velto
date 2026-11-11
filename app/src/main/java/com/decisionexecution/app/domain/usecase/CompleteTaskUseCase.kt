@@ -22,11 +22,12 @@ data class CompletionReceipt(
 
 /**
  * Completes a task and records it for metrics. A repeating task isn't closed: it moves to its
- * next date with its steps unticked, ready to go again.
+ * next date with its steps unticked, ready to go again, and its calendar event moves with it.
  */
 class CompleteTaskUseCase @Inject constructor(
     private val taskRepository: TaskRepository,
-    private val performanceRepository: PerformanceRepository
+    private val performanceRepository: PerformanceRepository,
+    private val calendarSync: CalendarSyncUseCase
 ) {
     /**
      * @param focusDuration Focus minutes if completed from a focus session
@@ -40,7 +41,10 @@ class CompleteTaskUseCase @Inject constructor(
         val receipt = if (task != null && recurrence != null) {
             val doneSteps = taskRepository.getSubtasks(taskId).first().filter { it.isDone }.map { it.id }.toSet()
             // The next round starts fresh, without the last one's dodges or snooze
-            taskRepository.updateTask(task.copy(dueDate = recurrence.next(task.dueDate ?: today, today), dodges = 0, snoozedUntil = null))
+            val nextRound = task.copy(dueDate = recurrence.next(task.dueDate ?: today, today), dodges = 0, snoozedUntil = null)
+            taskRepository.updateTask(nextRound)
+            // Its calendar event moves on to the next date too
+            calendarSync.refresh(nextRound)
             taskRepository.setDoneSubtasks(taskId, emptySet())
             CompletionReceipt(taskId, timestamp, rescheduled = task, doneSubtaskIds = doneSteps)
         } else {

@@ -1,5 +1,6 @@
 package com.decisionexecution.app.domain.usecase
 
+import com.decisionexecution.app.testutil.noCalendarSync
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
@@ -42,8 +43,8 @@ class RecurringTasksTest {
             .build()
         tasks = TaskRepositoryImpl(db.taskDao(), db.taskCompletionDao(), db.subtaskDao())
         val performance = PerformanceRepositoryImpl(db.taskCompletionDao(), db.focusSessionDao())
-        complete = CompleteTaskUseCase(tasks, performance)
-        undo = UndoCompleteTaskUseCase(tasks, performance)
+        complete = CompleteTaskUseCase(tasks, performance, noCalendarSync())
+        undo = UndoCompleteTaskUseCase(tasks, performance, noCalendarSync())
     }
 
     @After

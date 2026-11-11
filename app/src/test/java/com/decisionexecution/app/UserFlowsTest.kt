@@ -129,11 +129,11 @@ class UserFlowsTest {
     fun `created task appears in its category, swipe-complete removes it and counts in metrics`() = runTest {
         val tasks = TasksViewModel(
             GetAllTasksUseCase(taskRepository),
-            CompleteTaskUseCase(taskRepository, performanceRepository),
-            DeleteTaskUseCase(taskRepository),
+            CompleteTaskUseCase(taskRepository, performanceRepository, noCalendarSync()),
+            DeleteTaskUseCase(taskRepository, noCalendarSync()),
             scoring,
             EisenhowerClassifier(),
-            UndoCompleteTaskUseCase(taskRepository, performanceRepository),
+            UndoCompleteTaskUseCase(taskRepository, performanceRepository, noCalendarSync()),
             CreateTaskUseCase(taskRepository)
         )
         val created = task("Read chapter 4", TaskCategory.SCHOOL, 3, 4)
@@ -161,11 +161,11 @@ class UserFlowsTest {
     fun `deleting a task can be undone`() = runTest {
         val tasks = TasksViewModel(
             GetAllTasksUseCase(taskRepository),
-            CompleteTaskUseCase(taskRepository, performanceRepository),
-            DeleteTaskUseCase(taskRepository),
+            CompleteTaskUseCase(taskRepository, performanceRepository, noCalendarSync()),
+            DeleteTaskUseCase(taskRepository, noCalendarSync()),
             scoring,
             EisenhowerClassifier(),
-            UndoCompleteTaskUseCase(taskRepository, performanceRepository),
+            UndoCompleteTaskUseCase(taskRepository, performanceRepository, noCalendarSync()),
             CreateTaskUseCase(taskRepository)
         )
         val created = task("Call the bank", TaskCategory.PERSONAL, 4, 3)
@@ -199,7 +199,7 @@ class UserFlowsTest {
     @Test
     fun `changed preferences apply to the next focus session`() = runTest {
         CreateTaskUseCase(taskRepository)(task("Practice piano", TaskCategory.PERSONAL, 3, 3))
-        val settings = SettingsViewModel(prefs, mockk(relaxed = true), progressUseCase(com.decisionexecution.app.domain.service.LifetimeStats()))
+        val settings = SettingsViewModel(prefs, mockk(relaxed = true), progressUseCase(com.decisionexecution.app.domain.service.LifetimeStats()), FakeCalendarRepository())
 
         settings.onFocusDurationChanged(50)
         settings.onBreakDurationChanged(10)

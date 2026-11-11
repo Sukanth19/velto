@@ -1,5 +1,6 @@
 package com.decisionexecution.app.domain.usecase
 
+import com.decisionexecution.app.testutil.noCalendarSync
 import com.decisionexecution.app.domain.model.*
 import com.decisionexecution.app.domain.repository.PerformanceRepository
 import com.decisionexecution.app.domain.repository.TaskCompletion
@@ -134,7 +135,7 @@ class TaskUseCasesTest : StringSpec({
     "CompleteTaskUseCase should record completion timestamp" {
         val taskRepository = mockk<TaskRepository>()
         val performanceRepository = mockk<PerformanceRepository>()
-        val completeTaskUseCase = CompleteTaskUseCase(taskRepository, performanceRepository)
+        val completeTaskUseCase = CompleteTaskUseCase(taskRepository, performanceRepository, noCalendarSync())
         
         val taskId = "task-123"
         val focusDuration = 25
@@ -166,7 +167,7 @@ class TaskUseCasesTest : StringSpec({
     "CompleteTaskUseCase should record completion without focus duration" {
         val taskRepository = mockk<TaskRepository>()
         val performanceRepository = mockk<PerformanceRepository>()
-        val completeTaskUseCase = CompleteTaskUseCase(taskRepository, performanceRepository)
+        val completeTaskUseCase = CompleteTaskUseCase(taskRepository, performanceRepository, noCalendarSync())
         
         val taskId = "task-456"
         
@@ -183,7 +184,7 @@ class TaskUseCasesTest : StringSpec({
     
     "DeleteTaskUseCase should remove task from queries" {
         val taskRepository = mockk<TaskRepository>()
-        val deleteTaskUseCase = DeleteTaskUseCase(taskRepository)
+        val deleteTaskUseCase = DeleteTaskUseCase(taskRepository, noCalendarSync())
         
         val taskId = "task-to-delete"
         val task = Task(

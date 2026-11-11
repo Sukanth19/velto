@@ -5,7 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.decisionexecution.app.domain.model.Subtask
 import com.decisionexecution.app.domain.model.Task
+import com.decisionexecution.app.domain.repository.CalendarRepository
 import com.decisionexecution.app.domain.repository.TaskRepository
+import com.decisionexecution.app.domain.usecase.CalendarResult
+import com.decisionexecution.app.domain.usecase.CalendarSyncUseCase
 import com.decisionexecution.app.domain.usecase.CompleteTaskUseCase
 import com.decisionexecution.app.domain.usecase.DeleteTaskUseCase
 import com.decisionexecution.app.domain.usecase.GetTaskByIdUseCase
@@ -24,6 +27,12 @@ data class TaskDetailUiState(
     val steps: List<Subtask> = emptyList(),
     val isLoading: Boolean = true,
     val isFinished: Boolean = false,
+    /** A calendar is linked, so the task can go straight onto it */
+    val calendarLinked: Boolean = false,
+    /** The task already has an event on the linked calendar */
+    val onCalendar: Boolean = false,
+    /** Result of adding to or removing from the calendar, shown once */
+    val calendarMessage: String? = null,
     val error: String? = null
 )
 
@@ -37,7 +46,9 @@ class TaskDetailViewModel @Inject constructor(
     getTaskByIdUseCase: GetTaskByIdUseCase,
     private val completeTaskUseCase: CompleteTaskUseCase,
     private val deleteTaskUseCase: DeleteTaskUseCase,
-    private val taskRepository: TaskRepository
+    private val taskRepository: TaskRepository,
+    calendarRepository: CalendarRepository,
+    private val calendarSync: CalendarSyncUseCase
 ) : ViewModel() {
 
     private val taskId: String = checkNotNull(savedStateHandle[TASK_ID_ARG])
@@ -54,6 +65,12 @@ class TaskDetailViewModel @Inject constructor(
         viewModelScope.launch {
             taskRepository.getSubtasks(taskId).catch { }.collect { steps -> _uiState.update { it.copy(steps = steps) } }
         }
+        viewModelScope.launch {
+            calendarRepository.settings().catch { }.collect { settings -> _uiState.update { it.copy(calendarLinked = settings.isLinked) } }
+        }
+        viewModelScope.launch {
+            calendarRepository.tasksOnCalendar().catch { }.collect { ids -> _uiState.update { it.copy(onCalendar = taskId in ids) } }
+        }
     }
 
     fun onComplete() = finishWith("complete the task") { completeTaskUseCase(taskId) }
@@ -61,6 +78,29 @@ class TaskDetailViewModel @Inject constructor(
     fun onToggleStep(subtaskId: String, done: Boolean) {
         viewModelScope.launch { runCatching { taskRepository.setSubtaskDone(subtaskId, done) } }
     }
+
+    fun onAddToCalendar() {
+        val task = _uiState.value.task ?: return
+        viewModelScope.launch {
+            val message = when (calendarSync.add(task)) {
+                CalendarResult.ADDED -> "Added to your calendar"
+                CalendarResult.NOT_LINKED -> "Link a calendar in Settings first"
+                CalendarResult.NO_DUE_DATE -> "Give it a due date first"
+                CalendarResult.NO_PERMISSION -> "Velto can't reach your calendar. Link it again in Settings"
+                CalendarResult.FAILED -> "Couldn't add it to your calendar. Please try again."
+            }
+            _uiState.update { it.copy(calendarMessage = message) }
+        }
+    }
+
+    fun onRemoveFromCalendar() {
+        viewModelScope.launch {
+            calendarSync.remove(taskId)
+            _uiState.update { it.copy(calendarMessage = "Removed from your calendar") }
+        }
+    }
+
+    fun onCalendarMessageShown() = _uiState.update { it.copy(calendarMessage = null) }
 
     fun onDelete() = finishWith("delete the task") { deleteTaskUseCase(taskId) }
 

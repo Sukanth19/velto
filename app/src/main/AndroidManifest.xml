@@ -10,6 +10,9 @@
     <!-- Focus sounds keep playing with the screen off -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- Only asked for when the user links a calendar, to put tasks with due dates on it -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <uses-permission android:name="android.permission.WRITE_CALENDAR" />
 
     <application
         android:name=".DecisionExecutionApplication"

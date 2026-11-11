@@ -1,5 +1,7 @@
 package com.decisionexecution.app.presentation
 
+import com.decisionexecution.app.testutil.noCalendarSync
+import com.decisionexecution.app.testutil.FakeCalendarRepository
 import com.decisionexecution.app.testutil.noCalibration
 import com.decisionexecution.app.testutil.stubPick
 import com.decisionexecution.app.domain.usecase.DayPhaseSource
@@ -234,7 +236,7 @@ class ScreensRenderTest {
     @Test
     fun addTaskScreenShowsTitleError() {
         val getTask = mockk<GetTaskByIdUseCase>()
-        val viewModel = AddEditTaskViewModel(SavedStateHandle(), getTask, mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true), taskRepositoryWithSteps(), noCalibration())
+        val viewModel = AddEditTaskViewModel(SavedStateHandle(), getTask, mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true), taskRepositoryWithSteps(), noCalibration(), FakeCalendarRepository(), noCalendarSync())
 
         render("add_task") { AddEditTaskScreen({}, viewModel) }
         composeRule.onNodeWithText("Save").performClick()
@@ -335,7 +337,7 @@ class ScreensRenderTest {
     fun settingsInOcean() {
         val prefs = mockk<PreferencesRepository>(relaxed = true)
         every { prefs.getPreferences() } returns flowOf(UserPreferences(themePalette = ThemePalette.OCEAN))
-        render("settings_ocean", palette = ThemePalette.OCEAN) { SettingsScreen({}, SettingsViewModel(prefs, mockk(relaxed = true), progressUseCase(SAMPLE_STATS))) }
+        render("settings_ocean", palette = ThemePalette.OCEAN) { SettingsScreen({}, SettingsViewModel(prefs, mockk(relaxed = true), progressUseCase(SAMPLE_STATS), FakeCalendarRepository())) }
         composeRule.onNodeWithText("Ocean").assertIsDisplayed()
     }
 
@@ -344,7 +346,7 @@ class ScreensRenderTest {
         val prefs = mockk<PreferencesRepository>(relaxed = true)
         every { prefs.getPreferences() } returns flowOf(UserPreferences(45, 10, ThemeMode.SYSTEM))
 
-        render("settings") { SettingsScreen({}, SettingsViewModel(prefs, mockk(relaxed = true), progressUseCase(SAMPLE_STATS))) }
+        render("settings") { SettingsScreen({}, SettingsViewModel(prefs, mockk(relaxed = true), progressUseCase(SAMPLE_STATS), FakeCalendarRepository())) }
         // Level 7: Rose is unlocked, Graphite and the bonsai are still to come
         composeRule.onNodeWithText("Rose").assertExists()
         composeRule.onNodeWithText("Level 9").assertExists()

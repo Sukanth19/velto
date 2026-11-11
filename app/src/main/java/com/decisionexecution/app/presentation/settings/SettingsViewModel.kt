@@ -5,6 +5,10 @@ import androidx.lifecycle.viewModelScope
 import android.content.ContentResolver
 import android.net.Uri
 import com.decisionexecution.app.domain.model.Reminder
+import com.decisionexecution.app.domain.model.CalendarReminder
+import com.decisionexecution.app.domain.model.CalendarSettings
+import com.decisionexecution.app.domain.model.DeviceCalendar
+import com.decisionexecution.app.domain.repository.CalendarRepository
 import com.decisionexecution.app.domain.model.ThemeMode
 import com.decisionexecution.app.domain.model.ThemePalette
 import com.decisionexecution.app.domain.model.FocusSound
@@ -43,6 +47,12 @@ data class SettingsUiState(
     /** Result of the last export or import, shown once */
     val backupMessage: String? = null,
     val backupBusy: Boolean = false,
+    /** Which calendar tasks go to and the reminder they get */
+    val calendar: CalendarSettings = CalendarSettings(),
+    /** Calendars to pick from while linking; null when the picker is closed */
+    val calendarChoices: List<DeviceCalendar>? = null,
+    /** Why linking didn't work, shown under the calendar setting */
+    val calendarError: String? = null,
     val error: String? = null
 )
 
@@ -61,7 +71,8 @@ fun isValidBreakDuration(minutes: Int): Boolean = minutes in BREAK_DURATION_RANG
 class SettingsViewModel @Inject constructor(
     private val preferencesRepository: PreferencesRepository,
     private val backupRepository: BackupRepository,
-    private val getProgressUseCase: GetProgressUseCase
+    private val getProgressUseCase: GetProgressUseCase,
+    private val calendarRepository: CalendarRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -70,6 +81,9 @@ class SettingsViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             getProgressUseCase().collect { progress -> _uiState.update { it.copy(level = progress.level.level) } }
+        }
+        viewModelScope.launch {
+            calendarRepository.settings().collect { calendar -> _uiState.update { it.copy(calendar = calendar) } }
         }
         viewModelScope.launch {
             preferencesRepository.getPreferences().collect { prefs ->
@@ -133,6 +147,47 @@ class SettingsViewModel @Inject constructor(
 
     fun onWeeklyReviewReminderChanged(reminder: Reminder) {
         viewModelScope.launch { preferencesRepository.updateWeeklyReviewReminder(reminder) }
+    }
+
+    /** Calendar access granted: show the calendars on the phone to pick one */
+    fun onCalendarAccessGranted() {
+        viewModelScope.launch {
+            val calendars = try {
+                calendarRepository.writableCalendars()
+            } catch (e: SecurityException) {
+                onCalendarAccessDenied()
+                return@launch
+            } catch (e: Exception) {
+                _uiState.update { it.copy(calendarError = "Couldn't read your calendars. Please try again.") }
+                return@launch
+            }
+            _uiState.update {
+                if (calendars.isEmpty()) {
+                    it.copy(calendarError = "No calendars on this phone yet. Sign in to Google Calendar first, then try again.")
+                } else {
+                    it.copy(calendarChoices = calendars, calendarError = null)
+                }
+            }
+        }
+    }
+
+    fun onCalendarAccessDenied() =
+        _uiState.update { it.copy(calendarError = "Velto needs calendar access to add your tasks to it") }
+
+    fun onCalendarPicked(calendar: DeviceCalendar) {
+        _uiState.update { it.copy(calendarChoices = null, calendarError = null) }
+        viewModelScope.launch { calendarRepository.link(calendar) }
+    }
+
+    fun onCalendarPickerDismissed() = _uiState.update { it.copy(calendarChoices = null) }
+
+    /** Stops adding new tasks; events already on the calendar stay there */
+    fun onUnlinkCalendar() {
+        viewModelScope.launch { calendarRepository.link(null) }
+    }
+
+    fun onCalendarReminderChanged(reminder: CalendarReminder) {
+        viewModelScope.launch { calendarRepository.setReminder(reminder) }
     }
 
     /** Writes the backup to a file the user picked with the system file picker */

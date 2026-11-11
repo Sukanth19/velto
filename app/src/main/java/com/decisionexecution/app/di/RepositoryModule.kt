@@ -15,6 +15,7 @@ import com.decisionexecution.app.data.local.dao.InboxDao
 import com.decisionexecution.app.data.local.dao.MoodDao
 import com.decisionexecution.app.data.local.dao.StatsDao
 import com.decisionexecution.app.data.local.dao.SubtaskDao
+import com.decisionexecution.app.data.repository.CalendarRepositoryImpl
 import com.decisionexecution.app.data.repository.HabitRepositoryImpl
 import com.decisionexecution.app.data.repository.InboxRepositoryImpl
 import com.decisionexecution.app.data.repository.MoodRepositoryImpl
@@ -23,6 +24,7 @@ import com.decisionexecution.app.data.repository.ProgressRepositoryImpl
 import com.decisionexecution.app.data.repository.TaskRepositoryImpl
 import com.decisionexecution.app.data.repository.PreferencesRepositoryImpl
 import com.decisionexecution.app.domain.repository.BackupRepository
+import com.decisionexecution.app.domain.repository.CalendarRepository
 import com.decisionexecution.app.domain.repository.HabitRepository
 import com.decisionexecution.app.domain.repository.InboxRepository
 import com.decisionexecution.app.domain.repository.MoodRepository
@@ -89,6 +91,13 @@ object RepositoryModule {
         habitDao: HabitDao,
         dataStore: DataStore<Preferences>
     ): ProgressRepository = ProgressRepositoryImpl(statsDao, habitDao, dataStore)
+
+    @Provides
+    @Singleton
+    fun provideCalendarRepository(@ApplicationContext context: Context): CalendarRepository = CalendarRepositoryImpl(
+        context.contentResolver,
+        context.getSharedPreferences(CalendarRepositoryImpl.PREFS_NAME, Context.MODE_PRIVATE)
+    )
 
     @Provides
     @Singleton

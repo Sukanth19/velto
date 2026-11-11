@@ -23,13 +23,14 @@
 - **Live timer**: counts down on the lock screen and, on Android 16+, as a Live Update chip in the status bar
 - **Focus sounds**: brown noise, rain or a café, generated on the phone with nothing to download
 - **Habits**: daily check-ins, streaks and a 12-week grid
+- **Google Calendar**: link a calendar and tasks with a due date go on it as all-day events with a reminder (the evening before, the day before, two days or a week ahead). The event moves when the task does and goes when it's deleted. Without linking, any task can still be opened in the calendar app
 - **Inbox**: capture a thought in a tap, sort it into a task or habit later
 - **Journal**: mood and energy check-ins, a year in pixels, and how energy relates to your focus
 - **Week in review**: wins, trends against last week, your best focus hours and one suggestion, shareable as an image
 - **Progress**: XP, levels, achievements and a plant that grows as you level up. Levelling up unlocks new colour palettes and plants (sunflower, cactus, bonsai)
 - **Themes**: wallpaper colours or six built-in palettes (unlocked as you level up), light, dark or system, and a pure black mode for OLED screens
 - **Widgets**: next task, focus timer, today, top tasks, habits, mood, quick capture and level
-- **Private**: no account, no tracking. Data stays on the phone, with export/import and Android backup. See the [privacy policy](docs/PRIVACY.md)
+- **Private**: no account, no tracking. Calendar events go through the phone's own calendar, so there's no Google sign-in in the app. Data stays on the phone, with export/import and Android backup. See the [privacy policy](docs/PRIVACY.md)
 
 ## Tech
 

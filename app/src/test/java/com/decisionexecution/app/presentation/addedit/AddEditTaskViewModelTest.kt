@@ -1,6 +1,10 @@
 package com.decisionexecution.app.presentation.addedit
 
+import com.decisionexecution.app.domain.usecase.CalendarSyncUseCase
 import com.decisionexecution.app.testutil.noCalibration
+import com.decisionexecution.app.testutil.FakeCalendarRepository
+import com.decisionexecution.app.testutil.GOOGLE_CALENDAR
+import java.time.LocalDate
 import com.decisionexecution.app.testutil.stubPick
 import com.decisionexecution.app.domain.usecase.DayPhaseSource
 
@@ -110,16 +114,112 @@ class AddEditTaskViewModelTest : StringSpec({
         viewModel.uiState.value.error shouldBe "Couldn't save the task. Please try again."
         viewModel.uiState.value.isSaved shouldBe false
     }
+
+    "with a linked calendar, a new task with a due date goes on it by default" {
+        val calendar = FakeCalendarRepository(linked = GOOGLE_CALENDAR, reminder = CalendarReminder.EVENING_BEFORE)
+        val monday = LocalDate.of(2026, 11, 16)
+        val viewModel = createViewModel(calendar = calendar)
+
+        viewModel.uiState.value.calendarLinked shouldBe true
+        viewModel.uiState.value.addToCalendar shouldBe true
+        viewModel.onTitleChange("Study for test")
+        viewModel.onDueDateChange(monday)
+        viewModel.onSave()
+
+        viewModel.uiState.value.isSaved shouldBe true
+        val event = calendar.events.values.single()
+        event.title shouldBe "Study for test"
+        event.date shouldBe monday
+        event.reminderMinutesBefore shouldBe 6 * 60
+        calendar.calendarOf(calendar.events.keys.single()) shouldBe GOOGLE_CALENDAR.id
+    }
+
+    "turning the calendar switch off keeps the task off the calendar" {
+        val calendar = FakeCalendarRepository(linked = GOOGLE_CALENDAR)
+        val viewModel = createViewModel(calendar = calendar)
+
+        viewModel.onTitleChange("Study for test")
+        viewModel.onDueDateChange(LocalDate.of(2026, 11, 16))
+        viewModel.onAddToCalendarChange(false)
+        viewModel.onSave()
+
+        viewModel.uiState.value.isSaved shouldBe true
+        calendar.events shouldBe emptyMap()
+    }
+
+    "a task without a due date isn't put on the calendar" {
+        val calendar = FakeCalendarRepository(linked = GOOGLE_CALENDAR)
+        val viewModel = createViewModel(calendar = calendar)
+
+        viewModel.onTitleChange("Someday task")
+        viewModel.onSave()
+
+        viewModel.uiState.value.isSaved shouldBe true
+        calendar.events shouldBe emptyMap()
+    }
+
+    "without a linked calendar nothing is added and the switch is off" {
+        val calendar = FakeCalendarRepository(linked = null)
+        val viewModel = createViewModel(calendar = calendar)
+
+        viewModel.uiState.value.calendarLinked shouldBe false
+        viewModel.uiState.value.addToCalendar shouldBe false
+        viewModel.onTitleChange("Study for test")
+        viewModel.onDueDateChange(LocalDate.of(2026, 11, 16))
+        viewModel.onSave()
+
+        calendar.events shouldBe emptyMap()
+    }
+
+    "editing a task on the calendar moves its event to the new date" {
+        val calendar = FakeCalendarRepository(linked = GOOGLE_CALENDAR)
+        val existing = Task("t-1", "Study for test", null, TaskCategory.SCHOOL, 3, 4, TaskEffort.MEDIUM, null, 1L, dueDate = LocalDate.of(2026, 11, 16))
+        CalendarSyncUseCase(calendar).add(existing)
+        val viewModel = createViewModel(taskId = "t-1", existing = existing, calendar = calendar)
+
+        viewModel.uiState.value.addToCalendar shouldBe true
+        viewModel.onDueDateChange(LocalDate.of(2026, 11, 18))
+        viewModel.onSave()
+
+        calendar.events.getValue("t-1").date shouldBe LocalDate.of(2026, 11, 18)
+    }
+
+    "switching the calendar off when editing removes the event" {
+        val calendar = FakeCalendarRepository(linked = GOOGLE_CALENDAR)
+        val existing = Task("t-1", "Study for test", null, TaskCategory.SCHOOL, 3, 4, TaskEffort.MEDIUM, null, 1L, dueDate = LocalDate.of(2026, 11, 16))
+        CalendarSyncUseCase(calendar).add(existing)
+        val viewModel = createViewModel(taskId = "t-1", existing = existing, calendar = calendar)
+
+        viewModel.onAddToCalendarChange(false)
+        viewModel.onSave()
+
+        calendar.events shouldBe emptyMap()
+    }
+
+    "a calendar failure still saves the task" {
+        val calendar = FakeCalendarRepository(linked = GOOGLE_CALENDAR).apply { failWith = SecurityException("revoked") }
+        val create = mockk<CreateTaskUseCase>(relaxed = true)
+        val viewModel = createViewModel(create = create, calendar = calendar)
+
+        viewModel.onTitleChange("Study for test")
+        viewModel.onDueDateChange(LocalDate.of(2026, 11, 16))
+        viewModel.onSave()
+
+        coVerify { create(any()) }
+        viewModel.uiState.value.isSaved shouldBe true
+        viewModel.uiState.value.error shouldBe null
+    }
 })
 
 private fun createViewModel(
     taskId: String? = null,
     existing: Task? = null,
     create: CreateTaskUseCase = mockk(relaxed = true),
-    update: UpdateTaskUseCase = mockk(relaxed = true)
+    update: UpdateTaskUseCase = mockk(relaxed = true),
+    calendar: FakeCalendarRepository = FakeCalendarRepository()
 ): AddEditTaskViewModel {
     val getTask = mockk<GetTaskByIdUseCase>()
     every { getTask(any()) } returns flowOf(existing)
     val handle = SavedStateHandle(mapOf(AddEditTaskViewModel.TASK_ID_ARG to taskId))
-    return AddEditTaskViewModel(handle, getTask, create, update, mockk(relaxed = true), taskRepositoryWithSteps(), noCalibration())
+    return AddEditTaskViewModel(handle, getTask, create, update, mockk(relaxed = true), taskRepositoryWithSteps(), noCalibration(), calendar, CalendarSyncUseCase(calendar))
 }

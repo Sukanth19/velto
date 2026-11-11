@@ -26,6 +26,13 @@ import com.decisionexecution.app.presentation.components.label
 import com.decisionexecution.app.presentation.navigation.sharedTaskTitle
 import com.decisionexecution.app.presentation.theme.Spacing
 import java.text.DateFormat
+import androidx.compose.material.icons.rounded.CalendarMonth
+import androidx.compose.material.icons.rounded.EventAvailable
+import androidx.compose.ui.platform.LocalContext
+import com.decisionexecution.app.domain.model.CalendarReminder
+import com.decisionexecution.app.domain.service.calendarEventFor
+import com.decisionexecution.app.presentation.common.openCalendarInsert
+import kotlinx.coroutines.launch
 import java.util.Date
 
 /**
@@ -40,12 +47,23 @@ fun TaskDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var confirmDelete by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    LaunchedEffect(uiState.calendarMessage) {
+        uiState.calendarMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.onCalendarMessageShown()
+        }
+    }
 
     LaunchedEffect(uiState.isFinished) {
         if (uiState.isFinished) onBack()
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Task") },
@@ -73,7 +91,24 @@ fun TaskDetailScreen(
             task == null -> Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 Text(uiState.error ?: "Task not found")
             }
-            else -> TaskDetailContent(task, uiState.steps, uiState.error, viewModel::onComplete, viewModel::onToggleStep, Modifier.padding(padding))
+            else -> TaskDetailContent(
+                task, uiState.steps, uiState.error, viewModel::onComplete, viewModel::onToggleStep, Modifier.padding(padding),
+                calendar = {
+                    CalendarCard(
+                        linked = uiState.calendarLinked,
+                        onCalendar = uiState.onCalendar,
+                        onAdd = viewModel::onAddToCalendar,
+                        onRemove = viewModel::onRemoveFromCalendar,
+                        onOpenCalendarApp = {
+                            // Not linked: hand it to the calendar app, which sets its own reminder
+                            val event = calendarEventFor(task, CalendarReminder.NONE) ?: return@CalendarCard
+                            if (!context.openCalendarInsert(event)) {
+                                scope.launch { snackbarHostState.showSnackbar("No calendar app found") }
+                            }
+                        }
+                    )
+                }
+            )
         }
     }
 
@@ -100,7 +135,8 @@ private fun TaskDetailContent(
     error: String?,
     onComplete: () -> Unit,
     onToggleStep: (String, Boolean) -> Unit,
-    modifier: Modifier
+    modifier: Modifier,
+    calendar: @Composable () -> Unit = {}
 ) {
     Column(
         modifier
@@ -115,6 +151,7 @@ private fun TaskDetailContent(
             Text(it, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         if (steps.isNotEmpty()) StepsCard(steps, onToggleStep)
+        if (task.dueDate != null) calendar()
         HorizontalDivider()
         task.recurrence?.let { DetailRow("Repeats", it.label) }
         DetailRow("Category", task.category.label)
@@ -130,6 +167,50 @@ private fun TaskDetailContent(
         Spacer(Modifier.height(Spacing.sm))
         Button(onClick = onComplete, shapes = ButtonDefaults.shapes(), modifier = Modifier.fillMaxWidth().height(56.dp)) {
             Text(if (task.recurrence != null) "Done, see you next time" else "Mark complete")
+        }
+    }
+}
+
+/**
+ * Gets the task onto Google Calendar: straight onto the linked calendar with a reminder, or,
+ * with nothing linked, through the calendar app's own new-event screen.
+ */
+@Composable
+private fun CalendarCard(
+    linked: Boolean,
+    onCalendar: Boolean,
+    onAdd: () -> Unit,
+    onRemove: () -> Unit,
+    onOpenCalendarApp: () -> Unit
+) {
+    Surface(shape = RoundedCornerShape(24.dp), color = MaterialTheme.colorScheme.surfaceContainerLow) {
+        Row(
+            Modifier.fillMaxWidth().padding(Spacing.md),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
+        ) {
+            Icon(
+                if (onCalendar) Icons.Rounded.EventAvailable else Icons.Rounded.CalendarMonth,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
+            Column(Modifier.weight(1f)) {
+                Text("Google Calendar", style = MaterialTheme.typography.titleMedium)
+                Text(
+                    when {
+                        onCalendar -> "On your calendar, and it moves with the due date"
+                        linked -> "Add it to your calendar with a reminder"
+                        else -> "Add it in the calendar app, or link a calendar in Settings"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            when {
+                onCalendar -> TextButton(onClick = onRemove) { Text("Remove") }
+                linked -> FilledTonalButton(onClick = onAdd, shapes = ButtonDefaults.shapes()) { Text("Add") }
+                else -> FilledTonalButton(onClick = onOpenCalendarApp, shapes = ButtonDefaults.shapes()) { Text("Open") }
+            }
         }
     }
 }
