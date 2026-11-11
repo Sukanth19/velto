@@ -33,7 +33,8 @@ fun MoodCheckInCard(
     val scheme = MaterialTheme.colorScheme
 
     Surface(modifier = modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp), color = scheme.secondaryContainer) {
-        Column(Modifier.padding(Spacing.md), verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+        // Centred when Home stretches it to match the cards beside it
+        Column(Modifier.padding(Spacing.md), verticalArrangement = Arrangement.spacedBy(Spacing.sm, Alignment.CenterVertically)) {
             Text(
                 if (existing == null) "How are you feeling?" else "Today's check-in",
                 style = MaterialTheme.typography.titleMedium,

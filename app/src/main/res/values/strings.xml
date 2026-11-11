@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Velto</string>
+    <string name="app_name">velto</string>
     <string name="widget_best_task_name">Next task</string>
     <string name="widget_best_task_description">Your best task right now, with a Just Start button</string>
     <string name="widget_focus_timer_name">Focus timer</string>

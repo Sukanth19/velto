@@ -33,6 +33,9 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.ui.layout.SubcomposeLayout
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -339,14 +342,30 @@ private fun DailyCards(
         extras.plant?.let { plant -> add { PlantCard(plant) } }
     }
     val pagerState = rememberPagerState { pages.size }
+    val peek = 40.dp
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
-        HorizontalPager(
-            state = pagerState,
-            contentPadding = PaddingValues(end = 40.dp),
-            pageSpacing = Spacing.sm,
-            verticalAlignment = Alignment.Top,
-            modifier = Modifier.fillMaxWidth()
-        ) { page -> pages[page]() }
+        // Every card gets the height of the tallest, so swiping doesn't jump between sizes
+        SubcomposeLayout(Modifier.fillMaxWidth()) { constraints ->
+            val pageConstraints = Constraints(maxWidth = (constraints.maxWidth - peek.roundToPx()).coerceAtLeast(0))
+            // Measured off-screen copies, hidden from TalkBack so it doesn't read every card twice
+            val tallest = pages.indices.maxOfOrNull { index ->
+                subcompose("size-$index") { Box(Modifier.clearAndSetSemantics { }) { pages[index]() } }.maxOfOrNull { it.measure(pageConstraints).height } ?: 0
+            } ?: 0
+            val cardHeight = tallest.toDp()
+            val pager = subcompose("pager") {
+                HorizontalPager(
+                    state = pagerState,
+                    contentPadding = PaddingValues(end = peek),
+                    pageSpacing = Spacing.sm,
+                    verticalAlignment = Alignment.Top,
+                    modifier = Modifier.fillMaxWidth()
+                ) { page ->
+                    // A card can still grow past it, like the mood card opening up after a tap
+                    Box(Modifier.heightIn(min = cardHeight), propagateMinConstraints = true) { pages[page]() }
+                }
+            }.map { it.measure(constraints.copy(minHeight = 0)) }
+            layout(constraints.maxWidth, pager.maxOfOrNull { it.height } ?: 0) { pager.forEach { it.place(0, 0) } }
+        }
         PageDots(count = pages.size, current = pagerState.currentPage)
     }
 }
