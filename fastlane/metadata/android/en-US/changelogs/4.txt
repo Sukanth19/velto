@@ -1,0 +1,6 @@
+velto 2.2 puts your deadlines on your calendar:
+• Link Google Calendar in Settings and tasks with a due date go on it as all-day events
+• Pick your reminder: the evening before, the day before, two days or a week ahead
+• Events move when the task's date changes, follow repeating tasks, and go when a task is deleted
+• No calendar linked? Open any task in your calendar app in one tap
+• Home cards are now all the same size
