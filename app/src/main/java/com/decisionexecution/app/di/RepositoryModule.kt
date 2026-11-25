@@ -26,6 +26,7 @@ import com.decisionexecution.app.data.repository.PreferencesRepositoryImpl
 import com.decisionexecution.app.domain.repository.BackupRepository
 import com.decisionexecution.app.domain.repository.CalendarRepository
 import com.decisionexecution.app.domain.repository.HabitRepository
+import com.decisionexecution.app.ecosystem.VeltoBridge
 import com.decisionexecution.app.domain.repository.InboxRepository
 import com.decisionexecution.app.domain.repository.MoodRepository
 import com.decisionexecution.app.domain.repository.PerformanceRepository
@@ -74,7 +75,10 @@ object RepositoryModule {
 
     @Provides
     @Singleton
-    fun provideHabitRepository(habitDao: HabitDao): HabitRepository = HabitRepositoryImpl(habitDao)
+    fun provideHabitRepository(habitDao: HabitDao, @ApplicationContext context: Context): HabitRepository =
+        HabitRepositoryImpl(habitDao).apply {
+            onCheckInChanged = { id, day, done -> VeltoBridge.habitChanged(context, id, day.toEpochDay(), done) }
+        }
 
     @Provides
     @Singleton

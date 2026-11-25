@@ -24,6 +24,7 @@
 - **Focus sounds**: brown noise, rain or a café, generated on the phone with nothing to download
 - **Habits**: daily check-ins, streaks and a 12-week grid
 - **Google Calendar**: link a calendar and tasks with a due date go on it as all-day events with a reminder (the evening before, the day before, two days or a week ahead). The event moves when the task does and goes when it's deleted. Without linking, any task can still be opened in the calendar app
+- **Works with pupdr**: link [pupdr](https://github.com/Sukanth19/pupdr), the gym tracker, and creatine, water and workout habits tick off in both apps. Log creatine or finish your water in pupdr and the Velto habit is checked. Tick it in Velto and pupdr follows. Habits are created or matched by name the first time, and you can turn this off in Settings → Connected apps. Only pupdr and Midas, signed with their known certificates, can talk to Velto
 - **Inbox**: capture a thought in a tap, sort it into a task or habit later
 - **Journal**: mood and energy check-ins, a year in pixels, and how energy relates to your focus
 - **Week in review**: wins, trends against last week, your best focus hours and one suggestion, shareable as an image

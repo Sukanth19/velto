@@ -211,6 +211,9 @@ fun SettingsScreen(
                 onReminderChange = viewModel::onCalendarReminderChanged
             )
 
+            SectionTitle("Connected apps")
+            PupdrSetting()
+
             SectionTitle("Your data")
             Text(
                 "Everything stays on this phone and is included in your Android backup. " +

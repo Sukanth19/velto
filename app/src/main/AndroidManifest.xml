@@ -14,6 +14,11 @@
     <uses-permission android:name="android.permission.READ_CALENDAR" />
     <uses-permission android:name="android.permission.WRITE_CALENDAR" />
 
+    <queries>
+        <package android:name="dev.suks.pupdr" />
+        <package android:name="dev.suks.midas" />
+    </queries>
+
     <application
         android:name=".DecisionExecutionApplication"
         android:allowBackup="true"
@@ -187,6 +192,13 @@
                 android:value="androidx.startup"
                 tools:node="remove" />
         </provider>
+
+        <!-- pupdr calls this to sync creatine, water and workout habits;
+             callers are checked against pinned signing certificates (see ecosystem/Ecosystem.kt) -->
+        <provider
+            android:name="com.decisionexecution.app.ecosystem.EcosystemProvider"
+            android:authorities="${applicationId}.ecosystem"
+            android:exported="true" />
     </application>
 
 </manifest>

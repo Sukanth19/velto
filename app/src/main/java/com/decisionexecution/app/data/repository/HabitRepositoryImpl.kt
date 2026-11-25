@@ -16,6 +16,9 @@ class HabitRepositoryImpl @Inject constructor(
     private val habitDao: HabitDao
 ) : HabitRepository {
 
+    /** Called after a check-in changes here in Velto, so linked apps (pupdr) can follow along. */
+    var onCheckInChanged: (habitId: String, day: LocalDate, done: Boolean) -> Unit = { _, _, _ -> }
+
     override fun getHabits(since: LocalDate): Flow<List<HabitWithHistory>> =
         combine(habitDao.getHabits(), habitDao.getCheckInsSince(since.toEpochDay())) { habits, checkIns ->
             val daysByHabit = checkIns.groupBy({ it.habitId }, { LocalDate.ofEpochDay(it.day) })
@@ -34,6 +37,7 @@ class HabitRepositoryImpl @Inject constructor(
     override suspend fun setDone(habitId: String, day: LocalDate, done: Boolean) {
         if (done) habitDao.insertCheckIn(HabitCheckInEntity(habitId, day.toEpochDay()))
         else habitDao.deleteCheckIn(habitId, day.toEpochDay())
+        onCheckInChanged(habitId, day, done)
     }
 
     private fun HabitEntity.toDomain() = Habit(
