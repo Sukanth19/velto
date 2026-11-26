@@ -1,0 +1,4 @@
+velto 2.4 is pink:
+• Velto pink is the new default colour, unlocked from the start
+• Wallpaper colours and the other palettes are still in Settings
+• Works with the new pupdr release
