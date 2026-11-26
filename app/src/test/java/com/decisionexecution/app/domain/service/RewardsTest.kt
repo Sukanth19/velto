@@ -7,8 +7,8 @@ import io.kotest.matchers.shouldBe
 
 class RewardsTest : StringSpec({
 
-    "you start with wallpaper and violet colours and the blossom" {
-        ThemePalette.entries.filter { it.isUnlocked(1) } shouldBe listOf(ThemePalette.WALLPAPER, ThemePalette.VIOLET)
+    "you start with wallpaper, velto pink and violet colours and the blossom" {
+        ThemePalette.entries.filter { it.isUnlocked(1) } shouldBe listOf(ThemePalette.WALLPAPER, ThemePalette.HOT_PINK, ThemePalette.VIOLET)
         PlantVariety.entries.filter { it.isUnlocked(1) } shouldBe listOf(PlantVariety.BLOSSOM)
     }
 

@@ -43,6 +43,20 @@ private val Violet = PaletteSpec(
     )
 )
 
+// Velto's own colour, the default: a hot pink, with the usual calm teal for breaks.
+private val HotPink = PaletteSpec(
+    light = Accents(
+        c(0xFFD1006A), Color.White, c(0xFFFFD9E3), c(0xFF3E001C),
+        c(0xFF75565E), c(0xFFFFD9E1), c(0xFF2B151B),
+        c(0xFF006A62), Color.White, c(0xFF9DF2E6), c(0xFF00201D)
+    ),
+    dark = Accents(
+        c(0xFFFF84B5), c(0xFF4A0024), c(0xFF8E0048), c(0xFFFFD9E3),
+        c(0xFFE3BDC5), c(0xFF5B3F46), c(0xFFFFD9E1),
+        c(0xFF81D5CA), c(0xFF003732), c(0xFF005049), c(0xFF9DF2E6)
+    )
+)
+
 private val Ocean = PaletteSpec(
     light = Accents(
         c(0xFF0061A4), Color.White, c(0xFFD1E4FF), c(0xFF001D36),
@@ -110,7 +124,8 @@ private val Mono = PaletteSpec(
 
 private fun ThemePalette.spec(): PaletteSpec = when (this) {
     // Wallpaper colours are handled by the caller; this is the fallback before Android 12
-    ThemePalette.WALLPAPER, ThemePalette.VIOLET -> Violet
+    ThemePalette.WALLPAPER, ThemePalette.HOT_PINK -> HotPink
+    ThemePalette.VIOLET -> Violet
     ThemePalette.OCEAN -> Ocean
     ThemePalette.FOREST -> Forest
     ThemePalette.SUNSET -> Sunset
@@ -122,6 +137,7 @@ private fun ThemePalette.spec(): PaletteSpec = when (this) {
 val ThemePalette.label: String
     get() = when (this) {
         ThemePalette.WALLPAPER -> "Wallpaper"
+        ThemePalette.HOT_PINK -> "Velto pink"
         ThemePalette.VIOLET -> "Violet"
         ThemePalette.OCEAN -> "Ocean"
         ThemePalette.FOREST -> "Forest"

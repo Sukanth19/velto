@@ -16,7 +16,7 @@ enum class PlantVariety(val label: String, val unlockLevel: Int) {
  */
 val ThemePalette.unlockLevel: Int
     get() = when (this) {
-        ThemePalette.WALLPAPER, ThemePalette.VIOLET -> 1
+        ThemePalette.WALLPAPER, ThemePalette.HOT_PINK, ThemePalette.VIOLET -> 1
         ThemePalette.OCEAN -> 2
         ThemePalette.FOREST -> 3
         ThemePalette.SUNSET -> 5

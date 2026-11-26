@@ -33,7 +33,7 @@ data class SettingsUiState(
     val focusDuration: Int = 25,
     val breakDuration: Int = 5,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
-    val themePalette: ThemePalette = ThemePalette.WALLPAPER,
+    val themePalette: ThemePalette = ThemePalette.HOT_PINK,
     val pureBlack: Boolean = false,
     val focusSound: FocusSound = FocusSound.OFF,
     val plantVariety: PlantVariety = PlantVariety.BLOSSOM,
