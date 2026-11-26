@@ -81,7 +81,7 @@ object Spacing {
 @Composable
 fun VeltoTheme(
     themeMode: ThemeMode = ThemeMode.SYSTEM,
-    palette: ThemePalette = ThemePalette.WALLPAPER,
+    palette: ThemePalette = ThemePalette.HOT_PINK,
     pureBlack: Boolean = false,
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit

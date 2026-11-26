@@ -17,7 +17,7 @@ data class UserPreferences(
     /** Sunday evening nudge to look back at the week */
     val weeklyReviewReminder: Reminder = Reminder(enabled = true, minuteOfDay = 18 * 60),
     /** Colour palette for the whole app; [ThemePalette.WALLPAPER] uses Material You colours where available */
-    val themePalette: ThemePalette = ThemePalette.WALLPAPER,
+    val themePalette: ThemePalette = ThemePalette.HOT_PINK,
     /** True black backgrounds in dark mode, easier on OLED batteries */
     val pureBlack: Boolean = false,
     /** Background sound while a focus phase runs */
@@ -44,4 +44,4 @@ enum class FocusSound(val label: String) {
 }
 
 /** Colour palettes the user can pick in settings. Order is the order shown. */
-enum class ThemePalette { WALLPAPER, VIOLET, OCEAN, FOREST, SUNSET, ROSE, MONO }
+enum class ThemePalette { WALLPAPER, HOT_PINK, VIOLET, OCEAN, FOREST, SUNSET, ROSE, MONO }
