@@ -1,0 +1,5 @@
+velto 2.3 works with pupdr, the gym tracker:
+• Creatine, water and workout habits tick off in both apps
+• Log creatine or finish your water in pupdr and the Velto habit is checked; tick it here and pupdr follows
+• Habits are matched by name or created the first time
+• Turn it on or off in Settings → Connected apps
